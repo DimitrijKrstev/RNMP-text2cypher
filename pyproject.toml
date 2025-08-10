@@ -1,0 +1,10 @@
+[project]
+name = "text2cypher"
+version = "0.1.0"
+description = "A comparison of text2cypher and text2sql models."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "relbench>=1.1.0",
+    "tqdm>=4.67.1",
+]

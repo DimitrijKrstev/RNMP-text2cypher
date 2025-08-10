@@ -1,13 +1,16 @@
-FROM neo4j:latest
+# check=skip=SecretsUsedInArgOrEnv
+FROM neo4j:5.26.8 
 
-# Copy import files
+ENV NEO4J_AUTH=neo4j/neo4jneo4j      \
+  NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+
 COPY import/ /var/lib/neo4j/import/
 
-# Copy the import script
-COPY import-data.sh /var/lib/neo4j/import-data.sh
-RUN chmod +x /var/lib/neo4j/import-data.sh
+COPY scripts/f1-database-loader.sh /var/lib/neo4j/f1-database-loader.sh
+COPY scripts/import-nodes.sh /var/lib/neo4j/import-nodes.sh
 
-WORKDIR /var/lib/neo4j
-
-# Run the import script
-RUN /var/lib/neo4j/import-data.sh
+RUN chmod +x /var/lib/neo4j/import-nodes.sh \
+  && /var/lib/neo4j/import-nodes.sh
+  
+RUN chmod +x /var/lib/neo4j/f1-database-loader.sh \
+  && /var/lib/neo4j/f1-database-loader.sh

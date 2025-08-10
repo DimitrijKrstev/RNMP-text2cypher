@@ -1,0 +1,12 @@
+#!/bin/bash
+
+neo4j-admin database import full neo4j --verbose \
+--overwrite-destination=true \
+--id-type=string \
+--report-file=import-report.txt \
+--bad-tolerance=1000 \
+--skip-bad-relationships=true \
+--skip-duplicate-nodes=true \
+--delimiter="," \
+--array-delimiter=";" \
+$(for f in import/*_nodes.csv; do [ -e "$f" ] && echo --nodes="$f"; done)
