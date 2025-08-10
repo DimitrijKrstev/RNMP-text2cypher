@@ -8,3 +8,18 @@ dependencies = [
     "relbench>=1.1.0",
     "tqdm>=4.67.1",
 ]
+[tool.mypy]
+ignore_missing_imports = true
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "flake8>=7.3.0",
+    "isort>=6.0.1",
+    "mypy>=1.17.1",
+]
+
+[tool.uv.scripts]
+format = "black . && isort ."
+lint = "flake8 . && mypy ."
+check = "black --check . && isort --check-only . && flake8 . && mypy ."

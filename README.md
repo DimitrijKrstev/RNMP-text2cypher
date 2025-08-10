@@ -8,6 +8,12 @@ This project uses [uv](https://github.com/astral-sh/uv) as a package manager and
 uv sync
 ```
 
+You can then source the interperter by doing:
+
+```bash
+source .venv/bin/activate
+```
+
 Additionally [docker](https://www.docker.com/) is required to run the database.
 
 ## Running neo4j populated
@@ -27,3 +33,14 @@ docker compose up -d --build
 ```
 
 This will import the nodes via the `import-nodes.sh` script and will add the required constraints and relationships via the `f1-database-loader.sh` script.
+
+## Dev tools
+
+Before contributing make sure to run the following dev tools and fix issues related with the following:
+
+```
+isort .
+flake8
+mypy .
+black .
+```
