@@ -18,8 +18,3 @@ dev = [
     "isort>=6.0.1",
     "mypy>=1.17.1",
 ]
-
-[tool.uv.scripts]
-format = "black . && isort ."
-lint = "flake8 . && mypy ."
-check = "black --check . && isort --check-only . && flake8 . && mypy ."

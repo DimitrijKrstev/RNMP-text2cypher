@@ -34,53 +34,95 @@ create_relationships() {
     echo "Creating relationships…"
     
   cypher-shell -u neo4j -p "$PASSWORD" <<'CYPHER'
-    CALL {
+    CALL () {
       MATCH (r:results)
       MATCH (d:drivers)
       WHERE toInteger(r.driverId) = toInteger(d.driverId)
       MERGE (d)-[:ACHIEVED]->(r)
     } IN TRANSACTIONS OF 1000 ROWS;
 
-    CALL {
+    CALL () {
       MATCH (r:results)
       MATCH (c:constructors)
       WHERE toInteger(r.constructorId) = toInteger(c.constructorId)
       MERGE (c)-[:ACHIEVED]->(r)
     } IN TRANSACTIONS OF 1000 ROWS;
 
-    CALL {
+    CALL () {
       MATCH (ra:races)
       MATCH (ci:circuits)
       WHERE toInteger(ra.circutId) = toInteger(ci.circuitId)
       MERGE (ra)-[:HELD_AT]->(ci)
     } IN TRANSACTIONS OF 1000 ROWS;
 
-    CALL {
+    CALL () {
       MATCH (r:results)
       MATCH (ra:races)
       WHERE toInteger(r.raceId) = toInteger(ra.raceId)
       MERGE (r)-[:IN_RACE]->(ra)
     } IN TRANSACTIONS OF 1000 ROWS;
 
-    CALL {
+    CALL () {
       MATCH (q:qualifying)
       MATCH (d:drivers)
       WHERE toInteger(q.driverId) = toInteger(d.driverId)
       MERGE (d)-[:QUALIFIED_IN]->(q)
     } IN TRANSACTIONS OF 1000 ROWS;
 
-    CALL {
+    CALL () {
       MATCH (q:qualifying)
       MATCH (c:constructors)
       WHERE toInteger(q.constructorId) = toInteger(c.constructorId)
       MERGE (c)-[:QUALIFIED_IN]->(q)
     } IN TRANSACTIONS OF 1000 ROWS;
 
-    CALL {
+    CALL () {
       MATCH (q:qualifying)
       MATCH (ra:races)
       WHERE toInteger(q.raceId) = toInteger(ra.raceId)
       MERGE (q)-[:FOR_RACE]->(ra)
+    } IN TRANSACTIONS OF 1000 ROWS;
+
+    CALL () {
+      MATCH (s:standings)
+      MATCH (ra:races)
+      WHERE toInteger(s.raceId) = toInteger(ra.raceId)
+      MERGE (ra)-[:IN_STANDING]->(s)
+    } IN TRANSACTIONS OF 1000 ROWS;
+
+    CALL () {
+      MATCH (s:standings)
+      MATCH (d:drivers)
+      WHERE toInteger(s.driverId) = toInteger(d.driverId)
+      MERGE (d)-[:ACHIEVED_STANDING]->(s)
+    } IN TRANSACTIONS OF 1000 ROWS;
+
+    CALL () {
+      MATCH (cs:constructor_results)
+      MATCH (ra:races)
+      WHERE toInteger(cs.raceId) = toInteger(ra.raceId)
+      MERGE (ra)-[:RESULTED_IN]->(cs)
+    } IN TRANSACTIONS OF 1000 ROWS;
+
+    CALL () {
+      MATCH (cs:constructor_results)
+      MATCH (c:constructors)
+      WHERE toInteger(cs.constructorId) = toInteger(c.constructorId)
+      MERGE (c)-[:RESULTED_IN]->(cs)
+    } IN TRANSACTIONS OF 1000 ROWS;
+
+    CALL () {
+      MATCH (cst:constructor_standings)
+      MATCH (ra:races)
+      WHERE toInteger(cst.raceId) = toInteger(ra.raceId)
+      MERGE (ra)-[:HAS_STANDING]->(cst)
+    } IN TRANSACTIONS OF 1000 ROWS;
+
+    CALL () {
+      MATCH (cst:constructor_standings)
+      MATCH (c:constructors)
+      WHERE toInteger(cst.constructorId) = toInteger(c.constructorId)
+      MERGE (c)-[:HAS_STANDING]->(cst)
     } IN TRANSACTIONS OF 1000 ROWS;
 
 CYPHER
