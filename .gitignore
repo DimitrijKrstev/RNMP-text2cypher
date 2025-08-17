@@ -9,4 +9,4 @@ __pycache__
 *.db-shm
 *.db-wal
 
-import/*.csv
+neo4j/import/*.csv

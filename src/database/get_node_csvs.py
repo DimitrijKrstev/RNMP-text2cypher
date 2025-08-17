@@ -1,8 +1,7 @@
 import os
 
-from relbench.datasets import get_dataset
-
 from constants import CSV_OUTPUT_DIR
+from relbench.datasets import get_dataset
 
 
 def main() -> None:

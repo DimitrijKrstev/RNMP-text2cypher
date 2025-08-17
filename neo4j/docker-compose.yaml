@@ -1,6 +1,7 @@
 services:
   neo4j:
-    build: .
+    build:
+      context: .
     container_name: neo4j
     environment:
       NEO4J_AUTH: "neo4j/neo4jneo4j"
