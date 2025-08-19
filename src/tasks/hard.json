@@ -1,0 +1,42 @@
+[
+	{
+		"question": "Which driver has the most wins in a single season, and in which year did that season occur? Return driver, year, and win_count (break ties by higher win_count, then earlier year).",
+		"sql": "WITH season_wins AS (\\n  SELECT ra.year, r.driverId, COUNT(*) AS wins\\n  FROM results r\\n  JOIN races ra ON ra.raceId = r.raceId\\n  WHERE r.positionOrder = 1\\n  GROUP BY ra.year, r.driverId\\n)\\nSELECT d.forename || ' ' || d.surname AS driver, sw.year, sw.wins AS win_count\\nFROM season_wins sw\\nJOIN drivers d ON d.driverId = sw.driverId\\nORDER BY win_count DESC, year ASC\\nLIMIT 1;"
+	},
+	{
+		"question": "Find the constructor that has won on the largest number of distinct circuits overall. Return constructor and distinct_circuits_won.",
+		"sql": "SELECT c.name AS constructor, COUNT(DISTINCT ra.circuitId) AS distinct_circuits_won\\nFROM results r\\nJOIN races ra ON ra.raceId = r.raceId\\nJOIN constructors c ON c.constructorId = r.constructorId\\nWHERE r.positionOrder = 1\\nGROUP BY c.constructorId\\nORDER BY distinct_circuits_won DESC\\nLIMIT 1;"
+	},
+	{
+		"question": "Which circuit has had the greatest variety of winning drivers? Return circuit, distinct_winners.",
+		"sql": "SELECT ci.name AS circuit, COUNT(DISTINCT r.driverId) AS distinct_winners\\nFROM results r\\nJOIN races ra ON ra.raceId = r.raceId\\nJOIN circuits ci ON ci.circuitId = ra.circuitId\\nWHERE r.positionOrder = 1\\nGROUP BY ci.circuitId\\nORDER BY distinct_winners DESC\\nLIMIT 1;"
+	},
+	{
+		"question": "Who were the 5 youngest drivers at the time of their first career F1 win? Return driver, first_win_date (YYYY-MM-DD), circuit, and age_years (to 2 decimals).",
+		"sql": "WITH first_wins AS (\\n  SELECT r.driverId, ra.date AS win_date, ra.circuitId,\\n         ROW_NUMBER() OVER (PARTITION BY r.driverId ORDER BY ra.date) AS rn\\n  FROM results r\\n  JOIN races ra ON ra.raceId = r.raceId\\n  WHERE r.positionOrder = 1\\n), first_win AS (\\n  SELECT driverId, win_date, circuitId\\n  FROM first_wins\\n  WHERE rn = 1\\n)\\nSELECT d.forename || ' ' || d.surname AS driver,\\n       fw.win_date AS first_win_date,\\n       ci.name AS circuit,\\n       ROUND((julianday(fw.win_date) - julianday(d.dob)) / 365.25, 2) AS age_years\\nFROM first_win fw\\nJOIN drivers d ON d.driverId = fw.driverId\\nJOIN circuits ci ON ci.circuitId = fw.circuitId\\nORDER BY age_years ASC\\nLIMIT 5;"
+	},
+	{
+		"question": "Find the single race performance with the fastest average lap time (across all laps a driver completed in that race). Return race (year, name), driver, and avg_lap_ms.",
+		"sql": "WITH per_driver_race AS (\\n  SELECT lt.raceId, lt.driverId, AVG(lt.milliseconds) AS avg_ms\\n  FROM lapTimes lt\\n  GROUP BY lt.raceId, lt.driverId\\n)\\nSELECT ra.year, ra.name AS race, d.forename || ' ' || d.surname AS driver,\\n       ROUND(pdr.avg_ms, 2) AS avg_lap_ms\\nFROM per_driver_race pdr\\nJOIN races ra ON ra.raceId = pdr.raceId\\nJOIN drivers d ON d.driverId = pdr.driverId\\nORDER BY avg_lap_ms ASC\\nLIMIT 1;"
+	},
+	{
+		"question": "Which driver achieved the biggest single-race position gain from grid to finish (finished races only)? Return race (year, name), driver, grid, finish, and gain.",
+		"sql": "WITH finished AS (\\n  SELECT r.*, s.status\\n  FROM results r\\n  JOIN status s ON s.statusId = r.statusId\\n  WHERE s.status = 'Finished' AND r.grid IS NOT NULL AND r.positionOrder IS NOT NULL\\n), gains AS (\\n  SELECT f.raceId, f.driverId, f.grid, f.positionOrder AS finish, (f.grid - f.positionOrder) AS gain\\n  FROM finished f\\n  WHERE f.grid > f.positionOrder\\n)\\nSELECT ra.year, ra.name AS race, d.forename || ' ' || d.surname AS driver,\\n       g.grid, g.finish, g.gain\\nFROM gains g\\nJOIN races ra ON ra.raceId = g.raceId\\nJOIN drivers d ON d.driverId = g.driverId\\nORDER BY g.gain DESC\\nLIMIT 1;"
+	},
+	{
+		"question": "Which driver has the most wins from pole position? Return driver and pole_wins.",
+		"sql": "WITH winner AS (\\n  SELECT r.raceId, r.driverId\\n  FROM results r\\n  WHERE r.positionOrder = 1\\n), poles AS (\\n  SELECT q.raceId, q.driverId\\n  FROM qualifying q\\n  WHERE q.position = 1\\n)\\nSELECT d.forename || ' ' || d.surname AS driver, COUNT(*) AS pole_wins\\nFROM winner w\\nJOIN poles p ON p.raceId = w.raceId AND p.driverId = w.driverId\\nJOIN drivers d ON d.driverId = w.driverId\\nGROUP BY d.driverId\\nORDER BY pole_wins DESC\\nLIMIT 1;"
+	},
+	{
+		"question": "For each season, determine the constructor with the most wins; then find the constructor that topped the most seasons overall. Return constructor and seasons_topped.",
+		"sql": "WITH season_constructor_wins AS (\\n  SELECT ra.year, r.constructorId, COUNT(*) AS wins\\n  FROM results r\\n  JOIN races ra ON ra.raceId = r.raceId\\n  WHERE r.positionOrder = 1\\n  GROUP BY ra.year, r.constructorId\\n), season_champs AS (\\n  SELECT scw.year, scw.constructorId\\n  FROM (\\n    SELECT year, constructorId, wins,\\n           RANK() OVER (PARTITION BY year ORDER BY wins DESC) AS rk\\n    FROM season_constructor_wins\\n  ) scw\\n  WHERE rk = 1\\n)\\nSELECT c.name AS constructor, COUNT(*) AS seasons_topped\\nFROM season_champs sch\\nJOIN constructors c ON c.constructorId = sch.constructorId\\nGROUP BY c.constructorId\\nORDER BY seasons_topped DESC\\nLIMIT 1;"
+	},
+	{
+		"question": "List all races (year, name) where the winner also had pole position and set the fastest lap (\"grand chelem\"). Return also the winner name.",
+		"sql": "WITH winners AS (\\n  SELECT r.raceId, r.driverId, r.rank\\n  FROM results r\\n  WHERE r.positionOrder = 1\\n), poles AS (\\n  SELECT q.raceId, q.driverId\\n  FROM qualifying q\\n  WHERE q.position = 1\\n)\\nSELECT ra.year, ra.name AS race, d.forename || ' ' || d.surname AS winner\\nFROM winners w\\nJOIN races ra ON ra.raceId = w.raceId\\nJOIN drivers d ON d.driverId = w.driverId\\nJOIN poles p ON p.raceId = w.raceId AND p.driverId = w.driverId\\nWHERE w.rank = 1\\nORDER BY ra.year, ra.name;"
+	},
+	{
+		"question": "Which constructor showed the largest positive season-over-season jump in total points? Return constructor, from_year, to_year, and points_delta.",
+		"sql": "WITH season_points AS (\\n  SELECT ra.year, r.constructorId, SUM(r.points) AS pts\\n  FROM results r\\n  JOIN races ra ON ra.raceId = r.raceId\\n  GROUP BY ra.year, r.constructorId\\n), deltas AS (\\n  SELECT sp2.constructorId, sp1.year AS from_year, sp2.year AS to_year, (sp2.pts - sp1.pts) AS delta\\n  FROM season_points sp1\\n  JOIN season_points sp2\\n    ON sp2.constructorId = sp1.constructorId AND sp2.year = sp1.year + 1\\n)\\nSELECT c.name AS constructor, d.from_year, d.to_year, d.delta AS points_delta\\nFROM deltas d\\nJOIN constructors c ON c.constructorId = d.constructorId\\nORDER BY points_delta DESC\\nLIMIT 1;"
+	}
+]

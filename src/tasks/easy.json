@@ -1,0 +1,42 @@
+[
+	{
+		"question": "List all driver names.",
+		"sql": "SELECT forename || ' ' || surname AS name FROM drivers;"
+	},
+	{
+		"question": "Show all circuit names.",
+		"sql": "SELECT name FROM circuits;"
+	},
+	{
+		"question": "Get the names of all constructors.",
+		"sql": "SELECT name FROM constructors;"
+	},
+	{
+		"question": "Find the number of races held in 2010.",
+		"sql": "SELECT COUNT(*) FROM races WHERE year = 2010;"
+	},
+	{
+		"question": "Which driver won the 2008 British Grand Prix?",
+		"sql": "SELECT d.forename || ' ' || d.surname FROM results r JOIN races ra ON r.raceId = ra.raceId JOIN drivers d ON r.driverId = d.driverId WHERE ra.year = 2008 AND ra.name = 'British Grand Prix' AND r.position = 1;"
+	},
+	{
+		"question": "Show the circuit name for the 2019 Monaco Grand Prix.",
+		"sql": "SELECT c.name FROM races r JOIN circuits c ON r.circuitId = c.circuitId WHERE r.year = 2019 AND r.name = 'Monaco Grand Prix';"
+	},
+	{
+		"question": "List all years when the Italian Grand Prix was held.",
+		"sql": "SELECT year FROM races WHERE name = 'Italian Grand Prix' ORDER BY year;"
+	},
+	{
+		"question": "Get the total number of drivers in the database.",
+		"sql": "SELECT COUNT(*) FROM drivers;"
+	},
+	{
+		"question": "Find the nationality of the constructor named 'Ferrari'.",
+		"sql": "SELECT nationality FROM constructors WHERE name = 'Ferrari';"
+	},
+	{
+		"question": "Show all race names in the 2020 season.",
+		"sql": "SELECT name FROM races WHERE year = 2020;"
+	}
+]

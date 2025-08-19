@@ -1,0 +1,42 @@
+[
+	{
+		"question": "List the top 3 drivers with the most wins overall.",
+		"sql": "SELECT d.forename || ' ' || d.surname AS driver, COUNT(*) AS wins FROM results r JOIN drivers d ON r.driverId = d.driverId WHERE r.position = 1 GROUP BY d.driverId ORDER BY wins DESC LIMIT 3;"
+	},
+	{
+		"question": "Find all constructors that won a race in 2015.",
+		"sql": "SELECT DISTINCT c.name FROM results r JOIN races ra ON r.raceId = ra.raceId JOIN constructors c ON r.constructorId = c.constructorId WHERE r.position = 1 AND ra.year = 2015;"
+	},
+	{
+		"question": "Show the number of races held at each circuit.",
+		"sql": "SELECT c.name, COUNT(*) AS race_count FROM races r JOIN circuits c ON r.circuitId = c.circuitId GROUP BY c.circuitId ORDER BY race_count DESC;"
+	},
+	{
+		"question": "Get the average race position of driver 'Lewis Hamilton' in 2018.",
+		"sql": "SELECT AVG(r.position) FROM results r JOIN races ra ON r.raceId = ra.raceId JOIN drivers d ON r.driverId = d.driverId WHERE d.forename = 'Lewis' AND d.surname = 'Hamilton' AND ra.year = 2018;"
+	},
+	{
+		"question": "List all races in which 'Ferrari' won.",
+		"sql": "SELECT ra.year, ra.name FROM results r JOIN races ra ON r.raceId = ra.raceId JOIN constructors c ON r.constructorId = c.constructorId WHERE r.position = 1 AND c.name = 'Ferrari' ORDER BY ra.year;"
+	},
+	{
+		"question": "Find the circuit that has hosted the most races.",
+		"sql": "SELECT c.name, COUNT(*) AS race_count FROM races r JOIN circuits c ON r.circuitId = c.circuitId GROUP BY c.circuitId ORDER BY race_count DESC LIMIT 1;"
+	},
+	{
+		"question": "Show the drivers who have won the Monaco Grand Prix more than once.",
+		"sql": "SELECT d.forename || ' ' || d.surname AS driver, COUNT(*) AS wins FROM results r JOIN races ra ON r.raceId = ra.raceId JOIN drivers d ON r.driverId = d.driverId WHERE ra.name = 'Monaco Grand Prix' AND r.position = 1 GROUP BY d.driverId HAVING COUNT(*) > 1;"
+	},
+	{
+		"question": "Get the average number of pit stops per race in 2019.",
+		"sql": "SELECT AVG(p.stop_count) FROM (SELECT ps.raceId, COUNT(*) AS stop_count FROM pitstops ps JOIN races ra ON ps.raceId = ra.raceId WHERE ra.year = 2019 GROUP BY ps.raceId) p;"
+	},
+	{
+		"question": "List all drivers who have driven for both Ferrari and McLaren.",
+		"sql": "SELECT d.forename || ' ' || d.surname FROM drivers d WHERE d.driverId IN (SELECT DISTINCT r1.driverId FROM results r1 JOIN constructors c1 ON r1.constructorId = c1.constructorId WHERE c1.name = 'Ferrari') AND d.driverId IN (SELECT DISTINCT r2.driverId FROM results r2 JOIN constructors c2 ON r2.constructorId = c2.constructorId WHERE c2.name = 'McLaren');"
+	},
+	{
+		"question": "Find the driver with the most pole positions (qualifying position = 1).",
+		"sql": "SELECT d.forename || ' ' || d.surname, COUNT(*) AS poles FROM qualifying q JOIN drivers d ON q.driverId = d.driverId WHERE q.position = 1 GROUP BY d.driverId ORDER BY poles DESC LIMIT 1;"
+	}
+]
