@@ -1,0 +1,212 @@
+constructorId:ID(constructors-ID),constructorRef,name,nationality,:LABEL
+0,mclaren,McLaren,British,constructors
+1,bmw_sauber,BMW Sauber,German,constructors
+2,williams,Williams,British,constructors
+3,renault,Renault,French,constructors
+4,toro_rosso,Toro Rosso,Italian,constructors
+5,ferrari,Ferrari,Italian,constructors
+6,toyota,Toyota,Japanese,constructors
+7,super_aguri,Super Aguri,Japanese,constructors
+8,red_bull,Red Bull,Austrian,constructors
+9,force_india,Force India,Indian,constructors
+10,honda,Honda,Japanese,constructors
+11,spyker,Spyker,Dutch,constructors
+12,mf1,MF1,Russian,constructors
+13,spyker_mf1,Spyker MF1,Dutch,constructors
+14,sauber,Sauber,Swiss,constructors
+15,bar,BAR,British,constructors
+16,jordan,Jordan,Irish,constructors
+17,minardi,Minardi,Italian,constructors
+18,jaguar,Jaguar,British,constructors
+19,prost,Prost,French,constructors
+20,arrows,Arrows,British,constructors
+21,benetton,Benetton,Italian,constructors
+22,brawn,Brawn,British,constructors
+23,stewart,Stewart,British,constructors
+24,tyrrell,Tyrrell,British,constructors
+25,lola,Lola,British,constructors
+26,ligier,Ligier,French,constructors
+27,forti,Forti,Italian,constructors
+28,footwork,Footwork,British,constructors
+29,pacific,Pacific,British,constructors
+30,simtek,Simtek,British,constructors
+31,team_lotus,Team Lotus,British,constructors
+32,larrousse,Larrousse,French,constructors
+33,brabham,Brabham,British,constructors
+34,dallara,Dallara,Italian,constructors
+35,fondmetal,Fondmetal,Italian,constructors
+36,march,March,British,constructors
+37,moda,Andrea Moda,Italian,constructors
+38,ags,AGS,French,constructors
+39,lambo,Lambo,Italian,constructors
+40,leyton,Leyton House,British,constructors
+41,coloni,Coloni,Italian,constructors
+42,eurobrun,Euro Brun,Italian,constructors
+43,osella,Osella,Italian,constructors
+44,onyx,Onyx,British,constructors
+45,life,Life,Italian,constructors
+46,rial,Rial,German,constructors
+47,zakspeed,Zakspeed,German,constructors
+48,ram,RAM,British,constructors
+49,alfa,Alfa Romeo,Swiss,constructors
+50,spirit,Spirit,British,constructors
+51,toleman,Toleman,British,constructors
+52,ats,ATS,Italian,constructors
+53,theodore,Theodore,Hong Kong,constructors
+54,fittipaldi,Fittipaldi,Brazilian,constructors
+55,ensign,Ensign,British,constructors
+56,shadow,Shadow,British,constructors
+57,wolf,Wolf,Canadian,constructors
+58,merzario,Merzario,Italian,constructors
+59,kauhsen,Kauhsen,German,constructors
+60,rebaque,Rebaque,Mexican,constructors
+61,surtees,Surtees,British,constructors
+62,hesketh,Hesketh,British,constructors
+63,martini,Martini,French,constructors
+64,brm,BRM,British,constructors
+65,penske,Penske,American,constructors
+66,lec,LEC,British,constructors
+67,mcguire,McGuire,Australian,constructors
+68,boro,Boro,Dutch,constructors
+69,apollon,Apollon,Swiss,constructors
+70,kojima,Kojima,Japanese,constructors
+71,parnelli,Parnelli,American,constructors
+72,maki,Maki,Japanese,constructors
+73,hill,Embassy Hill,British,constructors
+74,lyncar,Lyncar,British,constructors
+75,trojan,Trojan,British,constructors
+76,amon,Amon,New Zealander,constructors
+77,token,Token,British,constructors
+78,iso_marlboro,Iso Marlboro,British,constructors
+79,tecno,Tecno,Italian,constructors
+80,matra,Matra,French,constructors
+81,politoys,Politoys,British,constructors
+82,connew,Connew,British,constructors
+83,bellasi,Bellasi,Swiss,constructors
+84,tomaso,De Tomaso,Italian,constructors
+85,cooper,Cooper,British,constructors
+86,eagle,Eagle,American,constructors
+87,lds,LDS,South African,constructors
+88,protos,Protos,British,constructors
+89,shannon,Shannon,British,constructors
+90,scirocco,Scirocco,British,constructors
+91,re,RE,Rhodesian,constructors
+92,brp,BRP,British,constructors
+93,porsche,Porsche,German,constructors
+94,derrington,Derrington,British,constructors
+95,gilby,Gilby,British,constructors
+96,stebro,Stebro,Canadian,constructors
+97,emeryson,Emeryson,British,constructors
+98,enb,ENB,Belgian,constructors
+99,jbw,JBW,British,constructors
+100,ferguson,Ferguson,British,constructors
+101,mbm,MBM,Swiss,constructors
+102,behra-porsche,Behra-Porsche,Italian,constructors
+103,maserati,Maserati,Italian,constructors
+104,scarab,Scarab,American,constructors
+105,watson,Watson,American,constructors
+106,epperly,Epperly,American,constructors
+107,phillips,Phillips,American,constructors
+108,lesovsky,Lesovsky,American,constructors
+109,trevis,Trevis,American,constructors
+110,meskowski,Meskowski,American,constructors
+111,kurtis_kraft,Kurtis Kraft,American,constructors
+112,kuzma,Kuzma,American,constructors
+113,vhristensen,Christensen,American,constructors
+114,ewing,Ewing,American,constructors
+115,aston_martin,Aston Martin,British,constructors
+116,vanwall,Vanwall,British,constructors
+117,moore,Moore,American,constructors
+118,dunn,Dunn,American,constructors
+119,elder,Elder,American,constructors
+120,sutton,Sutton,American,constructors
+121,fry,Fry,British,constructors
+122,tec-mec,Tec-Mec,Italian,constructors
+123,connaught,Connaught,British,constructors
+124,alta,Alta,British,constructors
+125,osca,OSCA,Italian,constructors
+126,gordini,Gordini,French,constructors
+127,stevens,Stevens,American,constructors
+128,bugatti,Bugatti,French,constructors
+129,mercedes,Mercedes,German,constructors
+130,lancia,Lancia,Italian,constructors
+131,hwm,HWM,British,constructors
+132,schroeder,Schroeder,American,constructors
+133,pawl,Pawl,American,constructors
+134,pankratz,Pankratz,American,constructors
+135,arzani-volpini,Arzani-Volpini,Italian,constructors
+136,nichels,Nichels,American,constructors
+137,bromme,Bromme,American,constructors
+138,klenk,Klenk,German,constructors
+139,simca,Simca,French,constructors
+140,turner,Turner,American,constructors
+141,del_roy,Del Roy,American,constructors
+142,veritas,Veritas,German,constructors
+143,bmw,BMW,German,constructors
+144,emw,EMW,East German,constructors
+145,afm,AFM,German,constructors
+146,frazer_nash,Frazer Nash,British,constructors
+147,sherman,Sherman,American,constructors
+148,deidt,Deidt,American,constructors
+149,era,ERA,British,constructors
+150,butterworth,Aston Butterworth,British,constructors
+151,cisitalia,Cisitalia,Italian,constructors
+152,lago,Talbot-Lago,French,constructors
+153,hall,Hall,American,constructors
+154,marchese,Marchese,American,constructors
+155,langley,Langley,American,constructors
+156,rae,Rae,American,constructors
+157,olson,Olson,American,constructors
+158,wetteroth,Wetteroth,American,constructors
+159,adams,Adams,American,constructors
+160,snowberger,Snowberger,American,constructors
+161,milano,Milano,Italian,constructors
+162,hrt,HRT,Spanish,constructors
+163,cooper-maserati,Cooper-Maserati,British,constructors
+164,virgin,Virgin,British,constructors
+165,cooper-osca,Cooper-OSCA,British,constructors
+166,cooper-borgward,Cooper-Borgward,British,constructors
+167,cooper-climax,Cooper-Climax,British,constructors
+168,cooper-castellotti,Cooper-Castellotti,British,constructors
+169,lotus-climax,Lotus-Climax,British,constructors
+170,lotus-maserati,Lotus-Maserati,British,constructors
+171,de_tomaso-osca,De Tomaso-Osca,Italian,constructors
+172,de_tomaso-alfa_romeo,De Tomaso-Alfa Romeo,Italian,constructors
+173,lotus-brm,Lotus-BRM,British,constructors
+174,lotus-borgward,Lotus-Borgward,British,constructors
+175,cooper-alfa_romeo,Cooper-Alfa Romeo,British,constructors
+176,de_tomaso-ferrari,De Tomaso-Ferrari,Italian,constructors
+177,lotus-ford,Lotus-Ford,British,constructors
+178,brabham-brm,Brabham-BRM,British,constructors
+179,brabham-ford,Brabham-Ford,British,constructors
+180,brabham-climax,Brabham-Climax,British,constructors
+181,lds-climax,LDS-Climax,South African,constructors
+182,lds-alfa_romeo,LDS-Alfa Romeo,South African,constructors
+183,cooper-ford,Cooper-Ford,British,constructors
+184,mclaren-ford,McLaren-Ford,British,constructors
+185,mclaren-seren,McLaren-Serenissima,British,constructors
+186,eagle-climax,Eagle-Climax,American,constructors
+187,eagle-weslake,Eagle-Weslake,American,constructors
+188,brabham-repco,Brabham-Repco,British,constructors
+189,cooper-ferrari,Cooper-Ferrari,British,constructors
+190,cooper-ats,Cooper-ATS,British,constructors
+191,mclaren-brm,McLaren-BRM,British,constructors
+192,cooper-brm,Cooper-BRM,British,constructors
+193,matra-ford,Matra-Ford,French,constructors
+194,brm-ford,BRM-Ford,British,constructors
+195,mclaren-alfa_romeo,McLaren-Alfa Romeo,British,constructors
+196,march-alfa_romeo,March-Alfa Romeo,British,constructors
+197,march-ford,March-Ford,British,constructors
+198,lotus-pw,Lotus-Pratt &amp; Whitney,British,constructors
+199,shadow-ford,Shadow-Ford,British,constructors
+200,shadow-matra,Shadow-Matra,British,constructors
+201,brabham-alfa_romeo,Brabham-Alfa Romeo,British,constructors
+202,lotus_racing,Lotus,Malaysian,constructors
+203,marussia,Marussia,Russian,constructors
+204,caterham,Caterham,Malaysian,constructors
+205,lotus_f1,Lotus F1,British,constructors
+206,manor,Manor Marussia,British,constructors
+207,haas,Haas F1 Team,American,constructors
+208,racing_point,Racing Point,British,constructors
+209,alphatauri,AlphaTauri,Italian,constructors
+210,alpine,Alpine F1 Team,French,constructors
