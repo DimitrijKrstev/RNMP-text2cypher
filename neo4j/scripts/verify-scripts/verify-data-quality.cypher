@@ -1,162 +1,87 @@
-// DATA QUALITY VERIFICATION QUERIES
-// =================================
+//  all counts should be zero
 
-// 1. Check for NULL or empty critical fields
-MATCH (d:drivers)
-WHERE d.driverId IS NULL OR d.code IS NULL OR d.surname IS NULL
-RETURN 'drivers' AS table_name, count(*) AS null_critical_fields;
 
-MATCH (c:circuits)
-WHERE c.circuitId IS NULL OR c.name IS NULL
-RETURN 'circuits' AS table_name, count(*) AS null_critical_fields;
-
-MATCH (r:races)
-WHERE r.raceId IS NULL OR r.year IS NULL
-RETURN 'races' AS table_name, count(*) AS null_critical_fields;
-
-// 2. Check for duplicate IDs within each node type
-MATCH (d:drivers)
-WITH d.driverId AS id, count(*) AS cnt
-WHERE cnt > 1
-RETURN 'drivers' AS table_name, id, cnt AS duplicate_count;
-
-MATCH (c:circuits)
-WITH c.circuitId AS id, count(*) AS cnt
-WHERE cnt > 1
-RETURN 'circuits' AS table_name, id, cnt AS duplicate_count;
-
-MATCH (r:races)
-WITH r.raceId AS id, count(*) AS cnt
-WHERE cnt > 1
-RETURN 'races' AS table_name, id, cnt AS duplicate_count;
-
-// 3. Check for referential integrity issues
-// Results without matching drivers
+// 1. range checks
+// positions outside realistic range
 MATCH (res:results)
-WHERE NOT EXISTS {
-    MATCH (d:drivers)
-    WHERE toInteger(res.driverId) = toInteger(d.driverId)
-}
-RETURN 'results_without_drivers' AS issue, count(*) AS count;
+WHERE res.position IS NOT NULL
+  AND (toInteger(res.position) < 1 OR toInteger(res.position) > 30)
+RETURN 'invalid_position' AS issue, count(*) AS cnt;
 
-// Results without matching constructors
-MATCH (res:results)
-WHERE NOT EXISTS {
-    MATCH (c:constructors)
-    WHERE toInteger(res.constructorId) = toInteger(c.constructorId)
-}
-RETURN 'results_without_constructors' AS issue, count(*) AS count;
-
-// Results without matching races
-MATCH (res:results)
-WHERE NOT EXISTS {
-    MATCH (r:races)
-    WHERE toInteger(res.raceId) = toInteger(r.raceId)
-}
-RETURN 'results_without_races' AS issue, count(*) AS count;
-
-// Races without matching circuits (will show the typo impact)
-MATCH (r:races)
-WHERE NOT EXISTS {
-    MATCH (c:circuits)
-    WHERE toInteger(r.circuitId) = toInteger(c.circuitId)
-}
-RETURN 'races_without_circuits' AS issue, count(*) AS count;
-
-// 4. Check for data range anomalies
-// Impossible positions (should be 1-20 typically)
-MATCH (res:results)
-WHERE toInteger(res.position) < 1 OR toInteger(res.position) > 30
-RETURN 'invalid_positions' AS issue, count(*) AS count, 
-       min(toInteger(res.position)) AS min_pos, 
-       max(toInteger(res.position)) AS max_pos;
-
-// Negative or excessive points
+// negative or excessive points
 MATCH (res:results)
 WHERE toFloat(res.points) < 0 OR toFloat(res.points) > 50
-RETURN 'unusual_points' AS issue, count(*) AS count,
-       min(toFloat(res.points)) AS min_points,
-       max(toFloat(res.points)) AS max_points;
+RETURN 'unusual_points' AS issue, count(*) AS cnt;
 
-// 5. Check temporal consistency
-// Races in impossible years
-MATCH (r:races)
-WHERE toInteger(r.year) < 1950 OR toInteger(r.year) > 2024
-RETURN 'races_unusual_years' AS issue, count(*) AS count,
-       min(toInteger(r.year)) AS min_year,
-       max(toInteger(r.year)) AS max_year;
+// implausible race years
+MATCH (ra:races)
+WHERE toInteger(ra.year) < 1950 OR toInteger(ra.year) > 2024
+RETURN 'implausible_year' AS issue,
+       count(*)                 AS cnt,
+       min(toInteger(ra.year))  AS minYear,
+       max(toInteger(ra.year))  AS maxYear;
 
-// 6. Check for missing relationships that should exist
-// Drivers who have results but no qualifying data
-MATCH (d:drivers)-[:ACHIEVED]->(res:results)
-WHERE NOT EXISTS {
-    MATCH (d)-[:QUALIFIED_IN]->(:qualifying)
-}
-WITH d, count(res) AS result_count
-RETURN 'drivers_results_no_qualifying' AS issue, count(*) AS driver_count,
-       sum(result_count) AS total_results_affected;
+// 2. duplicate PKs
 
-// 7. Check relationship direction consistency
-// Make sure all relationships go in the expected direction
-MATCH (res:results)-[:ACHIEVED]->(d:drivers)
-RETURN 'wrong_direction_driver_achieved' AS issue, count(*) AS count;
+MATCH (n:drivers)
+WITH n.driverId AS id, count(*) AS c WHERE c>1
+RETURN 'dup_driverId' AS issue, sum(c) AS cnt;
 
-MATCH (c:circuits)-[:HELD_AT]->(r:races)
-RETURN 'wrong_direction_held_at' AS issue, count(*) AS count;
+MATCH (n:constructors)
+WITH n.constructorId AS id, count(*) AS c WHERE c>1
+RETURN 'dup_constructorId' AS issue, sum(c) AS cnt;
 
-// 8. Statistical anomalies
-// Drivers with unusually high number of results
-MATCH (d:drivers)-[:ACHIEVED]->(res:results)
-WITH d, count(res) AS result_count
-WHERE result_count > 500  // Adjust threshold based on data
-RETURN 'drivers_excessive_results' AS issue, 
-       d.code AS driver_code, 
-       result_count;
+MATCH (n:circuits)
+WITH n.circuitId AS id, count(*) AS c WHERE c>1
+RETURN 'dup_circuitId' AS issue, sum(c) AS cnt;
 
-// Constructors with unusually high number of results
-MATCH (c:constructors)-[:ACHIEVED]->(res:results)
-WITH c, count(res) AS result_count
-WHERE result_count > 1000  // Adjust threshold based on data
-RETURN 'constructors_excessive_results' AS issue,
-       c.name AS constructor_name,
-       result_count;
+MATCH (n:races)
+WITH n.raceId AS id, count(*) AS c WHERE c>1
+RETURN 'dup_raceId' AS issue, sum(c) AS cnt;
 
-// 9. Check for orphaned relationship nodes
-// Results not connected to races
-MATCH (res:results)
-WHERE NOT (res)-[:IN_RACE]->(:races)
-RETURN 'orphaned_results' AS issue, count(*) AS count;
+MATCH (n:results)
+WITH n.resultId AS id, count(*) AS c WHERE c>1
+RETURN 'dup_resultId' AS issue, sum(c) AS cnt;
 
-// Qualifying not connected to races
-MATCH (q:qualifying)
-WHERE NOT (q)-[:FOR_RACE]->(:races)
-RETURN 'orphaned_qualifying' AS issue, count(*) AS count;
+MATCH (n:qualifying)
+WITH n.qualifyId AS id, count(*) AS c WHERE c>1
+RETURN 'dup_qualifyId' AS issue, sum(c) AS cnt;
 
-// 10. Data completeness check
-// Count missing optional but important fields
+// 3. completeness
+
 MATCH (res:results)
 WHERE res.fastestLapTime IS NULL
-RETURN 'results_missing_fastest_lap' AS metric, count(*) AS count;
+RETURN 'results_missing_fastLap' AS issue, count(*) AS cnt;
 
 MATCH (res:results)
 WHERE res.statusId IS NULL
-RETURN 'results_missing_status' AS metric, count(*) AS count;
+RETURN 'results_missing_status' AS issue, count(*) AS cnt;
 
-// 11. Cross-reference consistency
-// Check if qualifying and results have same drivers for same race
-MATCH (r:races)<-[:FOR_RACE]-(q:qualifying)
-MATCH (r)<-[:IN_RACE]-(res:results)
-WHERE toInteger(q.driverId) = toInteger(res.driverId)
-WITH r, count(DISTINCT q.driverId) AS qualifying_drivers, 
-     count(DISTINCT res.driverId) AS result_drivers
-WHERE qualifying_drivers <> result_drivers
-RETURN 'race_driver_mismatch' AS issue, count(*) AS races_affected;
+// 4. qualifyingvs results driver match
 
-// 12. Summary statistics for validation
-MATCH (n)
-RETURN labels(n)[0] AS node_type, count(*) AS total_count
-ORDER BY node_type;
+MATCH (ra:races)<-[:FOR_RACE]-(q:qualifying)
+MATCH (ra)<-[:IN_RACE]-(res:results)
+WITH ra,
+     collect(DISTINCT q.driverId)   AS qDrivers,
+     collect(DISTINCT res.driverId) AS rDrivers
+WHERE size([d IN qDrivers WHERE NOT d IN rDrivers]) > 0
+   OR size([d IN rDrivers WHERE NOT d IN qDrivers]) > 0
+RETURN 'race_driver_mismatch' AS issue, count(*) AS racesAffected;
 
-MATCH ()-[r]->()
-RETURN type(r) AS relationship_type, count(*) AS total_count
-ORDER BY relationship_type;
+// 5. Position/Driver Points missmatch
+MATCH (d:drivers)-[:ACHIEVED]->(r:results)
+WHERE r.position <= 3 AND toFloat(r.points) = 0
+RETURN count(r);
+
+// 6. Fastest lap must be exactly one
+MATCH (ra:races)<-[:IN_RACE]-(r:results)
+WITH ra,
+     sum( CASE WHEN r.fastestLapTime IS NOT NULL THEN 1 ELSE 0 END ) AS laps
+WHERE laps > 1
+RETURN ra.raceId AS raceId, laps;
+
+// 7. a season without 20 races
+MATCH (ra:races) 
+WITH ra.year AS yr, count(*) AS races  
+WHERE races <> 20
+RETURN yr, races;

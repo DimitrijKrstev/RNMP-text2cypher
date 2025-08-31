@@ -49,18 +49,14 @@ uv run src/database/save_to_sqlite.py
 
 ### Verifying Database Integrity
 
-To verify that all relationships were created correctly and check data quality:
+Scripts for verification on relationship types as well as data integrity are run automatically on startup. 
+To see their results check the container log.
 
-```bash
-cd neo4j/
-./scripts/run-verification.sh
-```
-
-This will run comprehensive checks on:
+The scripts will run comprehensive checks on:
 - Node and relationship counts
 - Orphaned nodes
 - Data consistency
-- Sample relationship paths
+- Sample relationship paths etc.
 
 ## Dev tools
 

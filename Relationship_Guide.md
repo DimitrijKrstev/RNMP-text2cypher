@@ -1,4 +1,4 @@
-# Database Verification Guide
+# Relationship Guide
 
 ## Relationship Schema
 
@@ -27,9 +27,3 @@
 - `constructors -[RESULTED_IN]-> constructor_results`
 - `races -[HAS_STANDING]-> constructor_standings`
 - `constructors -[HAS_STANDING]-> constructor_standings`
-
-## Expected Counts
-[Document expected ranges after running verification]
-
-## Known Issues
-- Typo in circuit relationship: `circutId` vs `circuitId`

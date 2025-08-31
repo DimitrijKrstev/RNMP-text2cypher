@@ -1,23 +1,16 @@
-#!/bin/sh
-set -eu
+#!/usr/bin/env bash
+set -euo pipefail
+USER=neo4j
+PASS=${NEO4J_PASSWORD:-${NEO4J_AUTH#neo4j/}}
 
-# Inside container, we can use the environment variable directly
-PASSWORD="neo4jneo4j"
+echo "============================================="
+echo "      F1 Knowledge-Graph Verification"
+echo "      $(date)"
+echo "============================================="
 
-echo "=== F1 Database Verification Report ==="
-echo "Generated on: $(date)"
-echo "========================================"
+cypher-shell -u "$USER" -p "$PASS" -f /var/lib/neo4j/scripts/verify-scripts/verify-relationships.cypher
+cypher-shell -u "$USER" -p "$PASS" -f /var/lib/neo4j/scripts/verify-scripts/verify-data-quality.cypher
 
-echo ""
-echo "🔍 Running relationship verification..."
-echo "----------------------------------------"
-cypher-shell -u neo4j -p "$PASSWORD" -f /var/lib/neo4j/scripts/verify-scripts/verify-relationships.cypher --format verbose
-
-echo ""
-echo "🔍 Running data quality checks..."
-echo "----------------------------------------"  
-cypher-shell -u neo4j -p "$PASSWORD" -f /var/lib/neo4j/scripts/verify-scripts/verify-data-quality.cypher --format verbose
-
-echo ""
-echo "✅ Verification complete!"
-echo "========================================"
+echo "============================================="
+echo "   ✔ All verification queries executed"
+echo "============================================="
