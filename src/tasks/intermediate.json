@@ -1,7 +1,7 @@
 [
 	{
 		"question": "List the top 3 drivers with the most wins overall.",
-		"sql": "SELECT d.forename || ' ' || d.surname AS driver, COUNT(*) AS wins FROM results r JOIN drivers d ON r.driverId = d.driverId WHERE r.position = 1 GROUP BY d.driverId ORDER BY wins DESC LIMIT 3;"
+		"sql": "SELECT d.forename d.surname AS driver, COUNT(*) AS wins FROM results r JOIN drivers d ON r.driverId = d.driverId WHERE r.position = 1 GROUP BY d.driverId ORDER BY wins DESC LIMIT 3;"
 	},
 	{
 		"question": "Find all constructors that won a race in 2015.",
@@ -25,7 +25,7 @@
 	},
 	{
 		"question": "Show the drivers who have won the Monaco Grand Prix more than once.",
-		"sql": "SELECT d.forename || ' ' || d.surname AS driver, COUNT(*) AS wins FROM results r JOIN races ra ON r.raceId = ra.raceId JOIN drivers d ON r.driverId = d.driverId WHERE ra.name = 'Monaco Grand Prix' AND r.position = 1 GROUP BY d.driverId HAVING COUNT(*) > 1;"
+		"sql": "SELECT d.forename d.surname AS driver, COUNT(*) AS wins FROM results r JOIN races ra ON r.raceId = ra.raceId JOIN drivers d ON r.driverId = d.driverId WHERE ra.name = 'Monaco Grand Prix' AND r.position = 1 GROUP BY d.driverId HAVING COUNT(*) > 1;"
 	},
 	{
 		"question": "Get the average number of pit stops per race in 2019.",
@@ -33,10 +33,10 @@
 	},
 	{
 		"question": "List all drivers who have driven for both Ferrari and McLaren.",
-		"sql": "SELECT d.forename || ' ' || d.surname FROM drivers d WHERE d.driverId IN (SELECT DISTINCT r1.driverId FROM results r1 JOIN constructors c1 ON r1.constructorId = c1.constructorId WHERE c1.name = 'Ferrari') AND d.driverId IN (SELECT DISTINCT r2.driverId FROM results r2 JOIN constructors c2 ON r2.constructorId = c2.constructorId WHERE c2.name = 'McLaren');"
+		"sql": "SELECT d.forename d.surname FROM drivers d WHERE d.driverId IN (SELECT DISTINCT r1.driverId FROM results r1 JOIN constructors c1 ON r1.constructorId = c1.constructorId WHERE c1.name = 'Ferrari') AND d.driverId IN (SELECT DISTINCT r2.driverId FROM results r2 JOIN constructors c2 ON r2.constructorId = c2.constructorId WHERE c2.name = 'McLaren');"
 	},
 	{
 		"question": "Find the driver with the most pole positions (qualifying position = 1).",
-		"sql": "SELECT d.forename || ' ' || d.surname, COUNT(*) AS poles FROM qualifying q JOIN drivers d ON q.driverId = d.driverId WHERE q.position = 1 GROUP BY d.driverId ORDER BY poles DESC LIMIT 1;"
+		"sql": "SELECT d.forename d.surname, COUNT(*) AS poles FROM qualifying q JOIN drivers d ON q.driverId = d.driverId WHERE q.position = 1 GROUP BY d.driverId ORDER BY poles DESC LIMIT 1;"
 	}
 ]

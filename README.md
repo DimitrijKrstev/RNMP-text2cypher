@@ -21,7 +21,7 @@ Additionally [docker](https://www.docker.com/) is required to run the database.
 In order for the [relbench f1 database](https://relbench.stanford.edu/datasets/rel-f1/) to be loaded into neo4j it is first downloaded locally and converted to a csv format. To do so, run the following:
 
 ```bash
-uv run src/database/get_node_csvs.py
+uv run src/main.py generate-csvs
 ```
 
 This will download the relbench f1 database locally and then convert all required entities into node csv files.
@@ -39,7 +39,7 @@ This will import the nodes via the `import-nodes.sh` script and will add the req
 In order to populate [SQLite](https://sqlite.org/) locally, run:
 
 ```bash
-uv run src/database/save_to_sqlite.py
+uv run src/main.py load-sqlite
 ```
 
 ## Dev tools

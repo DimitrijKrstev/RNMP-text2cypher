@@ -1,7 +1,7 @@
 [
 	{
 		"question": "List all driver names.",
-		"sql": "SELECT forename || ' ' || surname AS name FROM drivers;"
+		"sql": "SELECT forename surname AS name FROM drivers;"
 	},
 	{
 		"question": "Show all circuit names.",
@@ -17,7 +17,7 @@
 	},
 	{
 		"question": "Which driver won the 2008 British Grand Prix?",
-		"sql": "SELECT d.forename || ' ' || d.surname FROM results r JOIN races ra ON r.raceId = ra.raceId JOIN drivers d ON r.driverId = d.driverId WHERE ra.year = 2008 AND ra.name = 'British Grand Prix' AND r.position = 1;"
+		"sql": "SELECT d.forename d.surname FROM results r JOIN races ra ON r.raceId = ra.raceId JOIN drivers d ON r.driverId = d.driverId WHERE ra.year = 2008 AND ra.name = 'British Grand Prix' AND r.position = 1;"
 	},
 	{
 		"question": "Show the circuit name for the 2019 Monaco Grand Prix.",
