@@ -26,13 +26,18 @@ uv run src/main.py generate-csvs
 
 This will download the relbench f1 database locally and then convert all required entities into node csv files.
 
-To run the neo4j database simply run the docker compose:
+To run the neo4j database simply run the docker compose located inside the `/neo4j` folder:
 
 ```bash
+cd neo4j/
 docker compose up -d --build
 ```
 
 This will import the nodes via the `import-nodes.sh` script and will add the required constraints and relationships via the `import-relationships.sh` script inside the `scripts/` directory.
+
+### Accessing remote interface
+
+To access the remote interface of the neo4j database simply navigate to `http://localhost:7474/` on you browser. You can run queries here and analyze the data. 
 
 ## Populating SQLite
 
@@ -41,6 +46,45 @@ In order to populate [SQLite](https://sqlite.org/) locally, run:
 ```bash
 uv run src/main.py load-sqlite
 ```
+
+## Relationship Schema
+
+### Node Types
+- `circuits`: F1 racing circuits
+- `drivers`: F1 drivers
+- `constructors`: F1 teams/constructors
+- `races`: Individual race events
+- `results`: Race results
+- `qualifying`: Qualifying session results
+- `standings`: Driver championship standings
+- `constructor_results`: Constructor race results
+- `constructor_standings`: Constructor championship standings
+
+### Relationships
+- `drivers -[ACHIEVED]-> results`
+- `constructors -[ACHIEVED]-> results`
+- `races -[HELD_AT]-> circuits`
+- `results -[IN_RACE]-> races`
+- `drivers -[QUALIFIED_IN]-> qualifying`
+- `constructors -[QUALIFIED_IN]-> qualifying`
+- `qualifying -[FOR_RACE]-> races`
+- `races -[IN_STANDING]-> standings`
+- `drivers -[ACHIEVED_STANDING]-> standings`
+- `races -[RESULTED_IN]-> constructor_results`
+- `constructors -[RESULTED_IN]-> constructor_results`
+- `races -[HAS_STANDING]-> constructor_standings`
+- `constructors -[HAS_STANDING]-> constructor_standings`
+
+### Verifying Database Integrity
+
+Scripts for verification on relationship types as well as data integrity are run automatically on startup. 
+To see their results check the container log.
+
+The scripts will run comprehensive checks on:
+- Node and relationship counts
+- Orphaned nodes
+- Data consistency
+- Sample relationship paths etc.
 
 ## Dev tools
 
