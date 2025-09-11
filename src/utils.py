@@ -57,11 +57,14 @@ def get_tasks_from_json(path: Path) -> list[Task]:
 
 
 def save_task_results(
-    task_results: list[TaskResult], task_difficulty: TaskDifficulty, task_type: TaskType
+    task_results: list[TaskResult],
+    task_difficulty: TaskDifficulty,
+    task_type: TaskType,
+    model_name: str,
 ) -> None:
     result_dicts = [task_result.to_dict() for task_result in task_results]
 
-    result_dir = RESULTS_DIRECTORY / task_type.lower()
+    result_dir = RESULTS_DIRECTORY / task_type.lower() / model_name
     result_dir.mkdir(parents=True, exist_ok=True)
 
     try:
@@ -73,7 +76,7 @@ def save_task_results(
         print(f"Error saving results: {e}")
 
 
-def build_prompt(task_type: TaskType, question: str, schema: str) -> str:
+def build_local_prompt(task_type: TaskType, question: str, schema: str) -> str:
     return (
         f"You are a Text-to-{task_type} assistant. Return ONLY a valid {task_type} statement. "
         "No explanations, no comments, no code fences.\n\n"
@@ -81,4 +84,12 @@ def build_prompt(task_type: TaskType, question: str, schema: str) -> str:
         f"{schema}\n\n"
         f"Your task is to: {question}\n\n"
         f"The {task_type} query:"
+    )
+
+
+def build_remote_prompt(task_type: TaskType, question: str, schema: str) -> str:
+    return (
+        "Here is my database schema:\n"
+        f"{schema}\n\n"
+        f"Your task is to create a {task_type} query that will: {question}\n\n"
     )

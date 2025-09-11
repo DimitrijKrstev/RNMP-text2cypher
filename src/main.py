@@ -1,14 +1,21 @@
+import os
 import sys
 from argparse import ArgumentParser
 from logging import INFO, basicConfig
 
-from constants import BASE_MODEL_NAME
+from openai import OpenAI
+
+from constants import BASE_MODEL_NAME, REMOTE_MODEL_NAME
 from database.setup import get_node_csvs, load_dataset_to_sqlite
-from evaluation.eval import evaluate_model_for_task_type
+from evaluation.local_eval import evaluate_local_model_for_task
+from evaluation.remote_eval import evaluate_remote_model_for_task
 from models import TaskType
 from utils import get_model_and_tokenizer
 
 basicConfig(level=INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 def build_parser():
@@ -23,9 +30,13 @@ def build_parser():
         func=load_sqlite
     )
 
-    sub.add_parser("evaluate-model", help="Evaluate the text2SQL model.").set_defaults(
-        func=evaluate_model
-    )
+    sub.add_parser(
+        "evaluate-local-model", help="Evaluate the text2SQL model."
+    ).set_defaults(func=evaluate_local_model)
+
+    sub.add_parser(
+        "evaluate-remote-model", help="Evaluate the remote LLM model."
+    ).set_defaults(func=evaluate_remote_model)
 
     return args
 
@@ -38,11 +49,22 @@ def load_sqlite(_):
     load_dataset_to_sqlite()
 
 
-def evaluate_model(_):
+def evaluate_local_model(_):
     model, tokenizer = get_model_and_tokenizer(BASE_MODEL_NAME)
 
-    evaluate_model_for_task_type(model, tokenizer, TaskType.SQL)
-    evaluate_model_for_task_type(model, tokenizer, TaskType.CYPHER)
+    evaluate_local_model_for_task(
+        model, tokenizer, TaskType.SQL, BASE_MODEL_NAME.split("/")[-1]
+    )
+    evaluate_local_model_for_task(
+        model, tokenizer, TaskType.CYPHER, BASE_MODEL_NAME.split("/")[-1]
+    )
+
+
+def evaluate_remote_model(_):
+    client = OpenAI(api_key=OPENAI_API_KEY)
+
+    evaluate_remote_model_for_task(REMOTE_MODEL_NAME, TaskType.SQL, client)
+    evaluate_remote_model_for_task(REMOTE_MODEL_NAME, TaskType.CYPHER, client)
 
 
 def main(argv=None):

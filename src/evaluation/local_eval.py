@@ -8,7 +8,7 @@ from database.neo4j import get_neo4j_schema
 from database.sqlite import get_sqlite_tables
 from evaluation.scoring import get_task_result
 from models import TaskDifficulty, TaskType
-from utils import build_prompt, get_tasks_from_json, save_task_results
+from utils import build_local_prompt, get_tasks_from_json, save_task_results
 
 LIST_DB_TABLES_BY_TASK_TYPE = {
     TaskType.SQL: get_sqlite_tables,
@@ -16,8 +16,8 @@ LIST_DB_TABLES_BY_TASK_TYPE = {
 }
 
 
-def evaluate_model_for_task_type(
-    model: Any, tokenizer: Any, task_type: TaskType
+def evaluate_local_model_for_task(
+    model: Any, tokenizer: Any, task_type: TaskType, model_name: str
 ) -> None:
     schema = LIST_DB_TABLES_BY_TASK_TYPE[task_type]()  # type: ignore
 
@@ -26,7 +26,7 @@ def evaluate_model_for_task_type(
         task_results = []
 
         for task in tqdm(tasks, f"Tasks ({task_difficulty}, {task_type})"):
-            prompt = build_prompt(task_type, task.question, schema)
+            prompt = build_local_prompt(task_type, task.question, schema)
             tokenized_prompt = tokenizer(prompt, return_tensors="pt").to("cuda")
 
             with torch.inference_mode():
@@ -48,5 +48,5 @@ def evaluate_model_for_task_type(
             result = get_task_result(task, generated_query, task_type)
             task_results.append(result)
 
-        save_task_results(task_results, task_difficulty, task_type)
+        save_task_results(task_results, task_difficulty, task_type, model_name)
         break

@@ -8,6 +8,7 @@ dependencies = [
     "accelerate>=1.10.0",
     "bitsandbytes>=0.47.0",
     "neo4j>=5.28.2",
+    "openai>=1.107.1",
     "relbench>=1.1.0",
     "tqdm>=4.67.1",
     "transformers>=4.55.2",
