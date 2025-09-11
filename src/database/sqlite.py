@@ -1,3 +1,4 @@
+from functools import reduce
 from pathlib import Path
 from sqlite3 import Row, connect
 
@@ -5,7 +6,7 @@ from database.constants import SQLITE_DB_PATH
 from models import SQLTableWithHeaders
 
 
-def get_sqlite_tables() -> list[SQLTableWithHeaders]:
+def get_sqlite_tables() -> str:
     with connect(SQLITE_DB_PATH) as conn:
         tables = [
             row[0]
@@ -13,12 +14,18 @@ def get_sqlite_tables() -> list[SQLTableWithHeaders]:
                 "SELECT name FROM sqlite_master WHERE type='table';"
             )
         ]
-        return [
-            SQLTableWithHeaders(
-                table, [col[1] for col in conn.execute(f"PRAGMA table_info({table});")]
-            )
-            for table in tables
-        ]
+        # TODO
+        return reduce(
+            lambda acc, t: f"{acc}\n{t}",
+            [
+                SQLTableWithHeaders(
+                    table,
+                    [col[1] for col in conn.execute(f"PRAGMA table_info({table});")],
+                )
+                for table in tables
+            ],
+            "",
+        )
 
 
 def query_sqlite(sql: str) -> list[Row]:

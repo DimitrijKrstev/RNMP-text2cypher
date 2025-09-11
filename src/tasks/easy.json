@@ -1,42 +1,52 @@
 [
 	{
 		"question": "List all driver names.",
-		"sql": "SELECT forename surname AS name FROM drivers;"
+		"sql": "SELECT forename, surname AS name FROM drivers;",
+		"cypher": "MATCH (d:drivers) RETURN d.forename, d.surname AS name;"
 	},
 	{
 		"question": "Show all circuit names.",
-		"sql": "SELECT name FROM circuits;"
+		"sql": "SELECT name FROM circuits;",
+		"cypher": "MATCH (c:circuits) RETURN c.name;"
 	},
 	{
 		"question": "Get the names of all constructors.",
-		"sql": "SELECT name FROM constructors;"
+		"sql": "SELECT name FROM constructors;",
+		"cypher": "MATCH (c:constructors) RETURN c.name;"
 	},
 	{
 		"question": "Find the number of races held in 2010.",
-		"sql": "SELECT COUNT(*) FROM races WHERE year = 2010;"
+		"sql": "SELECT COUNT(*) FROM races WHERE year = 2010;",
+		"cypher": "MATCH (r:races {year: 2010}) RETURN count(r);"
 	},
 	{
 		"question": "Which driver won the 2008 British Grand Prix?",
-		"sql": "SELECT d.forename d.surname FROM results r JOIN races ra ON r.raceId = ra.raceId JOIN drivers d ON r.driverId = d.driverId WHERE ra.year = 2008 AND ra.name = 'British Grand Prix' AND r.position = 1;"
+		"sql": "SELECT d.forename, d.surname FROM results r JOIN races ra ON r.raceId = ra.raceId JOIN drivers d ON r.driverId = d.driverId WHERE ra.year = 2008 AND ra.name = 'British Grand Prix' AND r.position = 1;",
+		"cypher": "MATCH (ra:races {year: 2008, name: 'British Grand Prix'})<-[:IN_RACE]-(res:results {position: 1})-[:ACHIEVED]->(d:drivers) RETURN d.forename, d.surname;"
 	},
 	{
 		"question": "Show the circuit name for the 2019 Monaco Grand Prix.",
-		"sql": "SELECT c.name FROM races r JOIN circuits c ON r.circuitId = c.circuitId WHERE r.year = 2019 AND r.name = 'Monaco Grand Prix';"
+		"sql": "SELECT c.name FROM races r JOIN circuits c ON r.circuitId = c.circuitId WHERE r.year = 2019 AND r.name = 'Monaco Grand Prix';",
+		"cypher": "MATCH (r:races {year: 2019, name: 'Monaco Grand Prix'})-[:HELD_AT]->(c:circuits) RETURN c.name;"
 	},
 	{
 		"question": "List all years when the Italian Grand Prix was held.",
-		"sql": "SELECT year FROM races WHERE name = 'Italian Grand Prix' ORDER BY year;"
+		"sql": "SELECT year FROM races WHERE name = 'Italian Grand Prix' ORDER BY year;",
+		"cypher": "MATCH (r:races {name: 'Italian Grand Prix'}) RETURN r.year ORDER BY r.year;"
 	},
 	{
 		"question": "Get the total number of drivers in the database.",
-		"sql": "SELECT COUNT(*) FROM drivers;"
+		"sql": "SELECT COUNT(*) FROM drivers;",
+		"cypher": "MATCH (d:drivers) RETURN count(d);"
 	},
 	{
 		"question": "Find the nationality of the constructor named 'Ferrari'.",
-		"sql": "SELECT nationality FROM constructors WHERE name = 'Ferrari';"
+		"sql": "SELECT nationality FROM constructors WHERE name = 'Ferrari';",
+		"cypher": "MATCH (c:constructors {name: 'Ferrari'}) RETURN c.nationality;"
 	},
 	{
 		"question": "Show all race names in the 2020 season.",
-		"sql": "SELECT name FROM races WHERE year = 2020;"
+		"sql": "SELECT name FROM races WHERE year = 2020;",
+		"cypher": "MATCH (r:races {year: 2020}) RETURN r.name;"
 	}
 ]

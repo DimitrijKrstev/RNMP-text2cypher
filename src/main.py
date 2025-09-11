@@ -2,8 +2,11 @@ import sys
 from argparse import ArgumentParser
 from logging import INFO, basicConfig
 
+from constants import BASE_MODEL_NAME
 from database.setup import get_node_csvs, load_dataset_to_sqlite
-from sql.eval import evaluate_sql_model
+from evaluation.eval import evaluate_model_for_task_type
+from models import TaskType
+from utils import get_model_and_tokenizer
 
 basicConfig(level=INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
@@ -36,7 +39,10 @@ def load_sqlite(_):
 
 
 def evaluate_model(_):
-    evaluate_sql_model()
+    model, tokenizer = get_model_and_tokenizer(BASE_MODEL_NAME)
+
+    evaluate_model_for_task_type(model, tokenizer, TaskType.SQL)
+    evaluate_model_for_task_type(model, tokenizer, TaskType.CYPHER)
 
 
 def main(argv=None):
