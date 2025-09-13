@@ -1,8 +1,9 @@
 from functools import reduce
 from typing import Any
 
-from database.constants import NEO4J_PASSWORD, NEO4J_URI, NEO4J_USER
 from neo4j import GraphDatabase
+
+from database.constants import NEO4J_PASSWORD, NEO4J_URI, NEO4J_USER
 
 _driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
 

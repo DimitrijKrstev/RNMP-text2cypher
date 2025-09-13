@@ -8,6 +8,7 @@ class Task:
     question: str
     sql: str
     cypher: str
+    result: str | None
 
     @classmethod
     def from_dict(cls, data: dict) -> "Task":
@@ -15,13 +16,25 @@ class Task:
             question=data["question"],
             sql=data["sql"],
             cypher=data["cypher"],
+            result=data.get("result"),
         )
+
+    def to_dict(self):
+        return {
+            "question": self.question,
+            "sql": self.sql,
+            "cypher": self.cypher,
+            "result": self.result,
+        }
 
     def get_response_by_task_type(self, task_type: "TaskType") -> str:
         if task_type == TaskType.SQL:
             return self.sql
         elif task_type == TaskType.CYPHER:
             return self.cypher
+
+    def __hash__(self):
+        return hash(self.question)
 
 
 @dataclass(slots=True, frozen=True)

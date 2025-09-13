@@ -1,52 +1,56 @@
 [
-	{
-		"question": "Determine which driver has the most wins in a single season, and in which year did that season occur? Return driver, year, and win_count (break ties by higher win_count, then earlier year).",
-		"sql": "WITH season_wins AS (\n  SELECT ra.year, r.driverId, COUNT(*) AS wins\n  FROM results r\n  JOIN races ra ON ra.raceId = r.raceId\n  WHERE r.positionOrder = 1\n  GROUP BY ra.year, r.driverId\n)\nSELECT d.forename, d.surname AS driver, sw.year, sw.wins AS win_count\nFROM season_wins sw\nJOIN drivers d ON d.driverId = sw.driverId\nORDER BY win_count DESC, year ASC\nLIMIT 1;",
-		"cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results {positionOrder: 1})-[:IN_RACE]->(ra:races)\nWITH d, ra.year AS year, count(r) AS wins\nRETURN d.forename + ' ' + d.surname AS driver, year, wins AS win_count\nORDER BY win_count DESC, year ASC\nLIMIT 1;"
-	},
-	{
-		"question": "Find the constructor that has won on the largest number of distinct circuits overall. Return constructor and distinct_circuits_won.",
-		"sql": "SELECT c.name AS constructor, COUNT(DISTINCT ra.circuitId) AS distinct_circuits_won\nFROM results r\nJOIN races ra ON ra.raceId = r.raceId\nJOIN constructors c ON c.constructorId = r.constructorId\nWHERE r.positionOrder = 1\nGROUP BY c.constructorId\nORDER BY distinct_circuits_won DESC\nLIMIT 1;",
-		"cypher": "MATCH (c:constructors)-[:ACHIEVED]->(r:results {positionOrder: 1})-[:IN_RACE]->(ra:races)-[:HELD_AT]->(ci:circuits)\nWITH c, collect(DISTINCT ci) AS circuits\nRETURN c.name AS constructor, size(circuits) AS distinct_circuits_won\nORDER BY distinct_circuits_won DESC\nLIMIT 1;"
-	},
-	{
-		"question": "Determine which circuit has had the greatest variety of winning drivers? Return circuit, distinct_winners.",
-		"sql": "SELECT ci.name AS circuit, COUNT(DISTINCT r.driverId) AS distinct_winners\nFROM results r\nJOIN races ra ON ra.raceId = r.raceId\nJOIN circuits ci ON ci.circuitId = ra.circuitId\nWHERE r.positionOrder = 1\nGROUP BY ci.circuitId\nORDER BY distinct_winners DESC\nLIMIT 1;",
-		"cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results {positionOrder: 1})-[:IN_RACE]->(ra:races)-[:HELD_AT]->(ci:circuits)\nWITH ci, collect(DISTINCT d) AS winners\nRETURN ci.name AS circuit, size(winners) AS distinct_winners\nORDER BY distinct_winners DESC\nLIMIT 1;"
-	},
-	{
-		"question": "Determine Who were the 5 youngest drivers at the time of their first career F1 win? Return driver, first_win_date (YYYY-MM-DD), circuit, and age_years (to 2 decimals).",
-		"sql": "WITH first_wins AS (\n  SELECT r.driverId, ra.date AS win_date, ra.circuitId,\n         ROW_NUMBER() OVER (PARTITION BY r.driverId ORDER BY ra.date) AS rn\n  FROM results r\n  JOIN races ra ON ra.raceId = r.raceId\n  WHERE r.positionOrder = 1\n), first_win AS (\n  SELECT driverId, win_date, circuitId\n  FROM first_wins\n  WHERE rn = 1\n)\nSELECT d.forename || ' ' || d.surname AS driver,\n       fw.win_date AS first_win_date,\n       ci.name AS circuit,\n       ROUND((julianday(fw.win_date) - julianday(d.dob)) / 365.25, 2) AS age_years\nFROM first_win fw\nJOIN drivers d ON d.driverId = fw.driverId\nJOIN circuits ci ON ci.circuitId = fw.circuitId\nORDER BY age_years ASC\nLIMIT 5;",
-		"cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results {positionOrder: 1})-[:IN_RACE]->(ra:races)-[:HELD_AT]->(ci:circuits)\nWITH d, ra, ci\nORDER BY ra.date ASC\nWITH d, head(collect({date: ra.date, circuit: ci.name})) AS first_win\nWITH d, first_win.date AS win_date, first_win.circuit AS circuit,\n     duration.inDays(date(d.dob), date(first_win.date)).days / 365.25 AS age_years\nRETURN d.forename + ' ' + d.surname AS driver, toString(win_date) AS first_win_date, circuit, round(age_years, 2) AS age_years\nORDER BY age_years ASC\nLIMIT 5;"
-	},
-	{
-		"question": "Find the single race performance with the fastest average lap time (across all laps a driver completed in that race). Return race (year, name), driver, and avg_lap_ms.",
-		"sql": "WITH per_driver_race AS (\n  SELECT lt.raceId, lt.driverId, AVG(lt.milliseconds) AS avg_ms\n  FROM lapTimes lt\n  GROUP BY lt.raceId, lt.driverId\n)\nSELECT ra.year, ra.name AS race, d.forename || ' ' || d.surname AS driver,\n       ROUND(pdr.avg_ms, 2) AS avg_lap_ms\nFROM per_driver_race pdr\nJOIN races ra ON ra.raceId = pdr.raceId\nJOIN drivers d ON d.driverId = pdr.driverId\nORDER BY avg_lap_ms ASC\nLIMIT 1;",
-		"cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results)-[:IN_RACE]->(ra:races)\nMATCH (lt:lapTimes)\nWHERE toInteger(lt.raceId) = toInteger(ra.raceId) AND toInteger(lt.driverId) = toInteger(d.driverId)\nWITH ra, d, avg(toFloat(lt.milliseconds)) AS avg_lap_ms\nRETURN ra.year, ra.name AS race, d.forename + ' ' + d.surname AS driver, round(avg_lap_ms, 2) AS avg_lap_ms\nORDER BY avg_lap_ms ASC\nLIMIT 1;"
-	},
-	{
-		"question": "Determine which driver achieved the biggest single-race position gain from grid to finish (finished races only)? Return race (year, name), driver, grid, finish, and gain.",
-		"sql": "WITH finished AS (\n  SELECT r.*, s.status\n  FROM results r\n  JOIN status s ON s.statusId = r.statusId\n  WHERE s.status = 'Finished' AND r.grid IS NOT NULL AND r.positionOrder IS NOT NULL\n), gains AS (\n  SELECT f.raceId, f.driverId, f.grid, f.positionOrder AS finish, (f.grid - f.positionOrder) AS gain\n  FROM finished f\n  WHERE f.grid > f.positionOrder\n)\nSELECT ra.year, ra.name AS race, d.forename || ' ' || d.surname AS driver,\n       g.grid, g.finish, g.gain\nFROM gains g\nJOIN races ra ON ra.raceId = g.raceId\nJOIN drivers d ON d.driverId = g.driverId\nORDER BY g.gain DESC\nLIMIT 1;",
-		"cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results)-[:IN_RACE]->(ra:races)\nMATCH (s:status)\nWHERE toInteger(s.statusId) = toInteger(r.statusId) AND s.status = 'Finished'\n  AND r.grid IS NOT NULL AND r.positionOrder IS NOT NULL\nWITH d, ra, r.grid AS grid, r.positionOrder AS finish, (r.grid - r.positionOrder) AS gain\nWHERE gain > 0\nRETURN ra.year, ra.name AS race, d.forename + ' ' + d.surname AS driver, grid, finish, gain\nORDER BY gain DESC\nLIMIT 1;"
-	},
-	{
-		"question": "Determine which driver has the most wins from pole position? Return driver and pole_wins.",
-		"sql": "WITH winner AS (\n  SELECT r.raceId, r.driverId\n  FROM results r\n  WHERE r.positionOrder = 1\n), poles AS (\n  SELECT q.raceId, q.driverId\n  FROM qualifying q\n  WHERE q.position = 1\n)\nSELECT d.forename || ' ' || d.surname AS driver, COUNT(*) AS pole_wins\nFROM winner w\nJOIN poles p ON p.raceId = w.raceId AND p.driverId = w.driverId\nJOIN drivers d ON d.driverId = w.driverId\nGROUP BY d.driverId\nORDER BY pole_wins DESC\nLIMIT 1;",
-		"cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results {positionOrder: 1})-[:IN_RACE]->(ra:races)\nMATCH (d)-[:QUALIFIED_IN]->(q:qualifying)-[:FOR_RACE]->(ra)\nWHERE q.position = 1\nWITH d, count(r) AS pole_wins\nRETURN d.forename + ' ' + d.surname AS driver, pole_wins\nORDER BY pole_wins DESC\nLIMIT 1;"
-	},
-	{
-		"question": "For each season, determine the constructor with the most wins; then find the constructor that topped the most seasons overall. Return constructor and seasons_topped.",
-		"sql": "WITH season_constructor_wins AS (\n  SELECT ra.year, r.constructorId, COUNT(*) AS wins\n  FROM results r\n  JOIN races ra ON ra.raceId = r.raceId\n  WHERE r.positionOrder = 1\n  GROUP BY ra.year, r.constructorId\n), season_champs AS (\n  SELECT scw.year, scw.constructorId\n  FROM (\n    SELECT year, constructorId, wins,\n           RANK() OVER (PARTITION BY year ORDER BY wins DESC) AS rk\n    FROM season_constructor_wins\n  ) scw\n  WHERE rk = 1\n)\nSELECT c.name AS constructor, COUNT(*) AS seasons_topped\nFROM season_champs sch\nJOIN constructors c ON c.constructorId = sch.constructorId\nGROUP BY c.constructorId\nORDER BY seasons_topped DESC\nLIMIT 1;",
-		"cypher": "MATCH (c:constructors)-[:ACHIEVED]->(r:results {positionOrder: 1})-[:IN_RACE]->(ra:races)\nWITH ra.year AS year, c, count(r) AS wins\nORDER BY year, wins DESC\nWITH year, collect({constructor: c, wins: wins}) AS year_wins\nWITH [x IN year_wins WHERE x.wins = year_wins[0].wins] AS top_constructors\nUNWIND top_constructors AS tc\nWITH tc.constructor AS c\nRETURN c.name AS constructor, count(*) AS seasons_topped\nORDER BY seasons_topped DESC\nLIMIT 1;"
-	},
-	{
-		"question": "List all races (year, name) where the winner also had pole position and set the fastest lap (\"grand chelem\"). Return also the winner name.",
-		"sql": "WITH winners AS (\n  SELECT r.raceId, r.driverId, r.rank\n  FROM results r\n  WHERE r.positionOrder = 1\n), poles AS (\n  SELECT q.raceId, q.driverId\n  FROM qualifying q\n  WHERE q.position = 1\n)\nSELECT ra.year, ra.name AS race, d.forename || ' ' || d.surname AS winner\nFROM winners w\nJOIN races ra ON ra.raceId = w.raceId\nJOIN drivers d ON d.driverId = w.driverId\nJOIN poles p ON p.raceId = w.raceId AND p.driverId = w.driverId\nWHERE w.rank = 1\nORDER BY ra.year, ra.name;",
-		"cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results {positionOrder: 1})-[:IN_RACE]->(ra:races)\nMATCH (d)-[:QUALIFIED_IN]->(q:qualifying {position: 1})-[:FOR_RACE]->(ra)\nMATCH (fl:results {rank: 1})-[:IN_RACE]->(ra)\nWHERE (d)-[:ACHIEVED]->(fl)\nRETURN ra.year, ra.name AS race, d.forename + ' ' + d.surname AS winner\nORDER BY ra.year, ra.name;"
-	},
-	{
-		"question": "Determine which constructor showed the largest positive season-over-season jump in total points? Return constructor, from_year, to_year, and points_delta.",
-		"sql": "WITH season_points AS (\n  SELECT ra.year, r.constructorId, SUM(r.points) AS pts\n  FROM results r\n  JOIN races ra ON ra.raceId = r.raceId\n  GROUP BY ra.year, r.constructorId\n), deltas AS (\n  SELECT sp2.constructorId, sp1.year AS from_year, sp2.year AS to_year, (sp2.pts - sp1.pts) AS delta\n  FROM season_points sp1\n  JOIN season_points sp2\n    ON sp2.constructorId = sp1.constructorId AND sp2.year = sp1.year + 1\n)\nSELECT c.name AS constructor, d.from_year, d.to_year, d.delta AS points_delta\nFROM deltas d\nJOIN constructors c ON c.constructorId = d.constructorId\nORDER BY points_delta DESC\nLIMIT 1;",
-		"cypher": "MATCH (c:constructors)-[:ACHIEVED]->(r:results)-[:IN_RACE]->(ra:races)\nWITH c, ra.year AS year, sum(toFloat(r.points)) AS pts\nORDER BY c, year\nWITH c, collect({year: year, pts: pts}) AS seasons\nUNWIND range(0, size(seasons)-2) AS i\nWITH c, seasons[i] AS s1, seasons[i+1] AS s2\nWITH c, s1.year AS from_year, s2.year AS to_year, (s2.pts - s1.pts) AS points_delta\nRETURN c.name AS constructor, from_year, to_year, points_delta\nORDER BY points_delta DESC\nLIMIT 1;"
-	}
+  {
+    "question": "Find the driver who scored the most points in a single race without winning. Return driver, race, points.",
+    "sql": "SELECT d.forename, d.surname, ra.year, ra.name, r.points\nFROM results r JOIN races ra ON r.raceId=ra.raceId JOIN drivers d ON d.driverId=r.driverId\nWHERE r.positionOrder<>1 ORDER BY r.points DESC LIMIT 1;",
+    "cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results)-[:IN_RACE]->(ra:races)\nWHERE r.positionOrder<>1\nRETURN d.forename + ' ' + d.surname AS driver, ra.year, ra.name, r.points ORDER BY r.points DESC LIMIT 1;",
+    "result": "[{'driver': 'Nino Farina', 'ra.year': '1950', 'ra.name': 'British Grand Prix', 'r.points': '9.0'}]"
+  },
+  {
+    "question": "Determine which constructor showed the largest positive season-over-season jump in total points? Return constructor, from_year, to_year, and points_delta.",
+    "sql": "WITH season_points AS (\n  SELECT ra.year, r.constructorId, SUM(r.points) AS pts\n  FROM results r\n  JOIN races ra ON ra.raceId = r.raceId\n  GROUP BY ra.year, r.constructorId\n), deltas AS (\n  SELECT sp2.constructorId, sp1.year AS from_year, sp2.year AS to_year, (sp2.pts - sp1.pts) AS delta\n  FROM season_points sp1\n  JOIN season_points sp2\n    ON sp2.constructorId = sp1.constructorId AND sp2.year = sp1.year + 1\n)\nSELECT c.name AS constructor, d.from_year, d.to_year, d.delta AS points_delta\nFROM deltas d\nJOIN constructors c ON c.constructorId = d.constructorId\nORDER BY points_delta DESC\nLIMIT 1;",
+    "cypher": "MATCH (c:constructors)-[:ACHIEVED]->(r:results)-[:IN_RACE]->(ra:races)\nWITH c, ra.year AS year, sum(toFloat(r.points)) AS pts\nORDER BY c, year\nWITH c, collect({year: year, pts: pts}) AS seasons\nUNWIND range(0, size(seasons)-2) AS i\nWITH c, seasons[i] AS s1, seasons[i+1] AS s2\nWITH c, s1.year AS from_year, s2.year AS to_year, (s2.pts - s1.pts) AS points_delta\nRETURN c.name AS constructor, from_year, to_year, points_delta\nORDER BY points_delta DESC\nLIMIT 1;",
+    "result": "[{'constructor': 'Red Bull', 'from_year': '2008', 'to_year': '2009', 'points_delta': 124.5}]"
+  },
+  {
+    "question": "Find the driver with the highest career win-to-start ratio (min 50 starts). Return driver and ratio.",
+    "sql": "SELECT d.forename, d.surname, (1.0*SUM(CASE WHEN r.positionOrder=1 THEN 1 ELSE 0 END)/COUNT(*)) AS ratio\nFROM results r JOIN drivers d ON r.driverId=d.driverId\nGROUP BY d.driverId HAVING COUNT(*)>=50\nORDER BY ratio DESC LIMIT 1;",
+    "cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results)\nWITH d, count(r) AS starts, count(CASE WHEN r.positionOrder=1 THEN 1 END) AS wins\nWHERE starts>=50\nRETURN d.forename + ' ' + d.surname AS driver, (1.0*wins/starts) AS ratio ORDER BY ratio DESC LIMIT 1;",
+    "result": "[{'driver': 'Lewis Hamilton', 'ratio': 0.0}]"
+  },
+  {
+    "question": "Find the driver who started most races from last grid position. Return driver and count.",
+    "sql": "SELECT d.forename, d.surname, COUNT(*) AS cnt\nFROM results r JOIN drivers d ON r.driverId=d.driverId\nJOIN races ra ON r.raceId=ra.raceId\nWHERE r.grid=(SELECT MAX(grid) FROM results WHERE raceId=ra.raceId)\nGROUP BY d.driverId ORDER BY cnt DESC LIMIT 1;",
+    "cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results)-[:IN_RACE]->(ra:races)\nWITH ra, max(r.grid) AS last\nMATCH (d:drivers)-[:ACHIEVED]->(res:results {grid:last})-[:IN_RACE]->(ra)\nRETURN d.forename + ' ' + d.surname AS driver, count(res) AS cnt ORDER BY cnt DESC LIMIT 1;",
+    "result": "[{'driver': 'Jarno Trulli', 'cnt': 20}]"
+  },
+  {
+    "question": "Find the driver who has competed in the most different circuits. Return driver and circuit_count.",
+    "sql": "SELECT d.forename, d.surname, COUNT(DISTINCT ra.circuitId) AS circuit_count\nFROM results r JOIN races ra ON r.raceId=ra.raceId JOIN drivers d ON r.driverId=d.driverId\nGROUP BY d.driverId ORDER BY circuit_count DESC LIMIT 1;",
+    "cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results)-[:IN_RACE]->(ra:races)-[:HELD_AT]->(c:circuits)\nWITH d, collect(DISTINCT c) AS circuits\nRETURN d.forename + ' ' + d.surname AS driver, size(circuits) AS circuit_count ORDER BY circuit_count DESC LIMIT 1;",
+    "result": "[{'driver': 'Riccardo Patrese', 'circuit_count': 37}]"
+  },
+  {
+    "question": "Find the driver who has been overtaken the most times (grid better than finish). Return driver and overtakes_suffered.",
+    "sql": "SELECT d.forename, d.surname, COUNT(*) AS overtakes_suffered\nFROM results r JOIN drivers d ON r.driverId=d.driverId\nWHERE r.grid<r.positionOrder\nGROUP BY d.driverId ORDER BY overtakes_suffered DESC LIMIT 1;",
+    "cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results)\nWHERE r.grid<r.positionOrder\nRETURN d.forename + ' ' + d.surname AS driver, count(r) AS overtakes_suffered ORDER BY overtakes_suffered DESC LIMIT 1;",
+    "result": "[{'driver': 'Andrea de Cesaris', 'overtakes_suffered': 119}]"
+  },
+  {
+    "question": "Find the driver who has finished last the most times. Return driver and count.",
+    "sql": "SELECT d.forename, d.surname, COUNT(*) AS cnt\nFROM results r JOIN drivers d ON r.driverId=d.driverId\nJOIN races ra ON ra.raceId=ra.raceId\nWHERE r.positionOrder=(SELECT MAX(positionOrder) FROM results WHERE raceId=ra.raceId)\nGROUP BY d.driverId ORDER BY cnt DESC LIMIT 1;",
+    "cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results)-[:IN_RACE]->(ra:races)\nWITH ra, max(r.positionOrder) AS last\nMATCH (d:drivers)-[:ACHIEVED]->(res:results {positionOrder:last})-[:IN_RACE]->(ra)\nRETURN d.forename + ' ' + d.surname AS driver, count(res) AS cnt ORDER BY cnt DESC LIMIT 1;",
+    "result": "[{'driver': 'Giancarlo Fisichella', 'cnt': 18}]"
+  },
+  {
+    "question": "Which driver has the highest win percentage in a single season (min 5 races)? Return driver, year, and win_percentage.",
+    "sql": "WITH season_stats AS (\n  SELECT ra.year, r.driverId,\n         COUNT(*) FILTER (WHERE r.positionOrder = 1) AS wins,\n         COUNT(*) AS starts\n  FROM results r\n  JOIN races ra ON ra.raceId = r.raceId\n  GROUP BY ra.year, r.driverId\n)\nSELECT d.forename || ' ' || d.surname AS driver, ss.year,\n       ROUND(1.0*ss.wins/ss.starts*100,2) AS win_percentage\nFROM season_stats ss\nJOIN drivers d ON d.driverId = ss.driverId\nWHERE ss.starts >= 5\nORDER BY win_percentage DESC\nLIMIT 1;",
+    "cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results)-[:IN_RACE]->(ra:races)\nWITH d, ra.year AS year, count(r) AS starts, count(CASE WHEN r.positionOrder=1 THEN 1 END) AS wins\nWHERE starts >= 5\nWITH d, year, 100.0*wins/starts AS win_percentage\nRETURN d.forename + ' ' + d.surname AS driver, year, round(win_percentage,2) AS win_percentage\nORDER BY win_percentage DESC LIMIT 1;",
+    "result": "[{'driver': 'Lewis Hamilton', 'year': '2009', 'win_percentage': 0.0}]"
+  },
+  {
+    "question": "Find the driver with the most races entered before their first career win. Return driver and race_count.",
+    "sql": "WITH starts AS (\n  SELECT r.driverId, COUNT(*) AS races FROM results r GROUP BY r.driverId\n), wins AS (\n  SELECT r.driverId, MIN(ra.year*100+ra.round) AS first_win\n  FROM results r JOIN races ra ON r.raceId=ra.raceId\n  WHERE r.positionOrder=1 GROUP BY r.driverId\n)\nSELECT d.forename, d.surname, s.races AS race_count\nFROM starts s JOIN wins w ON s.driverId=w.driverId JOIN drivers d ON d.driverId=s.driverId\nORDER BY race_count DESC LIMIT 1;",
+    "cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results)-[:IN_RACE]->(ra:races)\nWITH d, count(r) AS races, min(CASE WHEN r.positionOrder=1 THEN ra.year*100+ra.round END) AS first_win\nRETURN d.forename + ' ' + d.surname AS driver, races AS race_count ORDER BY race_count DESC LIMIT 1;",
+    "result": "[{'driver': 'Rubens Barrichello', 'race_count': 288}]"
+  }
 ]

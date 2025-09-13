@@ -2,6 +2,7 @@ import os
 import sys
 from argparse import ArgumentParser
 from logging import INFO, basicConfig
+from pathlib import Path
 
 from openai import OpenAI
 
@@ -11,6 +12,7 @@ from evaluation.local_eval import evaluate_local_model_for_task
 from evaluation.remote_eval import evaluate_remote_model_for_task
 from models import TaskType
 from utils import get_model_and_tokenizer
+from validate_tasks import validate
 
 basicConfig(level=INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
@@ -37,6 +39,10 @@ def build_parser():
     sub.add_parser(
         "evaluate-remote-model", help="Evaluate the remote LLM model."
     ).set_defaults(func=evaluate_remote_model)
+
+    sub.add_parser("validate-tasks", help="Validate all tasks.").set_defaults(
+        func=validate_tasks
+    )
 
     return args
 
@@ -65,6 +71,11 @@ def evaluate_remote_model(_):
 
     evaluate_remote_model_for_task(REMOTE_MODEL_NAME, TaskType.SQL, client)
     evaluate_remote_model_for_task(REMOTE_MODEL_NAME, TaskType.CYPHER, client)
+
+
+def validate_tasks(_):
+    for path in Path("src/tasks").glob("*.json"):
+        validate(path)
 
 
 def main(argv=None):
