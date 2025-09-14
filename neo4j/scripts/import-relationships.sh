@@ -25,7 +25,7 @@ CALL {
 
 CALL {
   MATCH (ra:races) MATCH (ci:circuits)
-  WHERE coalesce(ra.circuitId, ra.circutId) = ci.circuitId   // typo handled here
+  WHERE coalesce(ra.circuitId, ra.circutId) = ci.circuitId
   MERGE (ra)-[:HELD_AT]->(ci)
 } IN TRANSACTIONS OF $BATCH ROWS;
 

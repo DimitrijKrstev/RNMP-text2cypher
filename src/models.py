@@ -8,7 +8,7 @@ class Task:
     question: str
     sql: str
     cypher: str
-    result: str | None
+    cypher_result: str | None
 
     @classmethod
     def from_dict(cls, data: dict) -> "Task":
@@ -16,7 +16,7 @@ class Task:
             question=data["question"],
             sql=data["sql"],
             cypher=data["cypher"],
-            result=data.get("result"),
+            cypher_result=data.get("cypher_result"),
         )
 
     def to_dict(self):
@@ -24,7 +24,7 @@ class Task:
             "question": self.question,
             "sql": self.sql,
             "cypher": self.cypher,
-            "result": self.result,
+            "cypher_result": self.cypher_result,
         }
 
     def get_response_by_task_type(self, task_type: "TaskType") -> str:
@@ -43,7 +43,6 @@ class TaskResult:
     response: str
     syntaxically_correct: bool
     correct_result: bool
-    cannonical_match: bool
     exact_match: bool
     task_type: "TaskType"
 
@@ -56,7 +55,6 @@ class TaskResult:
             "generated_script": self.response,
             "syntaxically_correct": self.syntaxically_correct,
             "correct_result": self.correct_result,
-            "cannonical_match": self.cannonical_match,
             "exact_match": self.exact_match,
         }
 

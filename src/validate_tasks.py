@@ -38,8 +38,9 @@ def validate(tasks_path: Path) -> None:
         if sql_valid and cypher_valid:
             valid_tasks.add(task)
 
-
-    print(f"In path {tasks_path}, found {len(tasks)} tasks, {len(valid_tasks)} valid tasks.")
+    print(
+        f"In path {tasks_path}, found {len(tasks)} tasks, {len(valid_tasks)} valid tasks."
+    )
 
     for task in tasks:
         if task not in valid_tasks:

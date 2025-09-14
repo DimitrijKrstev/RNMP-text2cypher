@@ -1,3 +1,7 @@
+from re import sub
+
+import sqlparse
+
 from database.neo4j import query_neo4j
 from database.sqlite import query_sqlite
 from models import Task, TaskResult, TaskType
@@ -11,7 +15,6 @@ QUERY_DB_BY_TASK_TYPE = {
 def get_task_result(task: Task, model_response: str, task_type: TaskType) -> TaskResult:
     syntaxically_correct = False
     correct_result = False
-    cannonical_match = False  # TODO
     exact_match = False
 
     try:
@@ -21,7 +24,9 @@ def get_task_result(task: Task, model_response: str, task_type: TaskType) -> Tas
 
         if result == QUERY_DB_BY_TASK_TYPE[task_type](optimal_response):  # type: ignore
             correct_result = True
-        if model_response == optimal_response:
+        if normalize_query(model_response, task_type) == normalize_query(
+            optimal_response, task_type
+        ):
             exact_match = True
 
     finally:
@@ -30,7 +35,30 @@ def get_task_result(task: Task, model_response: str, task_type: TaskType) -> Tas
             model_response,
             syntaxically_correct,
             correct_result,
-            cannonical_match,
             exact_match,
             task_type,
         )
+
+
+def normalize_query(query: str, task_type: TaskType) -> str:
+    query = query.strip().lower()
+
+    query = sub(r"\s+", " ", query)
+
+    if task_type == TaskType.SQL:
+        parsed = sqlparse.format(
+            query,
+            keyword_case="lower",
+            identifier_case="lower",
+            strip_comments=True,
+            reindent=False,
+        )
+        query = sub(r"\s+", " ", parsed).strip()
+
+    elif task_type == TaskType.CYPHER:
+        query = sub(r"\s+as\s+\w+", "", query)
+        query = query.strip()
+
+    query = query.rstrip(";")
+
+    return query

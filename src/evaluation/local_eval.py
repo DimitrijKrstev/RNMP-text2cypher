@@ -21,7 +21,7 @@ def evaluate_local_model_for_task(
 ) -> None:
     schema = LIST_DB_TABLES_BY_TASK_TYPE[task_type]()  # type: ignore
 
-    for task_difficulty in TaskDifficulty:
+    for task_difficulty in [TaskDifficulty.EASY]:
         tasks = get_tasks_from_json(TASKS_DIRECTORY / f"{task_difficulty}.json")
         task_results = []
 
@@ -49,4 +49,3 @@ def evaluate_local_model_for_task(
             task_results.append(result)
 
         save_task_results(task_results, task_difficulty, task_type, model_name)
-        break

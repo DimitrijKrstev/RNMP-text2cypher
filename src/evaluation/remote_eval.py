@@ -30,28 +30,21 @@ def evaluate_remote_model_for_task(
         for task in tqdm(tasks, f"Tasks ({task_difficulty}, {task_type})"):
             prompt = build_remote_prompt(task_type, task.question, schema)
 
-            response = client.chat.completions.create(
-                model=model_name,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": f"You are a Text-to-{task_type.name} assistant. "
-                        f"Return only a valid {task_type.name} query, "
-                        "without explanations or other code.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                max_tokens=128,
-                temperature=0,
+            response = client.responses.create(
+                model="gpt-5",
+                reasoning={"effort": "low"},
+                instructions=(
+                    f"You are a Text-to-{task_type} assistant. Return ONLY a raw valid {task_type} statement."
+                    "No explanations, no comments, no code fences.\n"
+                    "Do NOT order results unless explicitly asked.\n"
+                    "Do NOT use column or table aliases unless explicitly asked.\n"
+                    "Do NOT use 'AS' for aggregate functions like COUNT, SUM, AVG, etc. unless explicitly asked\n"
+                    "Do NOT return DISTINCT values unless explicitly asked.\n"
+                ),
+                input=f"{prompt}",
             )
 
-            if not response.choices or not response.choices[0].message.content:
-                logger.error(
-                    "No response from remote model for question '%s'", task.question
-                )
-                continue
-
-            generated_query = response.choices[0].message.content.strip()
+            generated_query = response.output_text
             result = get_task_result(task, generated_query, task_type)
             task_results.append(result)
 
