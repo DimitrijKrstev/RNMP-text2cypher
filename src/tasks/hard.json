@@ -52,5 +52,11 @@
     "sql": "WITH starts AS (\n  SELECT r.driverId, COUNT(*) AS races FROM results r GROUP BY r.driverId\n), wins AS (\n  SELECT r.driverId, MIN(ra.year*100+ra.round) AS first_win\n  FROM results r JOIN races ra ON r.raceId=ra.raceId\n  WHERE r.positionOrder=1 GROUP BY r.driverId\n)\nSELECT d.forename, d.surname, s.races AS race_count\nFROM starts s JOIN wins w ON s.driverId=w.driverId JOIN drivers d ON d.driverId=s.driverId\nORDER BY race_count DESC LIMIT 1;",
     "cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results)-[:IN_RACE]->(ra:races)\nWITH d, count(r) AS races, min(CASE WHEN r.positionOrder=1 THEN ra.year*100+ra.round END) AS first_win\nRETURN d.forename + ' ' + d.surname AS driver, races AS race_count ORDER BY race_count DESC LIMIT 1;",
     "result": "[{'driver': 'Rubens Barrichello', 'race_count': 288}]"
+  },
+  {
+    "question": "Find the driver who has finished last the most times in a single season. Return driver, year, and last_place_finishes.",
+    "sql": "SELECT d.forename, d.surname, ra.year, COUNT(*) AS last_place_finishes\nFROM results r\nJOIN drivers d ON r.driverId = d.driverId\nJOIN races ra ON r.raceId = ra.raceId\nWHERE r.positionOrder = (\n    SELECT MAX(r2.positionOrder)\n    FROM results r2\n    WHERE r2.raceId = ra.raceId\n)\nGROUP BY d.driverId, ra.year\nORDER BY last_place_finishes DESC\nLIMIT 1;",
+    "cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results)-[:IN_RACE]->(ra:races)\nWITH ra, max(r.positionOrder) AS lastPos\nMATCH (d)-[:ACHIEVED]->(res:results {positionOrder:lastPos})-[:IN_RACE]->(ra)\nWITH d, ra.year AS year, count(res) AS last_place_finishes\nRETURN d.forename + ' ' + d.surname AS driver, year, last_place_finishes\nORDER BY last_place_finishes DESC\nLIMIT 1;",
+    "result": "[{'driver': 'Andrea de Cesaris', 'year': 1986, 'last_place_finishes': 7}]"
   }
 ]

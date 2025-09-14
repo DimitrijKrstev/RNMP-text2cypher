@@ -36,13 +36,14 @@ def validate(tasks_path: Path) -> None:
             print(f"Cypher query failed: {e}")
 
         if sql_valid and cypher_valid:
-            task_with_result = Task(
-                sql=task.sql,
-                cypher=task.cypher,
-                question=task.question,
-                result=str(cypher_result),
-            )
-            valid_tasks.add(task_with_result)
+            valid_tasks.add(task)
 
-    with open(tasks_path, "w") as f:
-        json.dump([task.to_dict() for task in valid_tasks], f, indent=2)
+
+    print(f"In path {tasks_path}, found {len(tasks)} tasks, {len(valid_tasks)} valid tasks.")
+
+    for task in tasks:
+        if task not in valid_tasks:
+            print(f"Invalid task: {task.question}")
+            print(f"SQL: {task.sql}")
+            print(f"Cypher: {task.cypher}")
+            print()
