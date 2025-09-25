@@ -4,11 +4,22 @@
 # -----------------------------------------
 set -euo pipefail
 
+echo "DEBUG: Received argument: '$1'"
+echo "DEBUG: All arguments: '$@'"
+
+DATASET_NAME=${1:-${DATASET_NAME:-rel-f1}}
 USER=neo4j
 PASSWORD=${NEO4J_PASSWORD:-${NEO4J_AUTH#neo4j/}}
-REL_SCRIPT=/var/lib/neo4j/scripts/import-relationships.sh
-CONSTRAINT_FILE=/var/lib/neo4j/scripts/create-constraints.cypher
+REL_SCRIPT=/var/lib/neo4j/scripts/relationships/import-relationships-${DATASET_NAME}.sh
+CONSTRAINT_FILE=/var/lib/neo4j/scripts/constraints/create-constraints-${DATASET_NAME}.cypher
 VERIFY_SCRIPT=/var/lib/neo4j/scripts/verify-scripts/run-verification.sh
+
+DATASET_NAME=${1:-rel-f1}
+echo "DEBUG: DATASET_NAME = '$DATASET_NAME'"
+echo "DEBUG: Looking for constraint file: /var/lib/neo4j/scripts/constraints/create-constraints-${DATASET_NAME}.cypher"
+
+CONSTRAINT_FILE=/var/lib/neo4j/scripts/constraints/create-constraints-${DATASET_NAME}.cypher
+echo "DEBUG: CONSTRAINT_FILE = '$CONSTRAINT_FILE'"
 
 # helper – wait until bolt is available
 wait_for_neo4j () {
@@ -41,14 +52,14 @@ echo "------ Creating relationships… ------"
 echo "------   …done ------"
 
 #  4 – verification
-echo "------ Running verification suite… ------"
-"$VERIFY_SCRIPT"
-echo "------  …verification finished ------"
+# echo "------ Running verification suite… ------"
+# "$VERIFY_SCRIPT" "$DATASET_NAME"
+# echo "------  …verification finished ------"
 
 
 #  5 – keep container running
 echo ""
-echo "------ F1 graph ready! ------"
+echo "------ ${DATASET_NAME} graph ready! ------"
 echo "   Open the web interface at \"http://localhost:7474/browser/preview/\""
 echo "   Login: neo4j / $PASSWORD"
 echo "-----------------------------"

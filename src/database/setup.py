@@ -10,14 +10,15 @@ from database.sqlite import SQLITE_DB_PATH
 logger = getLogger(__name__)
 
 
-def get_node_csvs() -> None:
-    dataset = get_dataset(name="rel-f1", download=True)
+def get_node_csvs(dataset_name: str) -> None:
+    dataset = get_dataset(name=dataset_name, download=True)
     db = dataset.get_db()
 
     tables = list(db.table_dict.keys())
     logger.info(f"Available tables: {tables}")
 
-    os.makedirs(CSV_OUTPUT_DIR, exist_ok=True)
+    csv_output_dir_name = CSV_OUTPUT_DIR / dataset_name
+    os.makedirs(csv_output_dir_name, exist_ok=True)
 
     for table_name in tables:
         table_df = db.table_dict[table_name].df.copy()
@@ -29,17 +30,21 @@ def get_node_csvs() -> None:
         table_df[":LABEL"] = table_name
 
         table_df.to_csv(
-            os.path.join(CSV_OUTPUT_DIR, f"{table_name}_nodes.csv"), index=False
+            csv_output_dir_name / f"{table_name}_nodes.csv", index=False
         )
 
 
-def load_dataset_to_sqlite():
-    dataset = get_dataset(name="rel-f1", download=True)
+def load_dataset_to_sqlite(dataset_name: str) -> None:
+    dataset = get_dataset(name=dataset_name, download=True)
     database = dataset.get_db()
 
-    SQLITE_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    con = connect(SQLITE_DB_PATH.as_posix())
+    sql_database_dir = SQLITE_DB_PATH.parent / dataset_name
+    sql_database_dir.mkdir(parents=True, exist_ok=True)
+
+    db_path = sql_database_dir / "relbench.db"
+
+    con = connect(db_path.as_posix())
     try:
         con.execute("PRAGMA journal_mode=WAL;")
         con.execute("PRAGMA synchronous=NORMAL;")
@@ -54,7 +59,7 @@ def load_dataset_to_sqlite():
             dataframe.to_sql(name, con, if_exists="replace", index=False)
 
         con.commit()
-        logger.info(f"Done. SQLite DB at: {SQLITE_DB_PATH.resolve()}")
+        logger.info(f"Done. SQLite DB at: {db_path.resolve()}")
     except Exception as e:
         logger.error(f"Error saving dataset to SQLite: {e}")
     finally:
