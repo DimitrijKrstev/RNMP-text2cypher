@@ -31,30 +31,54 @@ def build_parser():
     args = ArgumentParser(prog="rnmp")
     sub = args.add_subparsers(dest="cmd", required=True)
 
-    sub.add_parser(
+    generate_csvs_cmd = sub.add_parser(
         "generate-csvs", help="Generate CSVs for Neo4j import."
-    ).set_defaults(func=generate_csvs)
-    sub.add_parser("load-sqlite", help="Create/refresh the SQLite DB.").set_defaults(
-        func=load_sqlite
     )
-    sub.add_parser("validate-tasks", help="Validate all tasks.").set_defaults(
-        func=validate_tasks
+    generate_csvs_cmd.set_defaults(func=generate_csvs)
+    generate_csvs_cmd.add_argument(
+        "--dataset-name",
+        type=str,
+        default="rel-f1",
+        help="Name of the RelBench dataset to use.",
+        choices=["rel-f1", "rel-amazon", "rel-stack"]
     )
-    sub.add_parser("get-neo4j", help="Evaluate the remote LLM model.").set_defaults(
-        func=get_neo4j_schema_command
+
+    load_sqlite_cmd = sub.add_parser(
+        "load-sqlite", help="Create/refresh the SQLite DB."
     )
-    sub.add_parser(
+    load_sqlite_cmd.set_defaults(func=load_sqlite)
+    load_sqlite_cmd.add_argument(
+        "--dataset-name",
+        type=str,
+        default="rel-f1",
+        help="Name of the RelBench dataset to use.",
+        choices=["rel-f1", "rel-amazon", 'rel-stack']
+    )
+    validate_tasks_cmd = sub.add_parser(
+        "validate-tasks", help="Validate all tasks."
+    )
+    validate_tasks_cmd.set_defaults(func=validate_tasks)
+
+    get_neo4j_cmd = sub.add_parser(
+        "get-neo4j", help="Evaluate the remote LLM model."
+    )
+    get_neo4j_cmd.set_defaults(func=get_neo4j_schema_command)
+
+    evaluate_local_model_cmd = sub.add_parser(
         "evaluate-local-model", help="Evaluate the text2SQL model."
-    ).set_defaults(func=evaluate_local_model)
-    sub.add_parser(
+    )
+    evaluate_local_model_cmd.set_defaults(func=evaluate_local_model)
+
+    evaluate_remote_model_cmd = sub.add_parser(
         "evaluate-remote-model", help="Evaluate the remote LLM model."
-    ).set_defaults(func=evaluate_remote_model)
+    )
+    evaluate_remote_model_cmd.set_defaults(func=evaluate_remote_model)
 
     return args
 
 
-def generate_csvs(_):
-    get_node_csvs()
+def generate_csvs(args : str):
+    get_node_csvs(args.dataset_name)
 
 
 def get_neo4j_schema_command(_):
@@ -62,8 +86,8 @@ def get_neo4j_schema_command(_):
     print(schema)
 
 
-def load_sqlite(_):
-    load_dataset_to_sqlite()
+def load_sqlite(args : str):
+    load_dataset_to_sqlite(args.dataset_name)
 
 
 def validate_tasks(_):

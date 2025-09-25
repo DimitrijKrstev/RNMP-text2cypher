@@ -12,3 +12,4 @@ __pycache__
 neo4j/import/*.csv
 
 .env
+**/*.csv
