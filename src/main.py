@@ -40,7 +40,7 @@ def build_parser():
         type=str,
         default="rel-f1",
         help="Name of the RelBench dataset to use.",
-        choices=["rel-f1", "rel-amazon", "rel-stack"]
+        choices=["rel-f1", "rel-amazon", "rel-stack"],
     )
 
     load_sqlite_cmd = sub.add_parser(
@@ -52,16 +52,12 @@ def build_parser():
         type=str,
         default="rel-f1",
         help="Name of the RelBench dataset to use.",
-        choices=["rel-f1", "rel-amazon", 'rel-stack']
+        choices=["rel-f1", "rel-amazon", "rel-stack"],
     )
-    validate_tasks_cmd = sub.add_parser(
-        "validate-tasks", help="Validate all tasks."
-    )
+    validate_tasks_cmd = sub.add_parser("validate-tasks", help="Validate all tasks.")
     validate_tasks_cmd.set_defaults(func=validate_tasks)
 
-    get_neo4j_cmd = sub.add_parser(
-        "get-neo4j", help="Evaluate the remote LLM model."
-    )
+    get_neo4j_cmd = sub.add_parser("get-neo4j", help="Evaluate the remote LLM model.")
     get_neo4j_cmd.set_defaults(func=get_neo4j_schema_command)
 
     evaluate_local_model_cmd = sub.add_parser(
@@ -77,7 +73,7 @@ def build_parser():
     return args
 
 
-def generate_csvs(args : str):
+def generate_csvs(args):
     get_node_csvs(args.dataset_name)
 
 
@@ -86,7 +82,7 @@ def get_neo4j_schema_command(_):
     print(schema)
 
 
-def load_sqlite(args : str):
+def load_sqlite(args):
     load_dataset_to_sqlite(args.dataset_name)
 
 
