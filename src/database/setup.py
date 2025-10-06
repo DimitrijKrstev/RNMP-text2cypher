@@ -29,15 +29,14 @@ def get_node_csvs(dataset_name: str) -> None:
         )
         table_df[":LABEL"] = table_name
 
-        table_df.to_csv(
-            csv_output_dir_name / f"{table_name}_nodes.csv", index=False
-        )
+        table_df.to_csv(csv_output_dir_name / f"{table_name}_nodes.csv", index=False)
+
+        logger.info(f"Wrote {table_name}_nodes.csv with {len(table_df)} rows.")
 
 
 def load_dataset_to_sqlite(dataset_name: str) -> None:
     dataset = get_dataset(name=dataset_name, download=True)
     database = dataset.get_db()
-
 
     sql_database_dir = SQLITE_DB_PATH.parent / dataset_name
     sql_database_dir.mkdir(parents=True, exist_ok=True)
