@@ -1,0 +1,652 @@
+[
+  {
+    "question": "Find users who have created both a question and an accepted answer to that question.",
+    "sql": "SELECT DISTINCT\n  u.Id\nFROM users AS u\nJOIN posts AS q\n  ON u.Id = q.OwnerUserId\nJOIN posts AS a\n  ON u.Id = a.OwnerUserId\nWHERE\n  q.PostTypeId = 1 AND a.PostTypeId = 2 AND q.AcceptedAnswerId = a.Id;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(q:posts {PostTypeId: 1}),\n      (u)-[:OWNS_POST]->(a:posts {PostTypeId: 2})\nWHERE q.AcceptedAnswerId = a.Id\nRETURN DISTINCT u.Id"
+  },
+  {
+    "question": "Determine the PostTypeId which has the highest average number of unique VoteTypeIds received per post.",
+    "sql": "WITH PostVoteDiversity AS (\n  SELECT\n    p.Id AS PostId,\n    p.PostTypeId,\n    COUNT(DISTINCT v.VoteTypeId) AS UniqueVoteTypes\n  FROM posts AS p\n  JOIN votes AS v\n    ON p.Id = v.PostId\n  GROUP BY\n    p.Id,\n    p.PostTypeId\n)\nSELECT\n  pvd.PostTypeId,\n  AVG(pvd.UniqueVoteTypes) AS AverageUniqueVoteTypes\nFROM PostVoteDiversity AS pvd\nGROUP BY\n  pvd.PostTypeId\nORDER BY\n  AverageUniqueVoteTypes DESC\nLIMIT 1;",
+    "cypher": "MATCH (p:posts)<-[r_v:VOTED_ON]-(v:votes)\nWITH p, collect(DISTINCT v.VoteTypeId) AS distinctVoteTypes\nWITH p.PostTypeId AS postType, avg(size(distinctVoteTypes)) AS avgUniqueVotes\nRETURN postType, avgUniqueVotes\nORDER BY avgUniqueVotes DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find the UserId who has the longest total Text length across all postHistory entries for posts they own.",
+    "sql": "SELECT\n  u.Id,\n  SUM(LENGTH(ph.Text)) AS TotalPostHistoryTextLength\nFROM users AS u\nJOIN posts AS p\n  ON u.Id = p.OwnerUserId\nJOIN postHistory AS ph\n  ON p.Id = ph.PostId AND u.Id = ph.UserId\nGROUP BY\n  u.Id\nORDER BY\n  TotalPostHistoryTextLength DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)<-[h:HAS_HISTORY]-(ph:postHistory)\nWHERE u.Id = ph.UserId\nWITH u, sum(size(ph.Text)) AS totalTextLength\nRETURN u.Id, totalTextLength\nORDER BY totalTextLength DESC\nLIMIT 1"
+  },
+  {
+    "question": "Identify posts that have more comments than votes and were created after 2020-01-01.",
+    "sql": "WITH PostCommentCounts AS (\n  SELECT\n    PostId,\n    COUNT(Id) AS CommentCount\n  FROM comments\n  GROUP BY\n    PostId\n),\nPostVoteCounts AS (\n  SELECT\n    PostId,\n    COUNT(Id) AS VoteCount\n  FROM votes\n  GROUP BY\n    PostId\n)\nSELECT\n  p.Id\nFROM posts AS p\nLEFT JOIN PostCommentCounts AS pcc\n  ON p.Id = pcc.PostId\nLEFT JOIN PostVoteCounts AS pvc\n  ON p.Id = pvc.PostId\nWHERE\n  p.CreationDate > '2020-01-01 00:00:00' AND COALESCE(pcc.CommentCount, 0) > COALESCE(pvc.VoteCount, 0);",
+    "cypher": "MATCH (p:posts)\nWHERE p.CreationDate > '2020-01-01 00:00:00'\nOPTIONAL MATCH (p)-[:HAS_COMMENT]->(c:comments)\nWITH p, count(c) AS numComments\nOPTIONAL MATCH (p)<-[:VOTED_ON]-(v:votes)\nWITH p, numComments, count(v) AS numVotes\nWHERE numComments > numVotes\nRETURN p.Id"
+  },
+  {
+    "question": "Find the PostId that has the highest ratio of unique users who commented on it versus unique users who voted on it.",
+    "sql": "WITH PostCommentUsers AS (\n  SELECT\n    PostId,\n    COUNT(DISTINCT UserId) AS CommentingUsers\n  FROM comments\n  GROUP BY\n    PostId\n),\nPostVoteUsers AS (\n  SELECT\n    PostId,\n    COUNT(DISTINCT UserId) AS VotingUsers\n  FROM votes\n  GROUP BY\n    PostId\n)\nSELECT\n  pcu.PostId,\n  CAST(pcu.CommentingUsers AS REAL) / pvc.VotingUsers AS UserRatio\nFROM PostCommentUsers AS pcu\nJOIN PostVoteUsers AS pvc\n  ON pcu.PostId = pvc.PostId\nWHERE\n  pvc.VotingUsers > 0\nORDER BY\n  UserRatio DESC\nLIMIT 1;",
+    "cypher": "MATCH (p:posts)\nOPTIONAL MATCH (p)-[:HAS_COMMENT]->(c:comments)-[:MADE_BY]->(cu:users)\nWITH p, collect(DISTINCT cu) AS commentingUsers\nOPTIONAL MATCH (p)<-[:VOTED_ON]-(v:votes)-[:CAST_BY]->(vu:users)\nWITH p, commentingUsers, collect(DISTINCT vu) AS votingUsers\nWHERE size(votingUsers) > 0\nWITH p.Id AS postId, toFloat(size(commentingUsers)) / size(votingUsers) AS userRatio\nRETURN postId, userRatio\nORDER BY userRatio DESC\nLIMIT 1"
+  },
+  {
+    "question": "Identify users who have received at least 5 badges and have also created at least 10 posts with more than 100 characters in their body.",
+    "sql": "SELECT\n  u.Id\nFROM users AS u\nJOIN (SELECT\n  UserId,\n  COUNT(Id) AS BadgeCount\nFROM badges\nGROUP BY\n  UserId\nHAVING\n  COUNT(Id) >= 5) AS UserBadges\n  ON u.Id = UserBadges.UserId\nJOIN (SELECT\n  OwnerUserId,\n  COUNT(Id) AS PostCount\nFROM posts\nWHERE\n  LENGTH(Body) > 100\nGROUP BY\n  OwnerUserId\nHAVING\n  COUNT(Id) >= 10) AS UserPosts\n  ON u.Id = UserPosts.OwnerUserId\nRETURN\n  u.Id;",
+    "cypher": "MATCH (u:users)-[:HAS_BADGE]->(b:badges)\nWITH u, count(b) AS badgeCount\nWHERE badgeCount >= 5\nMATCH (u)-[:OWNS_POST]->(p:posts)\nWHERE size(p.Body) > 100\nWITH u, badgeCount, count(p) AS postCount\nWHERE postCount >= 10\nRETURN u.Id"
+  },
+  {
+    "question": "Find the average CreationDate difference in minutes between a post and its first comment for posts created in 2023.",
+    "sql": "WITH FirstComment AS (\n  SELECT\n    c.PostId,\n    MIN(c.CreationDate) AS FirstCommentDate\n  FROM comments AS c\n  GROUP BY\n    c.PostId\n)\nSELECT\n  AVG(JULIANDAY(fc.FirstCommentDate) - JULIANDAY(p.CreationDate)) * 24 * 60 AS AvgTimeDiffMinutes\nFROM posts AS p\nJOIN FirstComment AS fc\n  ON p.Id = fc.PostId\nWHERE\n  STRFTIME('%Y', p.CreationDate) = '2023' AND fc.FirstCommentDate > p.CreationDate;",
+    "cypher": "MATCH (p:posts)-[:HAS_COMMENT]->(c:comments)\nWHERE p.CreationDate STARTS WITH '2023' AND c.CreationDate > p.CreationDate\nWITH p, min(c.CreationDate) AS firstCommentDate\nWITH p, firstCommentDate, duration.between(datetime(p.CreationDate), datetime(firstCommentDate)).minutes AS diffInMinutes\nRETURN avg(diffInMinutes) AS avgTimeDiffMinutes"
+  },
+  {
+    "question": "Which PostTypeId has the highest count of posts that have been linked to (as RelatedPostId) by at least 3 other posts?",
+    "sql": "WITH LinkedPostCounts AS (\n  SELECT\n    RelatedPostId AS PostId,\n    COUNT(Id) AS LinkCount\n  FROM postLinks\n  GROUP BY\n    RelatedPostId\n  HAVING\n    COUNT(Id) >= 3\n)\nSELECT\n  p.PostTypeId,\n  COUNT(p.Id) AS PostsCount\nFROM posts AS p\nJOIN LinkedPostCounts AS lpc\n  ON p.Id = lpc.PostId\nGROUP BY\n  p.PostTypeId\nORDER BY\n  PostsCount DESC\nLIMIT 1;",
+    "cypher": "MATCH (linkedPost:posts)<-[r:IS_RELATED_TO]-(pl:postLinks)\nWITH linkedPost, count(pl) AS linkCount\nWHERE linkCount >= 3\nRETURN linkedPost.PostTypeId AS postType, count(linkedPost) AS numberOfPosts\nORDER BY numberOfPosts DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find users who have edited at least 5 of their own posts but have never commented on any post.",
+    "sql": "SELECT DISTINCT\n  u.Id\nFROM users AS u\nJOIN postHistory AS ph\n  ON u.Id = ph.UserId\nJOIN posts AS p\n  ON ph.PostId = p.Id AND u.Id = p.OwnerUserId\nWHERE\n  u.Id NOT IN (SELECT\n    UserId\n  FROM comments)\nGROUP BY\n  u.Id\nHAVING\n  COUNT(DISTINCT ph.PostId) >= 5;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)<-[:HAS_HISTORY]-(ph:postHistory)\nWHERE u.Id = ph.UserId\nWITH u, count(DISTINCT p) AS editedPostsCount\nWHERE editedPostsCount >= 5\nOPTIONAL MATCH (u)-[:MADE_BY]->(c:comments)\nWITH u, editedPostsCount, count(c) AS commentCount\nWHERE commentCount = 0\nRETURN u.Id"
+  },
+  {
+    "question": "Determine the highest number of distinct users who have contributed to the post history of a single post.",
+    "sql": "SELECT\n  ph.PostId,\n  COUNT(DISTINCT ph.UserId) AS DistinctUsersInHistory\nFROM postHistory AS ph\nGROUP BY\n  ph.PostId\nORDER BY\n  DistinctUsersInHistory DESC\nLIMIT 1;",
+    "cypher": "MATCH (p:posts)<-[:HAS_HISTORY]-(ph:postHistory)-[:MADE_BY]->(u:users)\nWITH p, collect(DISTINCT u) AS distinctUsers\nRETURN p.Id AS postId, size(distinctUsers) AS numberOfDistinctUsers\nORDER BY numberOfDistinctUsers DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find the PostId of questions (`PostTypeId = 1`) that have an AcceptedAnswerId but no votes on the question itself.",
+    "sql": "SELECT\n  q.Id\nFROM posts AS q\nLEFT JOIN votes AS v\n  ON q.Id = v.PostId\nWHERE\n  q.PostTypeId = 1 AND q.AcceptedAnswerId IS NOT NULL\nGROUP BY\n  q.Id\nHAVING\n  COUNT(v.Id) = 0;",
+    "cypher": "MATCH (q:posts {PostTypeId: 1})\nWHERE q.AcceptedAnswerId IS NOT NULL\nOPTIONAL MATCH (q)<-[v:VOTED_ON]-()\nWITH q, count(v) AS voteCount\nWHERE voteCount = 0\nRETURN q.Id"
+  },
+  {
+    "question": "Identify users who have received at least one badge in each 'Class' of badges available.",
+    "sql": "SELECT\n  b.UserId\nFROM badges AS b\nGROUP BY\n  b.UserId\nHAVING\n  COUNT(DISTINCT b.Class) = (SELECT\n    COUNT(DISTINCT Class)\n  FROM badges);",
+    "cypher": "MATCH (u:users)-[:HAS_BADGE]->(b:badges)\nWITH u, collect(DISTINCT b.Class) AS distinctBadgeClasses\nWITH u, distinctBadgeClasses, size(distinctBadgeClasses) AS numDistinctClasses\nMATCH (allB:badges)\nWITH u, numDistinctClasses, count(DISTINCT allB.Class) AS totalDistinctClasses\nWHERE numDistinctClasses = totalDistinctClasses\nRETURN u.Id"
+  },
+  {
+    "question": "Find the PostId of posts that have been edited by more than 2 distinct users (excluding the original owner) and have more than 10 comments.",
+    "sql": "SELECT\n  p.Id\nFROM posts AS p\nJOIN postHistory AS ph\n  ON p.Id = ph.PostId\nJOIN comments AS c\n  ON p.Id = c.PostId\nWHERE\n  ph.UserId <> p.OwnerUserId\nGROUP BY\n  p.Id,\n  p.OwnerUserId\nHAVING\n  COUNT(DISTINCT ph.UserId) > 2 AND COUNT(c.Id) > 10;",
+    "cypher": "MATCH (p:posts)<-[:HAS_HISTORY]-(ph:postHistory)-[:MADE_BY]->(editor:users)\nWHERE editor.Id <> p.OwnerUserId\nWITH p, collect(DISTINCT editor) AS distinctEditors\nWHERE size(distinctEditors) > 2\nMATCH (p)-[:HAS_COMMENT]->(c:comments)\nWITH p, distinctEditors, count(c) AS commentCount\nWHERE commentCount > 10\nRETURN p.Id"
+  },
+  {
+    "question": "Which PostHistoryTypeId is most commonly associated with posts that have an 'AcceptedAnswerId' and also have comments by multiple users?",
+    "sql": "SELECT\n  ph.PostHistoryTypeId,\n  COUNT(DISTINCT ph.PostId) AS PostCount\nFROM postHistory AS ph\nJOIN posts AS p\n  ON ph.PostId = p.Id\nJOIN comments AS c\n  ON p.Id = c.PostId\nWHERE\n  p.AcceptedAnswerId IS NOT NULL\nGROUP BY\n  ph.PostId,\n  ph.PostHistoryTypeId\nHAVING\n  COUNT(DISTINCT c.UserId) > 1\nORDER BY\n  PostCount DESC\nLIMIT 1;",
+    "cypher": "MATCH (p:posts)-[:HAS_HISTORY]->(ph:postHistory)\nWHERE p.AcceptedAnswerId IS NOT NULL\nMATCH (p)-[:HAS_COMMENT]->(c:comments)-[:MADE_BY]->(u:users)\nWITH p, ph.PostHistoryTypeId AS historyType, collect(DISTINCT u) AS commentingUsers\nWHERE size(commentingUsers) > 1\nRETURN historyType, count(DISTINCT p) AS postCount\nORDER BY postCount DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find the UserId who has voted on posts from the most different owners, and has never owned a post themselves.",
+    "sql": "WITH UserVotedOwners AS (\n  SELECT\n    v.UserId,\n    COUNT(DISTINCT p.OwnerUserId) AS DifferentOwnersVotedOn\n  FROM votes AS v\n  JOIN posts AS p\n    ON v.PostId = p.Id\n  GROUP BY\n    v.UserId\n)\nSELECT\n  uvo.UserId\nFROM UserVotedOwners AS uvo\nLEFT JOIN posts AS own_posts\n  ON uvo.UserId = own_posts.OwnerUserId\nWHERE\n  own_posts.Id IS NULL\nORDER BY\n  uvo.DifferentOwnersVotedOn DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)-[:CAST_BY]->(v:votes)-[:VOTED_ON]->(p:posts)-[:OWNS_POST]->(owner:users)\nWITH u, collect(DISTINCT owner) AS distinctOwners\nWHERE NOT EXISTS((u)-[:OWNS_POST]->(:posts))\nRETURN u.Id, size(distinctOwners) AS numberOfDifferentOwners\nORDER BY numberOfDifferentOwners DESC\nLIMIT 1"
+  },
+  {
+    "question": "Calculate the ratio of 'upvotes' (VoteTypeId = 2) to 'downvotes' (VoteTypeId = 3) for posts created by users whose AccountId is less than 10000.",
+    "sql": "WITH UserFilteredVotes AS (\n  SELECT\n    v.VoteTypeId,\n    COUNT(v.Id) AS VoteCount\n  FROM votes AS v\n  JOIN posts AS p\n    ON v.PostId = p.Id\n  JOIN users AS u\n    ON p.OwnerUserId = u.Id\n  WHERE\n    u.AccountId < 10000\n  GROUP BY\n    v.VoteTypeId\n)\nSELECT\n  CAST(SUM(CASE WHEN VoteTypeId = 2 THEN VoteCount ELSE 0 END) AS REAL) / SUM(CASE WHEN VoteTypeId = 3 THEN VoteCount ELSE 0 END) AS UpvoteDownvoteRatio\nFROM UserFilteredVotes\nWHERE\n  SUM(CASE WHEN VoteTypeId = 3 THEN VoteCount ELSE 0 END) > 0;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)<-[:VOTED_ON]-(v:votes)\nWHERE u.AccountId < 10000\nWITH collect(v.VoteTypeId) AS voteTypes\nWITH toFloat(size(apoc.coll.filter(voteTypes, s => s = 2))) AS upvotes,\n     toFloat(size(apoc.coll.filter(voteTypes, s => s = 3))) AS downvotes\nWHERE downvotes > 0\nRETURN upvotes / downvotes AS upvoteDownvoteRatio"
+  },
+  {
+    "question": "Find the PostId that has post history entries from users who have never received a badge.",
+    "sql": "SELECT DISTINCT\n  ph.PostId\nFROM postHistory AS ph\nWHERE\n  ph.UserId NOT IN (SELECT DISTINCT\n    UserId\n  FROM badges);",
+    "cypher": "MATCH (u:users)\nWHERE NOT EXISTS((u)-[:HAS_BADGE]->(:badges))\nMATCH (ph:postHistory)-[:MADE_BY]->(u)\nRETURN DISTINCT ph.PostId"
+  },
+  {
+    "question": "Identify users who have commented on posts created by at least 10 different users, and their own oldest post (if any) was created before 2018-01-01.",
+    "sql": "WITH CommentedUsers AS (\n  SELECT\n    c.UserId AS CommenterId,\n    COUNT(DISTINCT p.OwnerUserId) AS DifferentPostOwnersCommentedOn\n  FROM comments AS c\n  JOIN posts AS p\n    ON c.PostId = p.Id\n  GROUP BY\n    c.UserId\n  HAVING\n    COUNT(DISTINCT p.OwnerUserId) >= 10\n),\nUserOldestPost AS (\n  SELECT\n    OwnerUserId,\n    MIN(CreationDate) AS OldestPostDate\n  FROM posts\n  GROUP BY\n    OwnerUserId\n)\nSELECT\n  cu.CommenterId\nFROM CommentedUsers AS cu\nLEFT JOIN UserOldestPost AS uop\n  ON cu.CommenterId = uop.OwnerUserId\nWHERE\n  uop.OldestPostDate < '2018-01-01 00:00:00' OR uop.OldestPostDate IS NULL;",
+    "cypher": "MATCH (commenter:users)-[:MADE_BY]->(c:comments)-[:HAS_COMMENT]->(p:posts)-[:OWNS_POST]->(postOwner:users)\nWITH commenter, collect(DISTINCT postOwner) AS distinctOwnersCommentedOn\nWHERE size(distinctOwnersCommentedOn) >= 10\nOPTIONAL MATCH (commenter)-[:OWNS_POST]->(op:posts)\nWITH commenter, distinctOwnersCommentedOn, min(op.CreationDate) AS oldestPostDate\nWHERE oldestPostDate IS NULL OR oldestPostDate < '2018-01-01 00:00:00'\nRETURN commenter.Id"
+  },
+  {
+    "question": "Find the `LinkTypeId` that is most commonly used to link posts whose `PostTypeId` are different.",
+    "sql": "SELECT\n  pl.LinkTypeId,\n  COUNT(pl.Id)\nFROM postLinks AS pl\nJOIN posts AS p1\n  ON pl.PostId = p1.Id\nJOIN posts AS p2\n  ON pl.RelatedPostId = p2.Id\nWHERE\n  p1.PostTypeId <> p2.PostTypeId\nGROUP BY\n  pl.LinkTypeId\nORDER BY\n  COUNT(pl.Id) DESC\nLIMIT 1;",
+    "cypher": "MATCH (pl:postLinks)-[:LINKS_TO]->(p1:posts)\nMATCH (pl)-[:LINKS_RELATED_TO]->(p2:posts)\nWHERE p1.PostTypeId <> p2.PostTypeId\nRETURN pl.LinkTypeId AS linkType, count(pl) AS linkCount\nORDER BY linkCount DESC\nLIMIT 1"
+  },
+  {
+    "question": "Determine the UserId who has received the most badges for posts where the post owner is different from the badge receiver.",
+    "sql": "SELECT\n  b.UserId,\n  COUNT(b.Id) AS BadgesCount\nFROM badges AS b\nJOIN posts AS p\n  ON b.TagBased = p.Tags -- Assuming TagBased badge implies connection to a post's tag\nWHERE\n  b.UserId <> p.OwnerUserId\nGROUP BY\n  b.UserId\nORDER BY\n  BadgesCount DESC\nLIMIT 1;",
+    "cypher": "MATCH (b:badges)-[:FOR_USER]->(u:users)\nMATCH (b)-[:TAGGED_TO]->(p:posts) WHERE b.TagBased IS NOT NULL\nAND u.Id <> p.OwnerUserId\nRETURN u.Id AS userId, count(b) AS badgesCount\nORDER BY badgesCount DESC\nLIMIT 1"
+  },
+  {
+    "question": "Calculate the average number of `postHistory` entries for posts that have at least one comment, grouped by `PostTypeId`.",
+    "sql": "WITH PostsWithComments AS (\n  SELECT DISTINCT\n    PostId\n  FROM comments\n),\nPostHistoryCounts AS (\n  SELECT\n    PostId,\n    COUNT(Id) AS HistoryCount\n  FROM postHistory\n  GROUP BY\n    PostId\n)\nSELECT\n  p.PostTypeId,\n  AVG(CAST(phc.HistoryCount AS REAL)) AS AvgHistoryCount\nFROM posts AS p\nJOIN PostsWithComments AS pwc\n  ON p.Id = pwc.PostId\nJOIN PostHistoryCounts AS phc\n  ON p.Id = phc.PostId\nGROUP BY\n  p.PostTypeId\nORDER BY\n  AvgHistoryCount DESC;",
+    "cypher": "MATCH (p:posts)-[:HAS_COMMENT]->(:comments)\nMATCH (p)-[:HAS_HISTORY]->(ph:postHistory)\nWITH p, count(ph) AS historyCount\nRETURN p.PostTypeId AS postType, avg(historyCount) AS avgHistoryCount\nORDER BY avgHistoryCount DESC"
+  },
+  {
+    "question": "Find the UserId who has edited a post belonging to another user, and that post received an accepted answer from a third user, all within the year 2022.",
+    "sql": "SELECT DISTINCT\n  ph.UserId\nFROM postHistory AS ph\nJOIN posts AS p_edited\n  ON ph.PostId = p_edited.Id\nJOIN posts AS p_answer\n  ON p_edited.AcceptedAnswerId = p_answer.Id\nWHERE\n  ph.UserId <> p_edited.OwnerUserId AND p_edited.AcceptedAnswerId IS NOT NULL AND p_answer.OwnerUserId <> ph.UserId AND p_answer.OwnerUserId <> p_edited.OwnerUserId AND STRFTIME('%Y', ph.CreationDate) = '2022' AND STRFTIME('%Y', p_edited.CreationDate) = '2022' AND STRFTIME('%Y', p_answer.CreationDate) = '2022';",
+    "cypher": "MATCH (editor:users)-[:MADE_BY]->(ph:postHistory)-[:HAS_HISTORY]->(p_edited:posts)\nWHERE editor.Id <> p_edited.OwnerUserId AND p_edited.AcceptedAnswerId IS NOT NULL\nMATCH (p_edited)-[:HAS_ACCEPTED_ANSWER]->(p_answer:posts)-[:OWNS_POST]->(answer_owner:users)\nWHERE editor.Id <> answer_owner.Id AND p_edited.OwnerUserId <> answer_owner.Id\nAND ph.CreationDate STARTS WITH '2022'\nRETURN DISTINCT editor.Id"
+  },
+  {
+    "question": "Identify users who have created a post, and all of their posts were created after their first badge was awarded.",
+    "sql": "WITH UserFirstBadge AS (\n  SELECT\n    UserId,\n    MIN(Date) AS FirstBadgeDate\n  FROM badges\n  GROUP BY\n    UserId\n),\nUserAllPostsAfterBadge AS (\n  SELECT\n    p.OwnerUserId,\n    MAX(CASE WHEN p.CreationDate < ufb.FirstBadgeDate THEN 1 ELSE 0 END) AS HasPostBeforeBadge\n  FROM posts AS p\n  JOIN UserFirstBadge AS ufb\n    ON p.OwnerUserId = ufb.UserId\n  GROUP BY\n    p.OwnerUserId\n)\nSELECT\n  uapab.OwnerUserId\nFROM UserAllPostsAfterBadge AS uapab\nWHERE\n  uapab.HasPostBeforeBadge = 0;",
+    "cypher": "MATCH (u:users)-[:HAS_BADGE]->(b:badges)\nWITH u, min(b.Date) AS firstBadgeDate\nMATCH (u)-[:OWNS_POST]->(p:posts)\nWITH u, firstBadgeDate, collect(p) AS posts, collect(CASE WHEN p.CreationDate < firstBadgeDate THEN 1 ELSE 0 END) AS postsBeforeBadge\nWHERE NOT 1 IN postsBeforeBadge\nRETURN u.Id"
+  },
+  {
+    "question": "Find the percentage of posts that are questions (`PostTypeId = 1`) that have at least one `comment` and at least one `vote`.",
+    "sql": "WITH QuestionStats AS (\n  SELECT\n    p.Id,\n    COUNT(DISTINCT c.Id) AS CommentCount,\n    COUNT(DISTINCT v.Id) AS VoteCount\n  FROM posts AS p\n  LEFT JOIN comments AS c\n    ON p.Id = c.PostId\n  LEFT JOIN votes AS v\n    ON p.Id = v.PostId\n  WHERE\n    p.PostTypeId = 1\n  GROUP BY\n    p.Id\n)\nSELECT\n  CAST(COUNT(CASE WHEN qs.CommentCount > 0 AND qs.VoteCount > 0 THEN 1 END) AS REAL) * 100 / COUNT(qs.Id) AS Percentage\nFROM QuestionStats AS qs;",
+    "cypher": "MATCH (q:posts {PostTypeId: 1})\nOPTIONAL MATCH (q)-[:HAS_COMMENT]->(c:comments)\nOPTIONAL MATCH (q)<-[:VOTED_ON]-(v:votes)\nWITH q, count(DISTINCT c) AS numComments, count(DISTINCT v) AS numVotes\nWITH count(q) AS totalQuestions, count(CASE WHEN numComments > 0 AND numVotes > 0 THEN q END) AS questionsWithCommentsAndVotes\nRETURN toFloat(questionsWithCommentsAndVotes) * 100 / totalQuestions AS percentage"
+  },
+  {
+    "question": "Which `PostHistoryTypeId` is most frequent for `postHistory` entries related to posts that were created by users who have never voted?",
+    "sql": "WITH UsersWhoNeverVoted AS (\n  SELECT\n    u.Id\n  FROM users AS u\n  LEFT JOIN votes AS v\n    ON u.Id = v.UserId\n  GROUP BY\n    u.Id\n  HAVING\n    COUNT(v.Id) = 0\n)\nSELECT\n  ph.PostHistoryTypeId,\n  COUNT(ph.Id)\nFROM postHistory AS ph\nJOIN posts AS p\n  ON ph.PostId = p.Id\nJOIN UsersWhoNeverVoted AS uwsv\n  ON p.OwnerUserId = uwsv.Id\nGROUP BY\n  ph.PostHistoryTypeId\nORDER BY\n  COUNT(ph.Id) DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)\nWHERE NOT EXISTS((u)-[:CAST_BY]->(:votes))\nMATCH (u)-[:OWNS_POST]->(p:posts)<-[:HAS_HISTORY]-(ph:postHistory)\nRETURN ph.PostHistoryTypeId AS historyType, count(ph) AS historyCount\nORDER BY historyCount DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find the user(s) who received the highest number of badges (`Class` = 1) for their activity on posts that were created on a Sunday.",
+    "sql": "SELECT\n  b.UserId,\n  COUNT(b.Id) AS GoldBadgesOnSundayPosts\nFROM badges AS b\nJOIN posts AS p\n  ON b.TagBased = p.Tags -- Assuming TagBased badge implies connection to a post's tag\nWHERE\n  b.Class = 1 AND STRFTIME('%w', p.CreationDate) = '0' -- 0 is Sunday for SQLite STRFTIME\nGROUP BY\n  b.UserId\nORDER BY\n  GoldBadgesOnSundayPosts DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)-[:HAS_BADGE]->(b:badges {Class: 1})\nMATCH (b)-[:TAGGED_TO]->(p:posts) WHERE b.TagBased IS NOT NULL\nAND datetime(p.CreationDate).dayOfWeek = 7 -- 7 for Sunday in Neo4j\nRETURN u.Id AS userId, count(b) AS goldBadgesCount\nORDER BY goldBadgesCount DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find posts that have more than 5 `postHistory` entries and all `comments` on these posts were made by users who created their `AccountId` after 2015-01-01.",
+    "sql": "WITH PostHistoryCounts AS (\n  SELECT\n    PostId,\n    COUNT(Id) AS HistoryCount\n  FROM postHistory\n  GROUP BY\n    PostId\n  HAVING\n    COUNT(Id) > 5\n)\nSELECT\n  phc.PostId\nFROM PostHistoryCounts AS phc\nJOIN comments AS c\n  ON phc.PostId = c.PostId\nJOIN users AS u\n  ON c.UserId = u.Id\nGROUP BY\n  phc.PostId\nHAVING\n  MIN(u.CreationDate) > '2015-01-01 00:00:00';",
+    "cypher": "MATCH (p:posts)-[:HAS_HISTORY]->(ph:postHistory)\nWITH p, count(ph) AS historyCount\nWHERE historyCount > 5\nMATCH (p)-[:HAS_COMMENT]->(c:comments)-[:MADE_BY]->(u:users)\nWITH p, collect(u.CreationDate) AS commentUserCreationDates\nWHERE all(dateString IN commentUserCreationDates WHERE dateString > '2015-01-01 00:00:00')\nRETURN p.Id"
+  },
+  {
+    "question": "Determine the `UserId` who has the highest total count of `votes` across posts they own and posts they have commented on, but excluding posts they have edited.",
+    "sql": "WITH UserPostsAndComments AS (\n  SELECT\n    u.Id AS UserId,\n    p.Id AS PostId\n  FROM users AS u\n  JOIN posts AS p\n    ON u.Id = p.OwnerUserId\n  UNION\n  SELECT\n    u.Id AS UserId,\n    c.PostId AS PostId\n  FROM users AS u\n  JOIN comments AS c\n    ON u.Id = c.UserId\n),\nUserEditedPosts AS (\n  SELECT DISTINCT\n    UserId,\n    PostId\n  FROM postHistory\n)\nSELECT\n  upc.UserId,\n  COUNT(v.Id) AS TotalVotes\nFROM UserPostsAndComments AS upc\nJOIN votes AS v\n  ON upc.PostId = v.PostId\nLEFT JOIN UserEditedPosts AS uep\n  ON upc.UserId = uep.UserId AND upc.PostId = uep.PostId\nWHERE\n  uep.PostId IS NULL\nGROUP BY\n  upc.UserId\nORDER BY\n  TotalVotes DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)\nOPTIONAL MATCH (u)-[:OWNS_POST]->(p1:posts)\nOPTIONAL MATCH (u)-[:MADE_BY]->(c:comments)-[:HAS_COMMENT]->(p2:posts)\nWITH u, collect(DISTINCT p1) + collect(DISTINCT p2) AS relevantPosts\nUNWIND relevantPosts AS p\nOPTIONAL MATCH (u)-[:MADE_BY]->(ph:postHistory)-[:HAS_HISTORY]->(p)\nWHERE ph.UserId = u.Id\nWITH u, p, count(ph) AS editCount\nWHERE editCount = 0\nMATCH (p)<-[:VOTED_ON]-(v:votes)\nRETURN u.Id AS userId, count(v) AS totalVotes\nORDER BY totalVotes DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find the `PostId` of questions (`PostTypeId = 1`) that have at least 2 distinct `PostHistoryTypeIds` and have no `comments`.",
+    "sql": "WITH PostHistoryTypes AS (\n  SELECT\n    PostId,\n    COUNT(DISTINCT PostHistoryTypeId) AS DistinctHistoryTypes\n  FROM postHistory\n  GROUP BY\n    PostId\n  HAVING\n    COUNT(DISTINCT PostHistoryTypeId) >= 2\n)\nSELECT\n  p.Id\nFROM posts AS p\nJOIN PostHistoryTypes AS pht\n  ON p.Id = pht.PostId\nLEFT JOIN comments AS c\n  ON p.Id = c.PostId\nWHERE\n  p.PostTypeId = 1\nGROUP BY\n  p.Id\nHAVING\n  COUNT(c.Id) = 0;",
+    "cypher": "MATCH (q:posts {PostTypeId: 1})-[:HAS_HISTORY]->(ph:postHistory)\nWITH q, collect(DISTINCT ph.PostHistoryTypeId) AS historyTypes\nWHERE size(historyTypes) >= 2\nOPTIONAL MATCH (q)-[:HAS_COMMENT]->(c:comments)\nWITH q, historyTypes, count(c) AS commentCount\nWHERE commentCount = 0\nRETURN q.Id"
+  },
+  {
+    "question": "Identify users who have created posts (`PostTypeId = 1`) that were linked to (`RelatedPostId`) by other posts created by the same user, and also received at least one badge after 2020-01-01.",
+    "sql": "SELECT DISTINCT\n  u.Id\nFROM users AS u\nJOIN posts AS p1\n  ON u.Id = p1.OwnerUserId\nJOIN postLinks AS pl\n  ON p1.Id = pl.RelatedPostId\nJOIN posts AS p2\n  ON pl.PostId = p2.Id AND u.Id = p2.OwnerUserId\nJOIN badges AS b\n  ON u.Id = b.UserId\nWHERE\n  p1.PostTypeId = 1 AND b.Date > '2020-01-01 00:00:00';",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p1:posts {PostTypeId: 1})\nMATCH (u)-[:OWNS_POST]->(p2:posts)-[:LINKS_TO]->(pl:postLinks)-[:LINKS_RELATED_TO]->(p1)\nMATCH (u)-[:HAS_BADGE]->(b:badges)\nWHERE b.Date > '2020-01-01 00:00:00'\nRETURN DISTINCT u.Id"
+  },
+  {
+    "question": "Find the average length of `Tags` for posts that have received more 'Upvotes' (`VoteTypeId` = 2) than 'Downvotes' (`VoteTypeId` = 3) and were created after 2021-01-01.",
+    "sql": "WITH PostVoteCounts AS (\n  SELECT\n    PostId,\n    SUM(CASE WHEN VoteTypeId = 2 THEN 1 ELSE 0 END) AS Upvotes,\n    SUM(CASE WHEN VoteTypeId = 3 THEN 1 ELSE 0 END) AS Downvotes\n  FROM votes\n  GROUP BY\n    PostId\n)\nSELECT\n  AVG(LENGTH(p.Tags)) AS AverageTagsLength\nFROM posts AS p\nJOIN PostVoteCounts AS pvc\n  ON p.Id = pvc.PostId\nWHERE\n  pvc.Upvotes > pvc.Downvotes AND p.CreationDate > '2021-01-01 00:00:00';",
+    "cypher": "MATCH (p:posts)<-[r:VOTED_ON]-(v:votes)\nWHERE p.CreationDate > '2021-01-01 00:00:00'\nWITH p, collect(v.VoteTypeId) AS voteTypes\nWITH p, size(apoc.coll.filter(voteTypes, s => s = 2)) AS upvotes, size(apoc.coll.filter(voteTypes, s => s = 3)) AS downvotes\nWHERE upvotes > downvotes\nRETURN avg(size(p.Tags)) AS averageTagsLength"
+  },
+  {
+    "question": "Identify users who have an `AboutMe` text length greater than the average `AboutMe` text length of all users and have created at least one post that has no votes.",
+    "sql": "WITH AvgAboutMeLength AS (\n  SELECT\n    AVG(LENGTH(AboutMe)) AS AvgLength\n  FROM users\n)\nSELECT DISTINCT\n  u.Id\nFROM users AS u\nJOIN AvgAboutMeLength AS aaml\n  ON LENGTH(u.AboutMe) > aaml.AvgLength\nJOIN posts AS p\n  ON u.Id = p.OwnerUserId\nLEFT JOIN votes AS v\n  ON p.Id = v.PostId\nGROUP BY\n  u.Id,\n  p.Id\nHAVING\n  COUNT(v.Id) = 0;",
+    "cypher": "MATCH (u:users)\nWITH avg(size(u.AboutMe)) AS globalAvgAboutMeLength\nMATCH (u:users)\nWHERE size(u.AboutMe) > globalAvgAboutMeLength\nMATCH (u)-[:OWNS_POST]->(p:posts)\nOPTIONAL MATCH (p)<-[:VOTED_ON]-(v:votes)\nWITH u, p, count(v) AS voteCount\nWHERE voteCount = 0\nRETURN DISTINCT u.Id"
+  },
+  {
+    "question": "Find the `PostTypeId` that has the highest number of posts with `Body` text containing the word 'database' (case-insensitive) and an `AcceptedAnswerId`.",
+    "sql": "SELECT\n  p.PostTypeId,\n  COUNT(p.Id)\nFROM posts AS p\nWHERE\n  p.Body LIKE '%database%' COLLATE NOCASE AND p.AcceptedAnswerId IS NOT NULL\nGROUP BY\n  p.PostTypeId\nORDER BY\n  COUNT(p.Id) DESC\nLIMIT 1;",
+    "cypher": "MATCH (p:posts)\nWHERE p.AcceptedAnswerId IS NOT NULL AND toLower(p.Body) CONTAINS 'database'\nRETURN p.PostTypeId AS postType, count(p) AS postCount\nORDER BY postCount DESC\nLIMIT 1"
+  },
+  {
+    "question": "Identify users who have received more than 5 `badges` of `Class` 2, and have more than 1000 `AccountId`.",
+    "sql": "SELECT\n  u.Id\nFROM users AS u\nJOIN (SELECT\n  UserId,\n  COUNT(Id) AS Class2Badges\nFROM badges\nWHERE\n  Class = 2\nGROUP BY\n  UserId\nHAVING\n  COUNT(Id) > 5) AS UserClass2Badges\n  ON u.Id = UserClass2Badges.UserId\nWHERE\n  u.AccountId > 1000;",
+    "cypher": "MATCH (u:users)-[:HAS_BADGE]->(b:badges {Class: 2})\nWHERE u.AccountId > 1000\nWITH u, count(b) AS class2BadgesCount\nWHERE class2BadgesCount > 5\nRETURN u.Id"
+  },
+  {
+    "question": "Find posts that have `ParentId` pointing to another post created by the same `OwnerUserId` and the parent post has at least 3 `comments`.",
+    "sql": "SELECT\n  child.Id\nFROM posts AS child\nJOIN posts AS parent\n  ON child.ParentId = parent.Id\nWHERE\n  child.OwnerUserId = parent.OwnerUserId\nGROUP BY\n  child.Id,\n  parent.Id\nHAVING\n  (SELECT\n    COUNT(Id)\n  FROM comments\n  WHERE\n    PostId = parent.Id) >= 3;",
+    "cypher": "MATCH (child:posts)-[:HAS_PARENT]->(parent:posts)\nWHERE child.OwnerUserId = parent.OwnerUserId\nMATCH (parent)-[:HAS_COMMENT]->(c:comments)\nWITH child, count(c) AS commentCount\nWHERE commentCount >= 3\nRETURN child.Id"
+  },
+  {
+    "question": "Calculate the average number of `postHistory` entries per day for posts created in `2024`.",
+    "sql": "WITH DailyHistoryCounts AS (\n  SELECT\n    STRFTIME('%Y-%m-%d', ph.CreationDate) AS HistoryDate,\n    COUNT(ph.Id) AS DailyCount\n  FROM postHistory AS ph\n  JOIN posts AS p\n    ON ph.PostId = p.Id\n  WHERE\n    STRFTIME('%Y', p.CreationDate) = '2024'\n  GROUP BY\n    HistoryDate\n)\nSELECT\n  AVG(DailyCount)\nFROM DailyHistoryCounts;",
+    "cypher": "MATCH (p:posts)<-[:HAS_HISTORY]-(ph:postHistory)\nWHERE p.CreationDate STARTS WITH '2024'\nWITH date(ph.CreationDate) AS historyDate, count(ph) AS dailyHistoryCount\nRETURN avg(dailyHistoryCount) AS avgHistoryPerDay"
+  },
+  {
+    "question": "Find the `UserId` who has the highest number of posts where their `PostTypeId` is different from the `PostTypeId` of the `RelatedPostId` through `postLinks`.",
+    "sql": "SELECT\n  p1.OwnerUserId,\n  COUNT(pl.Id) AS MismatchedPostTypeLinks\nFROM postLinks AS pl\nJOIN posts AS p1\n  ON pl.PostId = p1.Id\nJOIN posts AS p2\n  ON pl.RelatedPostId = p2.Id\nWHERE\n  p1.PostTypeId <> p2.PostTypeId\nGROUP BY\n  p1.OwnerUserId\nORDER BY\n  MismatchedPostTypeLinks DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p1:posts)-[:LINKS_TO]->(pl:postLinks)-[:LINKS_RELATED_TO]->(p2:posts)\nWHERE p1.PostTypeId <> p2.PostTypeId\nRETURN u.Id AS userId, count(DISTINCT pl) AS mismatchedLinks\nORDER BY mismatchedLinks DESC\nLIMIT 1"
+  },
+  {
+    "question": "Identify users who have `CreationDate` earlier than the `CreationDate` of their first post, and who have commented on at least 10 different posts.",
+    "sql": "WITH UserFirstPost AS (\n  SELECT\n    OwnerUserId AS UserId,\n    MIN(CreationDate) AS FirstPostDate\n  FROM posts\n  GROUP BY\n    OwnerUserId\n),\nUserCommentCounts AS (\n  SELECT\n    UserId,\n    COUNT(DISTINCT PostId) AS DistinctCommentedPosts\n  FROM comments\n  GROUP BY\n    UserId\n  HAVING\n    COUNT(DISTINCT PostId) >= 10\n)\nSELECT\n  u.Id\nFROM users AS u\nJOIN UserFirstPost AS ufp\n  ON u.Id = ufp.UserId\nJOIN UserCommentCounts AS ucc\n  ON u.Id = ucc.UserId\nWHERE\n  u.CreationDate < ufp.FirstPostDate;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)\nWITH u, min(p.CreationDate) AS firstPostDate\nWHERE u.CreationDate < firstPostDate\nMATCH (u)-[:MADE_BY]->(c:comments)\nWITH u, count(DISTINCT c.PostId) AS distinctCommentedPosts\nWHERE distinctCommentedPosts >= 10\nRETURN u.Id"
+  },
+  {
+    "question": "Find the `PostId` of questions (`PostTypeId = 1`) that have an `AcceptedAnswerId` and where the answer's `OwnerUserId` is different from the question's `OwnerUserId`.",
+    "sql": "SELECT\n  q.Id\nFROM posts AS q\nJOIN posts AS a\n  ON q.AcceptedAnswerId = a.Id\nWHERE\n  q.PostTypeId = 1 AND q.AcceptedAnswerId IS NOT NULL AND q.OwnerUserId <> a.OwnerUserId;",
+    "cypher": "MATCH (q:posts {PostTypeId: 1})-[:HAS_ACCEPTED_ANSWER]->(a:posts)\nWHERE q.OwnerUserId <> a.OwnerUserId\nRETURN q.Id"
+  },
+  {
+    "question": "Determine the `LinkTypeId` that has the most links where both the `PostId` and `RelatedPostId` refer to posts with `PostTypeId` = 2.",
+    "sql": "SELECT\n  pl.LinkTypeId,\n  COUNT(pl.Id)\nFROM postLinks AS pl\nJOIN posts AS p1\n  ON pl.PostId = p1.Id\nJOIN posts AS p2\n  ON pl.RelatedPostId = p2.Id\nWHERE\n  p1.PostTypeId = 2 AND p2.PostTypeId = 2\nGROUP BY\n  pl.LinkTypeId\nORDER BY\n  COUNT(pl.Id) DESC\nLIMIT 1;",
+    "cypher": "MATCH (pl:postLinks)-[:LINKS_TO]->(p1:posts {PostTypeId: 2})\nMATCH (pl)-[:LINKS_RELATED_TO]->(p2:posts {PostTypeId: 2})\nRETURN pl.LinkTypeId AS linkType, count(pl) AS linkCount\nORDER BY linkCount DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find the `UserId` who has the highest count of `postHistory` entries but has never created any `posts` themselves.",
+    "sql": "SELECT\n  ph.UserId,\n  COUNT(ph.Id) AS HistoryCount\nFROM postHistory AS ph\nLEFT JOIN posts AS p\n  ON ph.UserId = p.OwnerUserId\nGROUP BY\n  ph.UserId\nHAVING\n  COUNT(p.Id) = 0\nORDER BY\n  HistoryCount DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)<-[:MADE_BY]-(ph:postHistory)\nWHERE NOT EXISTS((u)-[:OWNS_POST]->(:posts))\nRETURN u.Id AS userId, count(ph) AS historyCount\nORDER BY historyCount DESC\nLIMIT 1"
+  },
+  {
+    "question": "Calculate the cumulative sum of `votes` (`Id`) created per year, but only consider votes on posts that have `PostTypeId` = 1.",
+    "sql": "WITH AnnualVotes AS (\n  SELECT\n    STRFTIME('%Y', v.CreationDate) AS Year,\n    COUNT(v.Id) AS VotesCount\n  FROM votes AS v\n  JOIN posts AS p\n    ON v.PostId = p.Id\n  WHERE\n    p.PostTypeId = 1\n  GROUP BY\n    Year\n)\nSELECT\n  Year,\n  SUM(VotesCount) OVER (ORDER BY Year) AS CumulativeVotes\nFROM AnnualVotes\nORDER BY\n  Year;",
+    "cypher": "MATCH (v:votes)-[:VOTED_ON]->(p:posts {PostTypeId: 1})\nWITH toString(datetime(v.CreationDate).year) AS year, count(v) AS votesCount\nORDER BY year\nWITH collect({year: year, votesCount: votesCount}) AS annualData\nUNWIND range(0, size(annualData) - 1) AS i\nWITH annualData[i].year AS year, reduce(sum = 0, item IN annualData[0..i+1] | sum + item.votesCount) AS cumulativeVotes\nRETURN year, cumulativeVotes"
+  },
+  {
+    "question": "Find the `PostId` of posts that have `Tags` containing both 'react' and 'javascript' (case-insensitive) and were edited by at least 2 distinct users.",
+    "sql": "SELECT\n  p.Id\nFROM posts AS p\nJOIN postHistory AS ph\n  ON p.Id = ph.PostId\nWHERE\n  p.Tags LIKE '%<react>%' COLLATE NOCASE AND p.Tags LIKE '%<javascript>%' COLLATE NOCASE\nGROUP BY\n  p.Id\nHAVING\n  COUNT(DISTINCT ph.UserId) >= 2;",
+    "cypher": "MATCH (p:posts)-[:HAS_HISTORY]->(ph:postHistory)\nWHERE toLower(p.Tags) CONTAINS '<react>' AND toLower(p.Tags) CONTAINS '<javascript>'\nWITH p, collect(DISTINCT ph.UserId) AS distinctEditors\nWHERE size(distinctEditors) >= 2\nRETURN p.Id"
+  },
+  {
+    "question": "Identify users whose `AboutMe` contains 'developer' (case-insensitive) and have created at least one `post` with `PostTypeId` = 2 and at least one `comment` on a different post.",
+    "sql": "SELECT DISTINCT\n  u.Id\nFROM users AS u\nJOIN posts AS p\n  ON u.Id = p.OwnerUserId\nJOIN comments AS c\n  ON u.Id = c.UserId\nWHERE\n  u.AboutMe LIKE '%developer%' COLLATE NOCASE AND p.PostTypeId = 2 AND p.Id <> c.PostId;",
+    "cypher": "MATCH (u:users)\nWHERE toLower(u.AboutMe) CONTAINS 'developer'\nMATCH (u)-[:OWNS_POST]->(p:posts {PostTypeId: 2})\nMATCH (u)-[:MADE_BY]->(c:comments)\nWHERE p.Id <> c.PostId\nRETURN DISTINCT u.Id"
+  },
+  {
+    "question": "Find the `UserId` who has the highest total number of characters in their `Text` fields across all `comments` and `postHistory` entries.",
+    "sql": "WITH UserTextLengths AS (\n  SELECT\n    UserId,\n    SUM(LENGTH(Text)) AS TotalTextLength\n  FROM comments\n  GROUP BY\n    UserId\n  UNION ALL\n  SELECT\n    UserId,\n    SUM(LENGTH(Text)) AS TotalTextLength\n  FROM postHistory\n  GROUP BY\n    UserId\n)\nSELECT\n  utl.UserId,\n  SUM(utl.TotalTextLength) AS GrandTotalTextLength\nFROM UserTextLengths AS utl\nGROUP BY\n  utl.UserId\nORDER BY\n  GrandTotalTextLength DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)-[:MADE_BY]->(c:comments)\nWITH u, sum(size(c.Text)) AS commentTextLength\nOPTIONAL MATCH (u)-[:MADE_BY]->(ph:postHistory)\nWITH u, commentTextLength, sum(size(ph.Text)) AS historyTextLength\nRETURN u.Id AS userId, (coalesce(commentTextLength, 0) + coalesce(historyTextLength, 0)) AS grandTotalTextLength\nORDER BY grandTotalTextLength DESC\nLIMIT 1"
+  },
+  {
+    "question": "Which `PostTypeId` has the highest average `votes` received per post for posts created between '2019-01-01' and '2020-01-01'?",
+    "sql": "WITH PostVoteCounts AS (\n  SELECT\n    PostId,\n    COUNT(Id) AS VoteCount\n  FROM votes\n  GROUP BY\n    PostId\n)\nSELECT\n  p.PostTypeId,\n  AVG(CAST(COALESCE(pvc.VoteCount, 0) AS REAL)) AS AverageVotesPerPost\nFROM posts AS p\nLEFT JOIN PostVoteCounts AS pvc\n  ON p.Id = pvc.PostId\nWHERE\n  p.CreationDate >= '2019-01-01 00:00:00' AND p.CreationDate < '2020-01-01 00:00:00'\nGROUP BY\n  p.PostTypeId\nORDER BY\n  AverageVotesPerPost DESC\nLIMIT 1;",
+    "cypher": "MATCH (p:posts)\nWHERE p.CreationDate >= '2019-01-01 00:00:00' AND p.CreationDate < '2020-01-01 00:00:00'\nOPTIONAL MATCH (p)<-[:VOTED_ON]-(v:votes)\nWITH p, count(v) AS voteCount\nRETURN p.PostTypeId AS postType, avg(voteCount) AS averageVotesPerPost\nORDER BY averageVotesPerPost DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find users who have created at least one post, and all their created posts have more than 500 characters in `Body` and have at least 5 `postLinks` entries (`PostId` or `RelatedPostId`).",
+    "sql": "SELECT\n  u.Id\nFROM users AS u\nJOIN posts AS p\n  ON u.Id = p.OwnerUserId\nLEFT JOIN postLinks AS pl1\n  ON p.Id = pl1.PostId\nLEFT JOIN postLinks AS pl2\n  ON p.Id = pl2.RelatedPostId\nWHERE\n  LENGTH(p.Body) > 500\nGROUP BY\n  u.Id,\n  p.Id\nHAVING\n  COUNT(DISTINCT COALESCE(pl1.Id, pl2.Id)) >= 5\nINTERSECT\nSELECT\n  u.Id\nFROM users AS u\nJOIN posts AS p\n  ON u.Id = p.OwnerUserId\nGROUP BY\n  u.Id\nHAVING\n  COUNT(p.Id) = (\n    SELECT\n      COUNT(p_inner.Id)\n    FROM posts AS p_inner\n    LEFT JOIN postLinks AS pl1_inner\n      ON p_inner.Id = pl1_inner.PostId\n    LEFT JOIN postLinks AS pl2_inner\n      ON p_inner.Id = pl2_inner.RelatedPostId\n    WHERE\n      p_inner.OwnerUserId = u.Id AND LENGTH(p_inner.Body) > 500 AND COUNT(DISTINCT COALESCE(pl1_inner.Id, pl2_inner.Id)) >= 5\n    GROUP BY\n      p_inner.Id\n  );",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)\nWHERE size(p.Body) > 500\nOPTIONAL MATCH (p)<-[r:LINKS_TO|LINKS_RELATED_TO]-(pl:postLinks)\nWITH u, p, count(DISTINCT pl) AS linkCount\nWHERE linkCount >= 5\nWITH u, collect(p) AS posts, collect(linkCount) AS linkCounts\nWHERE size(posts) > 0 AND all(lc IN linkCounts WHERE lc >= 5)\nRETURN u.Id"
+  },
+  {
+    "question": "Find the `UserId` who has the most `postHistory` entries for posts they *do not* own, but have previously voted on those posts.",
+    "sql": "SELECT\n  ph.UserId,\n  COUNT(ph.Id)\nFROM postHistory AS ph\nJOIN posts AS p\n  ON ph.PostId = p.Id\nJOIN votes AS v\n  ON ph.UserId = v.UserId AND ph.PostId = v.PostId\nWHERE\n  ph.UserId <> p.OwnerUserId\nGROUP BY\n  ph.UserId\nORDER BY\n  COUNT(ph.Id) DESC\nLIMIT 1;",
+    "cypher": "MATCH (editor:users)-[:MADE_BY]->(ph:postHistory)-[:HAS_HISTORY]->(p:posts)\nWHERE editor.Id <> p.OwnerUserId\nMATCH (editor)-[:CAST_BY]->(v:votes)-[:VOTED_ON]->(p)\nRETURN editor.Id AS userId, count(ph) AS historyCount\nORDER BY historyCount DESC\nLIMIT 1"
+  },
+  {
+    "question": "Calculate the difference between the average `PostTypeId` 1 posts' `CreationDate` and average `PostTypeId` 2 posts' `CreationDate` in days, for posts created in the first half of 2023.",
+    "sql": "WITH AvgCreationDateType1 AS (\n  SELECT\n    AVG(JULIANDAY(CreationDate)) AS AvgDate\n  FROM posts\n  WHERE\n    PostTypeId = 1 AND CreationDate >= '2023-01-01 00:00:00' AND CreationDate < '2023-07-01 00:00:00'\n),\nAvgCreationDateType2 AS (\n  SELECT\n    AVG(JULIANDAY(CreationDate)) AS AvgDate\n  FROM posts\n  WHERE\n    PostTypeId = 2 AND CreationDate >= '2023-01-01 00:00:00' AND CreationDate < '2023-07-01 00:00:00'\n)\nSELECT\n  (act1.AvgDate - act2.AvgDate) AS DateDifferenceInDays\nFROM AvgCreationDateType1 AS act1,\n  AvgCreationDateType2 AS act2;",
+    "cypher": "MATCH (p1:posts {PostTypeId: 1})\nWHERE p1.CreationDate >= '2023-01-01 00:00:00' AND p1.CreationDate < '2023-07-01 00:00:00'\nWITH avg(apoc.date.parse(p1.CreationDate, 'yyyy-MM-dd HH:mm:ss')) AS avgMsType1\nMATCH (p2:posts {PostTypeId: 2})\nWHERE p2.CreationDate >= '2023-01-01 00:00:00' AND p2.CreationDate < '2023-07-01 00:00:00'\nWITH avgMsType1, avg(apoc.date.parse(p2.CreationDate, 'yyyy-MM-dd HH:mm:ss')) AS avgMsType2\nRETURN (toFloat(avgMsType1) - toFloat(avgMsType2)) / (1000 * 60 * 60 * 24) AS dateDifferenceInDays"
+  },
+  {
+    "question": "Identify users who have created posts that are related to at least 5 other posts through `postLinks` (either `PostId` or `RelatedPostId`), and who have `AccountId` between 100 and 1000.",
+    "sql": "SELECT\n  u.Id\nFROM users AS u\nJOIN posts AS p\n  ON u.Id = p.OwnerUserId\nLEFT JOIN postLinks AS pl1\n  ON p.Id = pl1.PostId\nLEFT JOIN postLinks AS pl2\n  ON p.Id = pl2.RelatedPostId\nWHERE\n  u.AccountId BETWEEN 100 AND 1000\nGROUP BY\n  u.Id,\n  p.Id\nHAVING\n  COUNT(DISTINCT COALESCE(pl1.Id, pl2.Id)) >= 5\nGROUP BY\n  u.Id\nHAVING\n  COUNT(p.Id) > 0;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)\nWHERE u.AccountId >= 100 AND u.AccountId <= 1000\nOPTIONAL MATCH (p)<-[r:LINKS_TO|LINKS_RELATED_TO]-(pl:postLinks)\nWITH u, p, count(DISTINCT pl) AS linkCount\nWHERE linkCount >= 5\nRETURN DISTINCT u.Id"
+  },
+  {
+    "question": "Find the `UserId` who has cast the most 'upvotes' (`VoteTypeId` = 2) on posts where the `OwnerUserId` of the post is the same as the voter, and the post was created in `2023`.",
+    "sql": "SELECT\n  v.UserId,\n  COUNT(v.Id)\nFROM votes AS v\nJOIN posts AS p\n  ON v.PostId = p.Id\nWHERE\n  v.VoteTypeId = 2 AND v.UserId = p.OwnerUserId AND STRFTIME('%Y', p.CreationDate) = '2023'\nGROUP BY\n  v.UserId\nORDER BY\n  COUNT(v.Id) DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)-[:CAST_BY]->(v:votes {VoteTypeId: 2})-[:VOTED_ON]->(p:posts)\nWHERE u.Id = p.OwnerUserId AND p.CreationDate STARTS WITH '2023'\nRETURN u.Id AS userId, count(v) AS upvotes\nORDER BY upvotes DESC\nLIMIT 1"
+  },
+  {
+    "question": "Identify the `PostId` of questions (`PostTypeId = 1`) that have an `AcceptedAnswerId` and whose `Title` contains 'API' (case-insensitive), and have received more than 10 votes.",
+    "sql": "SELECT\n  p.Id\nFROM posts AS p\nJOIN votes AS v\n  ON p.Id = v.PostId\nWHERE\n  p.PostTypeId = 1 AND p.AcceptedAnswerId IS NOT NULL AND p.Title LIKE '%API%' COLLATE NOCASE\nGROUP BY\n  p.Id\nHAVING\n  COUNT(v.Id) > 10;",
+    "cypher": "MATCH (q:posts {PostTypeId: 1})\nWHERE q.AcceptedAnswerId IS NOT NULL AND toLower(q.Title) CONTAINS 'api'\nMATCH (q)<-[:VOTED_ON]-(v:votes)\nWITH q, count(v) AS voteCount\nWHERE voteCount > 10\nRETURN q.Id"
+  },
+  {
+    "question": "Find the average number of `comments` per post for posts that have at least one `postHistory` entry from a user other than the post owner.",
+    "sql": "WITH PostsWithExternalHistory AS (\n  SELECT DISTINCT\n    p.Id\n  FROM posts AS p\n  JOIN postHistory AS ph\n    ON p.Id = ph.PostId\n  WHERE\n    p.OwnerUserId <> ph.UserId\n)\nSELECT\n  AVG(CAST(COALESCE(comment_counts.CommentCount, 0) AS REAL)) AS AverageComments\nFROM PostsWithExternalHistory AS pweh\nLEFT JOIN (\n  SELECT\n    PostId,\n    COUNT(Id) AS CommentCount\n  FROM comments\n  GROUP BY\n    PostId\n) AS comment_counts\n  ON pweh.Id = comment_counts.PostId;",
+    "cypher": "MATCH (p:posts)<-[:HAS_HISTORY]-(ph:postHistory)\nWHERE p.OwnerUserId <> ph.UserId\nWITH DISTINCT p AS postWithExternalHistory\nOPTIONAL MATCH (postWithExternalHistory)-[:HAS_COMMENT]->(c:comments)\nWITH postWithExternalHistory, count(c) AS commentCount\nRETURN avg(commentCount) AS averageComments"
+  },
+  {
+    "question": "Identify `UserId` who have given at least 5 'upvotes' (`VoteTypeId` = 2) and also received at least 5 badges of `Class` 1.",
+    "sql": "SELECT\n  u.Id\nFROM users AS u\nJOIN (SELECT\n  UserId,\n  COUNT(Id) AS UpvoteCount\nFROM votes\nWHERE\n  VoteTypeId = 2\nGROUP BY\n  UserId\nHAVING\n  COUNT(Id) >= 5) AS UserUpvotes\n  ON u.Id = UserUpvotes.UserId\nJOIN (SELECT\n  UserId,\n  COUNT(Id) AS Class1BadgeCount\nFROM badges\nWHERE\n  Class = 1\nGROUP BY\n  UserId\nHAVING\n  COUNT(Id) >= 5) AS UserBadges\n  ON u.Id = UserBadges.UserId\nRETURN\n  u.Id;",
+    "cypher": "MATCH (u:users)-[:CAST_BY]->(v:votes {VoteTypeId: 2})\nWITH u, count(v) AS upvoteCount\nWHERE upvoteCount >= 5\nMATCH (u)-[:HAS_BADGE]->(b:badges {Class: 1})\nWITH u, upvoteCount, count(b) AS badgeCount\nWHERE badgeCount >= 5\nRETURN u.Id"
+  },
+  {
+    "question": "Find the `PostId` of posts that are linked to by more than 3 distinct `LinkTypeIds`.",
+    "sql": "SELECT\n  pl.RelatedPostId\nFROM postLinks AS pl\nGROUP BY\n  pl.RelatedPostId\nHAVING\n  COUNT(DISTINCT pl.LinkTypeId) > 3;",
+    "cypher": "MATCH (p:posts)<-[:LINKS_RELATED_TO]-(pl:postLinks)\nWITH p, collect(DISTINCT pl.LinkTypeId) AS distinctLinkTypes\nWHERE size(distinctLinkTypes) > 3\nRETURN p.Id"
+  },
+  {
+    "question": "Calculate the average `AccountId` for users who have created at least one post, and all their posts have `CreationDate` after 2020-06-01.",
+    "sql": "SELECT\n  AVG(u.AccountId)\nFROM users AS u\nWHERE\n  u.Id IN (SELECT\n    OwnerUserId\n  FROM posts\n  GROUP BY\n    OwnerUserId\n  HAVING\n    MIN(CreationDate) > '2020-06-01 00:00:00');",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)\nWITH u, collect(p) AS userPosts, min(p.CreationDate) AS firstPostDate\nWHERE size(userPosts) > 0 AND firstPostDate > '2020-06-01 00:00:00'\nRETURN avg(u.AccountId) AS averageAccountId"
+  },
+  {
+    "question": "Which `PostTypeId` has the highest ratio of posts with an `AcceptedAnswerId` to total posts, considering only posts created by users with more than 100 `AccountId`?",
+    "sql": "WITH PostCounts AS (\n  SELECT\n    p.PostTypeId,\n    COUNT(p.Id) AS TotalPosts,\n    COUNT(CASE WHEN p.AcceptedAnswerId IS NOT NULL THEN 1 ELSE NULL END) AS PostsWithAcceptedAnswer\n  FROM posts AS p\n  JOIN users AS u\n    ON p.OwnerUserId = u.Id\n  WHERE\n    u.AccountId > 100\n  GROUP BY\n    p.PostTypeId\n)\nSELECT\n  pc.PostTypeId,\n  CAST(pc.PostsWithAcceptedAnswer AS REAL) / pc.TotalPosts AS Ratio\nFROM PostCounts AS pc\nWHERE\n  pc.TotalPosts > 0\nORDER BY\n  Ratio DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)\nWHERE u.AccountId > 100\nWITH p.PostTypeId AS postType, collect(p) AS posts, count(CASE WHEN p.AcceptedAnswerId IS NOT NULL THEN p END) AS acceptedAnswerPostsCount\nWHERE size(posts) > 0\nRETURN postType, toFloat(acceptedAnswerPostsCount) / size(posts) AS ratio\nORDER BY ratio DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find users who have at least one badge created in 2023, and have also voted on at least 10 posts with `VoteTypeId` = 5 (`ModeratorNomination`).",
+    "sql": "SELECT\n  u.Id\nFROM users AS u\nJOIN (SELECT DISTINCT\n  UserId\nFROM badges\nWHERE\n  STRFTIME('%Y', Date) = '2023') AS UserBadges2023\n  ON u.Id = UserBadges2023.UserId\nJOIN (SELECT\n  UserId,\n  COUNT(Id) AS VoteCount\nFROM votes\nWHERE\n  VoteTypeId = 5\nGROUP BY\n  UserId\nHAVING\n  COUNT(Id) >= 10) AS UserVotes\n  ON u.Id = UserVotes.UserId\nRETURN\n  u.Id;",
+    "cypher": "MATCH (u:users)-[:HAS_BADGE]->(b:badges)\nWHERE b.Date STARTS WITH '2023'\nWITH u\nMATCH (u)-[:CAST_BY]->(v:votes {VoteTypeId: 5})\nWITH u, count(v) AS voteCount\nWHERE voteCount >= 10\nRETURN u.Id"
+  },
+  {
+    "question": "Calculate the percentage of `PostTypeId` 1 posts that have at least one `comment` and at least one `postHistory` entry.",
+    "sql": "SELECT\n  CAST(COUNT(CASE WHEN HasComment > 0 AND HasHistory > 0 THEN 1 END) AS REAL) * 100 / COUNT(Id)\nFROM (\n  SELECT\n    p.Id,\n    COUNT(DISTINCT c.Id) AS HasComment,\n    COUNT(DISTINCT ph.Id) AS HasHistory\n  FROM posts AS p\n  LEFT JOIN comments AS c\n    ON p.Id = c.PostId\n  LEFT JOIN postHistory AS ph\n    ON p.Id = ph.PostId\n  WHERE\n    p.PostTypeId = 1\n  GROUP BY\n    p.Id\n) AS SubQuery;",
+    "cypher": "MATCH (p:posts {PostTypeId: 1})\nOPTIONAL MATCH (p)-[:HAS_COMMENT]->(c:comments)\nOPTIONAL MATCH (p)-[:HAS_HISTORY]->(ph:postHistory)\nWITH p, count(DISTINCT c) AS numComments, count(DISTINCT ph) AS numHistory\nWITH count(p) AS totalPosts, count(CASE WHEN numComments > 0 AND numHistory > 0 THEN p END) AS postsWithCommentAndHistory\nRETURN toFloat(postsWithCommentAndHistory) * 100 / totalPosts AS percentage"
+  },
+  {
+    "question": "Which `UserId` has created the highest number of posts where the `Body` length is less than the average `Body` length of all posts, and `Title` contains 'issue' (case-insensitive)?",
+    "sql": "WITH AvgPostBodyLength AS (\n  SELECT\n    AVG(LENGTH(Body)) AS AvgLength\n  FROM posts\n)\nSELECT\n  p.OwnerUserId,\n  COUNT(p.Id)\nFROM posts AS p\nJOIN AvgPostBodyLength AS apbl\n  ON LENGTH(p.Body) < apbl.AvgLength\nWHERE\n  p.Title LIKE '%issue%' COLLATE NOCASE\nGROUP BY\n  p.OwnerUserId\nORDER BY\n  COUNT(p.Id) DESC\nLIMIT 1;",
+    "cypher": "MATCH (p:posts)\nWITH avg(size(p.Body)) AS globalAvgBodyLength\nMATCH (p:posts)\nWHERE size(p.Body) < globalAvgBodyLength AND toLower(p.Title) CONTAINS 'issue'\nRETURN p.OwnerUserId AS userId, count(p) AS postCount\nORDER BY postCount DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find the `UserId` who has cast votes on posts owned by at least 3 distinct users, and has also had at least one post linked to (as `PostId` or `RelatedPostId`) by other posts.",
+    "sql": "SELECT DISTINCT\n  v.UserId\nFROM votes AS v\nJOIN posts AS p\n  ON v.PostId = p.Id\nWHERE\n  v.UserId IN (\n    SELECT\n      pl.PostId\n    FROM postLinks AS pl\n    UNION\n    SELECT\n      pl.RelatedPostId\n    FROM postLinks AS pl\n  )\nGROUP BY\n  v.UserId\nHAVING\n  COUNT(DISTINCT p.OwnerUserId) >= 3;",
+    "cypher": "MATCH (u:users)-[:CAST_BY]->(v:votes)-[:VOTED_ON]->(p_voted:posts)\nWITH u, collect(DISTINCT p_voted.OwnerUserId) AS votedOwners\nWHERE size(votedOwners) >= 3\nMATCH (u)-[:OWNS_POST]->(p_owned:posts)\nOPTIONAL MATCH (p_owned)<-[r:LINKS_TO|LINKS_RELATED_TO]-(pl:postLinks)\nWHERE pl IS NOT NULL\nRETURN DISTINCT u.Id"
+  },
+  {
+    "question": "Calculate the ratio of posts with an `AcceptedAnswerId` to posts without one, for posts created by users whose `AccountId` is greater than 5000 and less than 15000.",
+    "sql": "WITH UserFilteredPosts AS (\n  SELECT\n    p.Id,\n    p.AcceptedAnswerId\n  FROM posts AS p\n  JOIN users AS u\n    ON p.OwnerUserId = u.Id\n  WHERE\n    u.AccountId > 5000 AND u.AccountId < 15000\n)\nSELECT\n  CAST(COUNT(CASE WHEN AcceptedAnswerId IS NOT NULL THEN 1 END) AS REAL) / COUNT(CASE WHEN AcceptedAnswerId IS NULL THEN 1 END) AS AcceptedToUnacceptedRatio\nFROM UserFilteredPosts\nWHERE\n  COUNT(CASE WHEN AcceptedAnswerId IS NULL THEN 1 END) > 0;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)\nWHERE u.AccountId > 5000 AND u.AccountId < 15000\nWITH count(CASE WHEN p.AcceptedAnswerId IS NOT NULL THEN 1 ELSE null END) AS acceptedCount,\n     count(CASE WHEN p.AcceptedAnswerId IS NULL THEN 1 ELSE null END) AS unacceptedCount\nWHERE unacceptedCount > 0\nRETURN toFloat(acceptedCount) / unacceptedCount AS acceptedToUnacceptedRatio"
+  },
+  {
+    "question": "Find the `UserId` who has the highest number of unique `PostHistoryTypeIds` across all posts they own, created after 2017-01-01.",
+    "sql": "SELECT\n  p.OwnerUserId,\n  COUNT(DISTINCT ph.PostHistoryTypeId)\nFROM posts AS p\nJOIN postHistory AS ph\n  ON p.Id = ph.PostId\nWHERE\n  p.CreationDate > '2017-01-01 00:00:00'\nGROUP BY\n  p.OwnerUserId\nORDER BY\n  COUNT(DISTINCT ph.PostHistoryTypeId) DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)\nWHERE p.CreationDate > '2017-01-01 00:00:00'\nMATCH (p)-[:HAS_HISTORY]->(ph:postHistory)\nWITH u, collect(DISTINCT ph.PostHistoryTypeId) AS distinctHistoryTypes\nRETURN u.Id AS userId, size(distinctHistoryTypes) AS uniqueHistoryTypeCount\nORDER BY uniqueHistoryTypeCount DESC\nLIMIT 1"
+  },
+  {
+    "question": "Identify posts with more than 10 comments, where at least half of these comments were made by users who have received a badge of `Class` 3.",
+    "sql": "SELECT\n  p.Id\nFROM posts AS p\nJOIN comments AS c\n  ON p.Id = c.PostId\nLEFT JOIN badges AS b\n  ON c.UserId = b.UserId AND b.Class = 3\nGROUP BY\n  p.Id\nHAVING\n  COUNT(c.Id) > 10 AND COUNT(b.Id) * 2 >= COUNT(c.Id);",
+    "cypher": "MATCH (p:posts)-[:HAS_COMMENT]->(c:comments)-[:MADE_BY]->(u:users)\nWITH p, collect(c) AS allComments, collect(u) AS commentingUsers\nWHERE size(allComments) > 10\nMATCH (u_badge:users)-[:HAS_BADGE]->(b:badges {Class: 3})\nWHERE u_badge IN commentingUsers\nWITH p, allComments, count(u_badge) AS usersWithClass3BadgeCount\nWHERE toFloat(usersWithClass3BadgeCount) * 2 >= size(allComments)\nRETURN p.Id"
+  },
+  {
+    "question": "Find the average `PostTypeId` for posts that have received at least one `upvote` (`VoteTypeId` = 2) and no `downvotes` (`VoteTypeId` = 3).",
+    "sql": "WITH PostVoteSummary AS (\n  SELECT\n    PostId,\n    SUM(CASE WHEN VoteTypeId = 2 THEN 1 ELSE 0 END) AS UpvoteCount,\n    SUM(CASE WHEN VoteTypeId = 3 THEN 1 ELSE 0 END) AS DownvoteCount\n  FROM votes\n  GROUP BY\n    PostId\n)\nSELECT\n  AVG(p.PostTypeId)\nFROM posts AS p\nJOIN PostVoteSummary AS pvs\n  ON p.Id = pvs.PostId\nWHERE\n  pvs.UpvoteCount >= 1 AND pvs.DownvoteCount = 0;",
+    "cypher": "MATCH (p:posts)<-[r:VOTED_ON]-(v:votes)\nWITH p, collect(v.VoteTypeId) AS voteTypes\nWITH p, size(apoc.coll.filter(voteTypes, s => s = 2)) AS upvotes, size(apoc.coll.filter(voteTypes, s => s = 3)) AS downvotes\nWHERE upvotes >= 1 AND downvotes = 0\nRETURN avg(p.PostTypeId)"
+  },
+  {
+    "question": "Identify users who have `AboutMe` text length less than the global average `AboutMe` text length and have created at least one post that has been edited by at least two distinct users other than themselves.",
+    "sql": "WITH AvgAboutMeLength AS (\n  SELECT\n    AVG(LENGTH(AboutMe)) AS AvgLength\n  FROM users\n)\nSELECT DISTINCT\n  u.Id\nFROM users AS u\nJOIN AvgAboutMeLength AS aaml\n  ON LENGTH(u.AboutMe) < aaml.AvgLength\nJOIN posts AS p\n  ON u.Id = p.OwnerUserId\nJOIN postHistory AS ph\n  ON p.Id = ph.PostId\nWHERE\n  ph.UserId <> u.Id\nGROUP BY\n  u.Id,\n  p.Id\nHAVING\n  COUNT(DISTINCT ph.UserId) >= 2;",
+    "cypher": "MATCH (u:users)\nWITH avg(size(u.AboutMe)) AS globalAvgAboutMeLength\nMATCH (u:users)\nWHERE size(u.AboutMe) < globalAvgAboutMeLength\nMATCH (u)-[:OWNS_POST]->(p:posts)<-[:HAS_HISTORY]-(ph:postHistory)-[:MADE_BY]->(editor:users)\nWHERE editor.Id <> u.Id\nWITH u, p, collect(DISTINCT editor) AS distinctEditors\nWHERE size(distinctEditors) >= 2\nRETURN DISTINCT u.Id"
+  },
+  {
+    "question": "Find the `PostId` of questions (`PostTypeId = 1`) that have a `ParentId` and their `CreationDate` is earlier than their `ParentId`'s `CreationDate`.",
+    "sql": "SELECT\n  child.Id\nFROM posts AS child\nJOIN posts AS parent\n  ON child.ParentId = parent.Id\nWHERE\n  child.PostTypeId = 1 AND child.ParentId IS NOT NULL AND child.CreationDate < parent.CreationDate;",
+    "cypher": "MATCH (child:posts {PostTypeId: 1})-[:HAS_PARENT]->(parent:posts)\nWHERE child.CreationDate < parent.CreationDate\nRETURN child.Id"
+  },
+  {
+    "question": "Which `UserId` has created posts that collectively sum up to the highest `Body` length, and also have an `AccountId` over 10000?",
+    "sql": "SELECT\n  u.Id,\n  SUM(LENGTH(p.Body)) AS TotalBodyLength\nFROM users AS u\nJOIN posts AS p\n  ON u.Id = p.OwnerUserId\nWHERE\n  u.AccountId > 10000\nGROUP BY\n  u.Id\nORDER BY\n  TotalBodyLength DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)\nWHERE u.AccountId > 10000\nRETURN u.Id AS userId, sum(size(p.Body)) AS totalBodyLength\nORDER BY totalBodyLength DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find the percentage of `badges` that are `TagBased` for users who have created at least one post and at least one comment.",
+    "sql": "WITH ActiveUsers AS (\n  SELECT DISTINCT\n    u.Id\n  FROM users AS u\n  JOIN posts AS p\n    ON u.Id = p.OwnerUserId\n  JOIN comments AS c\n    ON u.Id = c.UserId\n),\nUserBadges AS (\n  SELECT\n    b.UserId,\n    b.TagBased\n  FROM badges AS b\n  JOIN ActiveUsers AS au\n    ON b.UserId = au.Id\n)\nSELECT\n  CAST(COUNT(CASE WHEN TagBased = 1 THEN 1 END) AS REAL) * 100 / COUNT(UserId) AS PercentageTagBased\nFROM UserBadges\nWHERE\n  COUNT(UserId) > 0;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(:posts)\nMATCH (u)-[:MADE_BY]->(:comments)\nMATCH (u)-[:HAS_BADGE]->(b:badges)\nWITH collect(b) AS allBadges\nWITH size(allBadges) AS totalBadges, size(apoc.coll.filter(allBadges, b_item => b_item.TagBased IS NOT NULL)) AS tagBasedBadges\nWHERE totalBadges > 0\nRETURN toFloat(tagBasedBadges) * 100 / totalBadges AS percentageTagBased"
+  },
+  {
+    "question": "Identify `PostId` where the `Text` in `postHistory` entries for that post collectively contains 'bug' (case-insensitive) more than 5 times, and the post has been voted on by at least 2 distinct `VoteTypeIds`.",
+    "sql": "SELECT\n  p.Id\nFROM posts AS p\nJOIN postHistory AS ph\n  ON p.Id = ph.PostId\nJOIN votes AS v\n  ON p.Id = v.PostId\nWHERE\n  LOWER(ph.Text) LIKE '%bug%'\nGROUP BY\n  p.Id\nHAVING\n  COUNT(CASE WHEN LOWER(ph.Text) LIKE '%bug%' THEN 1 ELSE 0 END) > 5 AND COUNT(DISTINCT v.VoteTypeId) >= 2;",
+    "cypher": "MATCH (p:posts)<-[:HAS_HISTORY]-(ph:postHistory)\nWITH p, collect(ph.Text) AS historyTexts\nWITH p, size(apoc.coll.filter(historyTexts, t => toLower(t) CONTAINS 'bug')) AS bugMentions\nWHERE bugMentions > 5\nMATCH (p)<-[:VOTED_ON]-(v:votes)\nWITH p, bugMentions, collect(DISTINCT v.VoteTypeId) AS distinctVoteTypes\nWHERE size(distinctVoteTypes) >= 2\nRETURN p.Id"
+  },
+  {
+    "question": "Find the `PostId` of posts that are linked to by more than 2 `postLinks` and have at least one `comment` created after the latest `vote` on that post.",
+    "sql": "WITH PostMaxVoteDate AS (\n  SELECT\n    PostId,\n    MAX(CreationDate) AS MaxVoteDate\n  FROM votes\n  GROUP BY\n    PostId\n),\nPostLinkCounts AS (\n  SELECT\n    PostId,\n    COUNT(Id) AS LinkCount\n  FROM postLinks\n  GROUP BY\n    PostId\n  HAVING\n    COUNT(Id) > 2\n  UNION\n  SELECT\n    RelatedPostId AS PostId,\n    COUNT(Id) AS LinkCount\n  FROM postLinks\n  GROUP BY\n    RelatedPostId\n  HAVING\n    COUNT(Id) > 2\n)\nSELECT DISTINCT\n  p.Id\nFROM posts AS p\nJOIN PostLinkCounts AS plc\n  ON p.Id = plc.PostId\nJOIN comments AS c\n  ON p.Id = c.PostId\nJOIN PostMaxVoteDate AS pmvd\n  ON p.Id = pmvd.PostId\nWHERE\n  c.CreationDate > pmvd.MaxVoteDate;",
+    "cypher": "MATCH (p:posts)<-[r:LINKS_TO|LINKS_RELATED_TO]-(pl:postLinks)\nWITH p, count(pl) AS linkCount\nWHERE linkCount > 2\nMATCH (p)<-[:VOTED_ON]-(v:votes)\nWITH p, linkCount, max(datetime(v.CreationDate)) AS latestVoteDate\nMATCH (p)-[:HAS_COMMENT]->(c:comments)\nWHERE datetime(c.CreationDate) > latestVoteDate\nRETURN DISTINCT p.Id"
+  },
+  {
+    "question": "Determine the `UserId` who has the highest total count of `badges` of `Class` 1 or `Class` 2, and has an `AboutMe` that contains 'engineer' (case-insensitive).",
+    "sql": "SELECT\n  u.Id,\n  COUNT(b.Id) AS GoldAndSilverBadges\nFROM users AS u\nJOIN badges AS b\n  ON u.Id = b.UserId\nWHERE\n  (b.Class = 1 OR b.Class = 2) AND u.AboutMe LIKE '%engineer%' COLLATE NOCASE\nGROUP BY\n  u.Id\nORDER BY\n  GoldAndSilverBadges DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)-[:HAS_BADGE]->(b:badges)\nWHERE (b.Class = 1 OR b.Class = 2) AND toLower(u.AboutMe) CONTAINS 'engineer'\nRETURN u.Id AS userId, count(b) AS goldAndSilverBadges\nORDER BY goldAndSilverBadges DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find the `PostId` of posts where the `OwnerUserId` has an `AccountId` that is a prime number and the post has at least one comment, but no votes.",
+    "sql": "WITH PrimeAccounts AS (\n  SELECT\n    Id\n  FROM users\n  WHERE\n    AccountId > 1 AND AccountId NOT IN (SELECT\n      n.AccountId * m.AccountId\n    FROM users AS n,\n      users AS m\n    WHERE\n      n.AccountId * m.AccountId = u.AccountId AND n.AccountId > 1 AND m.AccountId > 1) -- Simplified prime check for demonstration\n)\nSELECT\n  p.Id\nFROM posts AS p\nJOIN PrimeAccounts AS pa\n  ON p.OwnerUserId = pa.Id\nJOIN comments AS c\n  ON p.Id = c.PostId\nLEFT JOIN votes AS v\n  ON p.Id = v.PostId\nGROUP BY\n  p.Id\nHAVING\n  COUNT(c.Id) >= 1 AND COUNT(v.Id) = 0;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)-[:HAS_COMMENT]->(c:comments)\nWHERE apoc.math.isPrime(u.AccountId)\nOPTIONAL MATCH (p)<-[:VOTED_ON]-(v:votes)\nWITH p, count(v) AS voteCount\nWHERE voteCount = 0\nRETURN p.Id"
+  },
+  {
+    "question": "Calculate the cumulative number of `comments` created by each `UserId` over time, ordered by `CreationDate`.",
+    "sql": "SELECT\n  UserId,\n  CreationDate,\n  COUNT(Id) OVER (PARTITION BY UserId ORDER BY CreationDate) AS CumulativeComments\nFROM comments\nORDER BY\n  UserId,\n  CreationDate;",
+    "cypher": "MATCH (u:users)-[:MADE_BY]->(c:comments)\nWITH u, c ORDER BY u.Id, c.CreationDate\nWITH u, collect(c) AS commentsPerUser\nUNWIND range(0, size(commentsPerUser) - 1) AS i\nWITH u, commentsPerUser[i] AS currentComment, i\nRETURN u.Id AS userId, currentComment.CreationDate AS commentCreationDate, (i + 1) AS cumulativeComments\nORDER BY userId, commentCreationDate"
+  },
+  {
+    "question": "Find the `UserId` who has the highest number of posts that received an `AcceptedAnswerId` from a different `OwnerUserId`, and have at least 3 unique `tags`.",
+    "sql": "SELECT\n  q.OwnerUserId,\n  COUNT(DISTINCT q.Id) AS PostsWithDifferentAcceptedAnswerUser\nFROM posts AS q\nJOIN posts AS a\n  ON q.AcceptedAnswerId = a.Id\nWHERE\n  q.AcceptedAnswerId IS NOT NULL AND q.OwnerUserId <> a.OwnerUserId AND LENGTH(q.Tags) - LENGTH(REPLACE(q.Tags, '<', '')) >= 3\nGROUP BY\n  q.OwnerUserId\nORDER BY\n  PostsWithDifferentAcceptedAnswerUser DESC\nLIMIT 1;",
+    "cypher": "MATCH (q:posts)-[:HAS_ACCEPTED_ANSWER]->(a:posts)\nWHERE q.OwnerUserId <> a.OwnerUserId AND q.Tags IS NOT NULL\nWITH q, split(q.Tags, '><') AS tags\nWHERE size(tags) >= 3\nRETURN q.OwnerUserId AS userId, count(q) AS postsCount\nORDER BY postsCount DESC\nLIMIT 1"
+  },
+  {
+    "question": "Identify posts where the `Body` contains 'error' (case-insensitive) and the `CreationDate` is after 2021-01-01, and it has more `postLinks` (as `PostId`) than `votes`.",
+    "sql": "WITH PostLinkCounts AS (\n  SELECT\n    PostId,\n    COUNT(Id) AS LinkCount\n  FROM postLinks\n  GROUP BY\n    PostId\n),\nPostVoteCounts AS (\n  SELECT\n    PostId,\n    COUNT(Id) AS VoteCount\n  FROM votes\n  GROUP BY\n    PostId\n)\nSELECT\n  p.Id\nFROM posts AS p\nLEFT JOIN PostLinkCounts AS plc\n  ON p.Id = plc.PostId\nLEFT JOIN PostVoteCounts AS pvc\n  ON p.Id = pvc.PostId\nWHERE\n  LOWER(p.Body) LIKE '%error%' AND p.CreationDate > '2021-01-01 00:00:00' AND COALESCE(plc.LinkCount, 0) > COALESCE(pvc.VoteCount, 0);",
+    "cypher": "MATCH (p:posts)\nWHERE toLower(p.Body) CONTAINS 'error' AND p.CreationDate > '2021-01-01 00:00:00'\nOPTIONAL MATCH (p)<-[:LINKS_TO]-(pl:postLinks)\nWITH p, count(pl) AS numLinks\nOPTIONAL MATCH (p)<-[:VOTED_ON]-(v:votes)\nWITH p, numLinks, count(v) AS numVotes\nWHERE numLinks > numVotes\nRETURN p.Id"
+  },
+  {
+    "question": "Find the `PostId` of posts that have been modified (via `postHistory`) by the `OwnerUserId` at least 3 times, and also have at least one comment from a different user.",
+    "sql": "SELECT\n  p.Id\nFROM posts AS p\nJOIN postHistory AS ph\n  ON p.Id = ph.PostId\nJOIN comments AS c\n  ON p.Id = c.PostId\nWHERE\n  p.OwnerUserId = ph.UserId AND p.OwnerUserId <> c.UserId\nGROUP BY\n  p.Id,\n  p.OwnerUserId\nHAVING\n  COUNT(ph.Id) >= 3 AND COUNT(DISTINCT c.UserId) >= 1;",
+    "cypher": "MATCH (p:posts)<-[:HAS_HISTORY]-(ph:postHistory)-[:MADE_BY]->(u_owner:users)\nWHERE p.OwnerUserId = u_owner.Id\nWITH p, count(ph) AS ownerEditCount\nWHERE ownerEditCount >= 3\nMATCH (p)-[:HAS_COMMENT]->(c:comments)-[:MADE_BY]->(u_commenter:users)\nWHERE p.OwnerUserId <> u_commenter.Id\nWITH p, ownerEditCount, collect(DISTINCT u_commenter) AS distinctCommenters\nWHERE size(distinctCommenters) >= 1\nRETURN p.Id"
+  },
+  {
+    "question": "Determine the `UserId` who has the highest total number of 'answer' posts (`PostTypeId` = 2) for questions (`PostTypeId` = 1) that were created by a different user.",
+    "sql": "SELECT\n  a.OwnerUserId,\n  COUNT(a.Id)\nFROM posts AS a\nJOIN posts AS q\n  ON a.ParentId = q.Id\nWHERE\n  a.PostTypeId = 2 AND q.PostTypeId = 1 AND a.OwnerUserId <> q.OwnerUserId\nGROUP BY\n  a.OwnerUserId\nORDER BY\n  COUNT(a.Id) DESC\nLIMIT 1;",
+    "cypher": "MATCH (answerer:users)-[:OWNS_POST]->(a:posts {PostTypeId: 2})-[:HAS_PARENT]->(q:posts {PostTypeId: 1})\nWHERE answerer.Id <> q.OwnerUserId\nRETURN answerer.Id AS userId, count(a) AS answersToOthersQuestions\nORDER BY answersToOthersQuestions DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find the average number of distinct `PostTypeIds` of linked posts (via `postLinks.RelatedPostId`) for posts that have at least 5 comments.",
+    "sql": "WITH PostsWithManyComments AS (\n  SELECT\n    PostId,\n    COUNT(Id) AS CommentCount\n  FROM comments\n  GROUP BY\n    PostId\n  HAVING\n    COUNT(Id) >= 5\n)\nSELECT\n  AVG(CAST(COALESCE(DistinctLinkedPostTypes.Count, 0) AS REAL))\nFROM PostsWithManyComments AS pwmc\nLEFT JOIN (\n  SELECT\n    pl.PostId,\n    COUNT(DISTINCT p.PostTypeId) AS Count\n  FROM postLinks AS pl\n  JOIN posts AS p\n    ON pl.RelatedPostId = p.Id\n  GROUP BY\n    pl.PostId\n) AS DistinctLinkedPostTypes\n  ON pwmc.PostId = DistinctLinkedPostTypes.PostId;",
+    "cypher": "MATCH (p:posts)-[:HAS_COMMENT]->(c:comments)\nWITH p, count(c) AS numComments\nWHERE numComments >= 5\nOPTIONAL MATCH (p)-[:LINKS_TO]->(pl:postLinks)-[:LINKS_RELATED_TO]->(relatedPost:posts)\nWITH p, collect(DISTINCT relatedPost.PostTypeId) AS distinctLinkedPostTypes\nRETURN avg(size(distinctLinkedPostTypes)) AS averageDistinctLinkedPostTypes"
+  },
+  {
+    "question": "Identify users who have created posts that received more votes than comments, and also have an `AboutMe` text length over 200 characters.",
+    "sql": "SELECT DISTINCT\n  u.Id\nFROM users AS u\nJOIN posts AS p\n  ON u.Id = p.OwnerUserId\nLEFT JOIN comments AS c\n  ON p.Id = c.PostId\nLEFT JOIN votes AS v\n  ON p.Id = v.PostId\nWHERE\n  LENGTH(u.AboutMe) > 200\nGROUP BY\n  u.Id,\n  p.Id\nHAVING\n  COUNT(v.Id) > COUNT(c.Id);",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)\nWHERE size(u.AboutMe) > 200\nOPTIONAL MATCH (p)-[:HAS_COMMENT]->(c:comments)\nWITH u, p, count(c) AS numComments\nOPTIONAL MATCH (p)<-[:VOTED_ON]-(v:votes)\nWITH u, p, numComments, count(v) AS numVotes\nWHERE numVotes > numComments\nRETURN DISTINCT u.Id"
+  },
+  {
+    "question": "Find the `LinkTypeId` that has the highest average `LinkType` value for `postLinks` created by users who have at least one `Class` 3 badge.",
+    "sql": "SELECT\n  pl.LinkTypeId,\n  AVG(pl.LinkTypeId) AS AvgLinkTypeId\nFROM postLinks AS pl\nJOIN posts AS p\n  ON pl.PostId = p.Id\nJOIN users AS u\n  ON p.OwnerUserId = u.Id\nJOIN badges AS b\n  ON u.Id = b.UserId\nWHERE\n  b.Class = 3\nGROUP BY\n  pl.LinkTypeId\nORDER BY\n  AVG(pl.LinkTypeId) DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)-[:HAS_BADGE]->(b:badges {Class: 3})\nMATCH (u)-[:OWNS_POST]->(p:posts)<-[r:LINKS_TO|LINKS_RELATED_TO]-(pl:postLinks)\nRETURN pl.LinkTypeId AS linkType, avg(toFloat(pl.LinkTypeId)) AS avgLinkType\nORDER BY avgLinkType DESC\nLIMIT 1"
+  },
+  {
+    "question": "Calculate the difference in days between the earliest `CreationDate` of a `PostTypeId` 1 post and the latest `CreationDate` of a `PostTypeId` 2 post, considering only posts created by users with an `AccountId` less than 500.",
+    "sql": "WITH EarliestQuestionDate AS (\n  SELECT\n    MIN(p.CreationDate) AS EarliestDate\n  FROM posts AS p\n  JOIN users AS u\n    ON p.OwnerUserId = u.Id\n  WHERE\n    p.PostTypeId = 1 AND u.AccountId < 500\n),\nLatestAnswerDate AS (\n  SELECT\n    MAX(p.CreationDate) AS LatestDate\n  FROM posts AS p\n  JOIN users AS u\n    ON p.OwnerUserId = u.Id\n  WHERE\n    p.PostTypeId = 2 AND u.AccountId < 500\n)\nSELECT\n  JULIANDAY(eqd.EarliestDate) - JULIANDAY(lad.LatestDate) AS DateDifferenceInDays\nFROM EarliestQuestionDate AS eqd,\n  LatestAnswerDate AS lad;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p1:posts {PostTypeId: 1})\nWHERE u.AccountId < 500\nWITH min(datetime(p1.CreationDate)) AS earliestQuestionDate\nMATCH (u:users)-[:OWNS_POST]->(p2:posts {PostTypeId: 2})\nWHERE u.AccountId < 500\nWITH earliestQuestionDate, max(datetime(p2.CreationDate)) AS latestAnswerDate\nRETURN duration.between(latestAnswerDate, earliestQuestionDate).days AS dateDifferenceInDays"
+  },
+  {
+    "question": "Find the `UserId` who has the highest number of posts with `Tags` that include both 'css' and 'html' (case-insensitive) and that also received at least one `comment`.",
+    "sql": "SELECT\n  p.OwnerUserId,\n  COUNT(DISTINCT p.Id)\nFROM posts AS p\nJOIN comments AS c\n  ON p.Id = c.PostId\nWHERE\n  p.Tags LIKE '%<css>%' COLLATE NOCASE AND p.Tags LIKE '%<html>%' COLLATE NOCASE\nGROUP BY\n  p.OwnerUserId\nORDER BY\n  COUNT(DISTINCT p.Id) DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)-[:HAS_COMMENT]->(c:comments)\nWHERE toLower(p.Tags) CONTAINS '<css>' AND toLower(p.Tags) CONTAINS '<html>'\nRETURN u.Id AS userId, count(DISTINCT p) AS taggedPostsWithComments\nORDER BY taggedPostsWithComments DESC\nLIMIT 1"
+  },
+  {
+    "question": "Identify posts where the owner has never received any `badges`, and the post has at least one `vote` but no `comments`.",
+    "sql": "SELECT\n  p.Id\nFROM posts AS p\nJOIN votes AS v\n  ON p.Id = v.PostId\nLEFT JOIN comments AS c\n  ON p.Id = c.PostId\nLEFT JOIN badges AS b\n  ON p.OwnerUserId = b.UserId\nWHERE\n  b.Id IS NULL\nGROUP BY\n  p.Id\nHAVING\n  COUNT(v.Id) >= 1 AND COUNT(c.Id) = 0;",
+    "cypher": "MATCH (p:posts)-[:OWNS_POST]->(u:users)\nWHERE NOT EXISTS((u)-[:HAS_BADGE]->(:badges))\nMATCH (p)<-[:VOTED_ON]-(v:votes)\nOPTIONAL MATCH (p)-[:HAS_COMMENT]->(c:comments)\nWITH p, count(v) AS numVotes, count(c) AS numComments\nWHERE numVotes >= 1 AND numComments = 0\nRETURN p.Id"
+  },
+  {
+    "question": "Find the `UserId` who has the longest continuous streak of daily post creations, considering posts created in `2023`.",
+    "sql": "WITH UserDailyPosts AS (\n  SELECT\n    OwnerUserId AS UserId,\n    STRFTIME('%Y-%m-%d', CreationDate) AS PostDate\n  FROM posts\n  WHERE\n    STRFTIME('%Y', CreationDate) = '2023'\n  GROUP BY\n    OwnerUserId,\n    PostDate\n),\nRankedDailyPosts AS (\n  SELECT\n    UserId,\n    PostDate,\n    JULIANDAY(PostDate) AS JulianDay,\n    JULIANDAY(PostDate) - ROW_NUMBER() OVER (PARTITION BY UserId ORDER BY PostDate) AS DateGroup\n  FROM UserDailyPosts\n)\nSELECT\n  UserId,\n  COUNT(PostDate) AS StreakLength\nFROM RankedDailyPosts\nGROUP BY\n  UserId,\n  DateGroup\nORDER BY\n  StreakLength DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)\nWHERE p.CreationDate STARTS WITH '2023'\nWITH u, date(p.CreationDate) AS postDate\nORDER BY u.Id, postDate\nWITH u, collect(DISTINCT postDate) AS dailyPosts\nWITH u, dailyPosts, apoc.coll.sort(dailyPosts) AS sortedDailyPosts\nWITH u, [i IN range(0, size(sortedDailyPosts) - 2) |\n  CASE WHEN duration.between(sortedDailyPosts[i], sortedDailyPosts[i+1]).days = 1 THEN 1 ELSE 0 END\n] AS diffs\nWITH u, size(diffs) AS totalDays, reduce(s = [0], d IN diffs | s + [CASE WHEN d = 1 THEN s[-1] + 1 ELSE 0 END]) AS streaks\nUNWIND streaks AS streak\nWITH u, max(streak) AS maxStreak\nRETURN u.Id AS userId, (maxStreak + 1) AS longestStreak\nORDER BY longestStreak DESC\nLIMIT 1"
+  },
+  {
+    "question": "Calculate the average length of `Body` text for `PostTypeId` 2 posts that have `ParentId` pointing to a `PostTypeId` 1 post, and the parent post was created before 2020-01-01.",
+    "sql": "SELECT\n  AVG(LENGTH(a.Body))\nFROM posts AS a\nJOIN posts AS q\n  ON a.ParentId = q.Id\nWHERE\n  a.PostTypeId = 2 AND q.PostTypeId = 1 AND q.CreationDate < '2020-01-01 00:00:00';",
+    "cypher": "MATCH (a:posts {PostTypeId: 2})-[:HAS_PARENT]->(q:posts {PostTypeId: 1})\nWHERE q.CreationDate < '2020-01-01 00:00:00'\nRETURN avg(size(a.Body)) AS averageAnswerBodyLength"
+  },
+  {
+    "question": "Which `PostTypeId` has the highest count of posts that received at least one vote, and all their `postHistory` entries (`Text` field) have a length greater than 50 characters?",
+    "sql": "SELECT\n  p.PostTypeId,\n  COUNT(DISTINCT p.Id)\nFROM posts AS p\nJOIN votes AS v\n  ON p.Id = v.PostId\nJOIN postHistory AS ph\n  ON p.Id = ph.PostId\nWHERE\n  LENGTH(ph.Text) > 50\nGROUP BY\n  p.Id,\n  p.PostTypeId\nHAVING\n  COUNT(DISTINCT ph.Id) = (\n    SELECT\n      COUNT(Id)\n    FROM postHistory AS ph_inner\n    WHERE\n      ph_inner.PostId = p.Id AND LENGTH(ph_inner.Text) > 50\n  )\nORDER BY\n  COUNT(DISTINCT p.Id) DESC\nLIMIT 1;",
+    "cypher": "MATCH (p:posts)<-[:VOTED_ON]-(v:votes)\nMATCH (p)-[:HAS_HISTORY]->(ph:postHistory)\nWITH p, collect(ph) AS allHistoryEntries\nWHERE all(entry IN allHistoryEntries WHERE size(entry.Text) > 50)\nRETURN p.PostTypeId AS postType, count(DISTINCT p) AS postCount\nORDER BY postCount DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find the `UserId` who has created posts that have been linked to (`RelatedPostId`) by other posts from at least 3 distinct users, and this user has also received at least one badge after 2021-01-01.",
+    "sql": "SELECT DISTINCT\n  u.Id\nFROM users AS u\nJOIN posts AS p_target\n  ON u.Id = p_target.OwnerUserId\nJOIN postLinks AS pl\n  ON p_target.Id = pl.RelatedPostId\nJOIN posts AS p_source\n  ON pl.PostId = p_source.Id\nJOIN badges AS b\n  ON u.Id = b.UserId\nWHERE\n  b.Date > '2021-01-01 00:00:00'\nGROUP BY\n  u.Id,\n  p_target.Id\nHAVING\n  COUNT(DISTINCT p_source.OwnerUserId) >= 3;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p_target:posts)<-[:LINKS_RELATED_TO]-(pl:postLinks)<-[:LINKS_TO]-(p_source:posts)-[:OWNS_POST]->(source_owner:users)\nWITH u, p_target, collect(DISTINCT source_owner) AS linkingOwners\nWHERE size(linkingOwners) >= 3\nMATCH (u)-[:HAS_BADGE]->(b:badges)\nWHERE b.Date > '2021-01-01 00:00:00'\nRETURN DISTINCT u.Id"
+  },
+  {
+    "question": "Calculate the average number of `postHistory` entries per post for posts that have at least one `comment` and whose `CreationDate` is between 2020-01-01 and 2022-12-31.",
+    "sql": "WITH PostsWithCommentsAndDateRange AS (\n  SELECT DISTINCT\n    p.Id\n  FROM posts AS p\n  JOIN comments AS c\n    ON p.Id = c.PostId\n  WHERE\n    p.CreationDate >= '2020-01-01 00:00:00' AND p.CreationDate <= '2022-12-31 23:59:59'\n)\nSELECT\n  AVG(CAST(COALESCE(phc.HistoryCount, 0) AS REAL))\nFROM PostsWithCommentsAndDateRange AS pwcdr\nLEFT JOIN (\n  SELECT\n    PostId,\n    COUNT(Id) AS HistoryCount\n  FROM postHistory\n  GROUP BY\n    PostId\n) AS phc\n  ON pwcdr.Id = phc.PostId;",
+    "cypher": "MATCH (p:posts)-[:HAS_COMMENT]->(:comments)\nWHERE p.CreationDate >= '2020-01-01 00:00:00' AND p.CreationDate <= '2022-12-31 23:59:59'\nMATCH (p)-[:HAS_HISTORY]->(ph:postHistory)\nWITH p, count(ph) AS historyCount\nRETURN avg(historyCount) AS averageHistoryCount"
+  },
+  {
+    "question": "Find users who have created an 'answer' post (`PostTypeId` = 2) that was accepted (`AcceptedAnswerId` points to it), and the question (`PostTypeId` = 1) was created by a user with an `AccountId` greater than 20000, and the answer has more than 5 comments.",
+    "sql": "SELECT DISTINCT\n  a.OwnerUserId\nFROM posts AS q\nJOIN posts AS a\n  ON q.AcceptedAnswerId = a.Id\nJOIN users AS u_q\n  ON q.OwnerUserId = u_q.Id\nJOIN comments AS c\n  ON a.Id = c.PostId\nWHERE\n  q.PostTypeId = 1 AND a.PostTypeId = 2 AND u_q.AccountId > 20000\nGROUP BY\n  a.OwnerUserId,\n  a.Id\nHAVING\n  COUNT(c.Id) > 5;",
+    "cypher": "MATCH (u_q:users)-[:OWNS_POST]->(q:posts {PostTypeId: 1})-[:HAS_ACCEPTED_ANSWER]->(a:posts {PostTypeId: 2})\nWHERE u_q.AccountId > 20000\nMATCH (a)-[:HAS_COMMENT]->(c:comments)\nWITH a.OwnerUserId AS answerOwnerId, a, count(c) AS numComments\nWHERE numComments > 5\nRETURN DISTINCT answerOwnerId"
+  },
+  {
+    "question": "Identify `PostId` of questions (`PostTypeId` = 1) whose `Title` contains 'react' or 'next.js' (case-insensitive) and which have at least two distinct users commenting on them.",
+    "sql": "SELECT\n  p.Id\nFROM posts AS p\nJOIN comments AS c\n  ON p.Id = c.PostId\nWHERE\n  p.PostTypeId = 1 AND (LOWER(p.Title) LIKE '%react%' OR LOWER(p.Title) LIKE '%next.js%')\nGROUP BY\n  p.Id\nHAVING\n  COUNT(DISTINCT c.UserId) >= 2;",
+    "cypher": "MATCH (q:posts {PostTypeId: 1})-[:HAS_COMMENT]->(c:comments)-[:MADE_BY]->(u:users)\nWHERE toLower(q.Title) CONTAINS 'react' OR toLower(q.Title) CONTAINS 'next.js'\nWITH q, collect(DISTINCT u) AS distinctCommenters\nWHERE size(distinctCommenters) >= 2\nRETURN q.Id"
+  },
+  {
+    "question": "Find the average number of `votes` received by `PostTypeId` 1 posts whose `OwnerUserId` has an `AboutMe` text length less than 100 characters.",
+    "sql": "SELECT\n  AVG(CAST(COALESCE(vote_counts.VoteCount, 0) AS REAL))\nFROM posts AS p\nJOIN users AS u\n  ON p.OwnerUserId = u.Id\nLEFT JOIN (\n  SELECT\n    PostId,\n    COUNT(Id) AS VoteCount\n  FROM votes\n  GROUP BY\n    PostId\n) AS vote_counts\n  ON p.Id = vote_counts.PostId\nWHERE\n  p.PostTypeId = 1 AND LENGTH(u.AboutMe) < 100;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(q:posts {PostTypeId: 1})\nWHERE size(u.AboutMe) < 100\nOPTIONAL MATCH (q)<-[:VOTED_ON]-(v:votes)\nWITH q, count(v) AS voteCount\nRETURN avg(voteCount) AS averageVotes"
+  },
+  {
+    "question": "Identify the `UserId` who has created posts whose `Title` contains 'bug' (case-insensitive) and has received at least one `badge` of `Class` 1 in `2024`.",
+    "sql": "SELECT DISTINCT\n  u.Id\nFROM users AS u\nJOIN posts AS p\n  ON u.Id = p.OwnerUserId\nJOIN badges AS b\n  ON u.Id = b.UserId\nWHERE\n  LOWER(p.Title) LIKE '%bug%' AND b.Class = 1 AND STRFTIME('%Y', b.Date) = '2024';",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)\nWHERE toLower(p.Title) CONTAINS 'bug'\nMATCH (u)-[:HAS_BADGE]->(b:badges {Class: 1})\nWHERE b.Date STARTS WITH '2024'\nRETURN DISTINCT u.Id"
+  },
+  {
+    "question": "Find the `UserId` who has the highest number of posts that received at least one `upvote` (`VoteTypeId` = 2) from a user with an `AccountId` less than 100 and no `downvotes` (`VoteTypeId` = 3) at all.",
+    "sql": "WITH PostUpvotesFromLowAccount AS (\n  SELECT\n    p.Id AS PostId,\n    COUNT(v.Id) AS UpvotesFromLowAccount\n  FROM posts AS p\n  JOIN votes AS v\n    ON p.Id = v.PostId\n  JOIN users AS u_voter\n    ON v.UserId = u_voter.Id\n  WHERE\n    v.VoteTypeId = 2 AND u_voter.AccountId < 100\n  GROUP BY\n    p.Id\n  HAVING\n    COUNT(v.Id) >= 1\n),\nPostDownvotes AS (\n  SELECT\n    PostId,\n    COUNT(Id) AS DownvotesCount\n  FROM votes\n  WHERE\n    VoteTypeId = 3\n  GROUP BY\n    PostId\n)\nSELECT\n  p.OwnerUserId,\n  COUNT(p.Id)\nFROM posts AS p\nJOIN PostUpvotesFromLowAccount AS pufla\n  ON p.Id = pufla.PostId\nLEFT JOIN PostDownvotes AS pd\n  ON p.Id = pd.PostId\nWHERE\n  pd.DownvotesCount IS NULL\nGROUP BY\n  p.OwnerUserId\nORDER BY\n  COUNT(p.Id) DESC\nLIMIT 1;",
+    "cypher": "MATCH (u_owner:users)-[:OWNS_POST]->(p:posts)\nMATCH (p)<-[:VOTED_ON]-(v_up:votes {VoteTypeId: 2})<-[:CAST_BY]-(u_voter:users)\nWHERE u_voter.AccountId < 100\nWITH u_owner, p, collect(v_up) AS upvotes\nWHERE size(upvotes) >= 1\nOPTIONAL MATCH (p)<-[:VOTED_ON]-(v_down:votes {VoteTypeId: 3})\nWITH u_owner, p, count(v_down) AS downvotesCount\nWHERE downvotesCount = 0\nRETURN u_owner.Id AS userId, count(p) AS postsCount\nORDER BY postsCount DESC\nLIMIT 1"
+  },
+  {
+    "question": "Identify posts with a `PostTypeId` of 1 that have `Title`s with more than 100 characters, have at least one `comment` and all `comments` are from users with an `AccountId` greater than 5000.",
+    "sql": "SELECT\n  p.Id\nFROM posts AS p\nJOIN comments AS c\n  ON p.Id = c.PostId\nJOIN users AS u\n  ON c.UserId = u.Id\nWHERE\n  p.PostTypeId = 1 AND LENGTH(p.Title) > 100\nGROUP BY\n  p.Id\nHAVING\n  COUNT(c.Id) >= 1 AND MIN(u.AccountId) > 5000;",
+    "cypher": "MATCH (q:posts {PostTypeId: 1})\nWHERE size(q.Title) > 100\nMATCH (q)-[:HAS_COMMENT]->(c:comments)-[:MADE_BY]->(u:users)\nWITH q, collect(u.AccountId) AS commenterAccountIds, count(c) AS numComments\nWHERE numComments >= 1 AND all(accountId IN commenterAccountIds WHERE accountId > 5000)\nRETURN q.Id"
+  },
+  {
+    "question": "Find the average number of `postLinks` (as `PostId` or `RelatedPostId`) per post for posts that have at least 10 `postHistory` entries and were created in `2024`.",
+    "sql": "WITH PostHistoryCounts AS (\n  SELECT\n    PostId,\n    COUNT(Id) AS HistoryCount\n  FROM postHistory\n  GROUP BY\n    PostId\n  HAVING\n    COUNT(Id) >= 10\n),\nPostLinkAggregates AS (\n  SELECT\n    PostId,\n    COUNT(Id) AS LinkCount\n  FROM (\n    SELECT\n      Id,\n      PostId\n    FROM postLinks\n    UNION ALL\n    SELECT\n      Id,\n      RelatedPostId AS PostId\n    FROM postLinks\n  ) AS CombinedLinks\n  GROUP BY\n    PostId\n)\nSELECT\n  AVG(CAST(COALESCE(pla.LinkCount, 0) AS REAL))\nFROM posts AS p\nJOIN PostHistoryCounts AS phc\n  ON p.Id = phc.PostId\nLEFT JOIN PostLinkAggregates AS pla\n  ON p.Id = pla.PostId\nWHERE\n  STRFTIME('%Y', p.CreationDate) = '2024';",
+    "cypher": "MATCH (p:posts)-[:HAS_HISTORY]->(ph:postHistory)\nWHERE p.CreationDate STARTS WITH '2024'\nWITH p, count(ph) AS historyCount\nWHERE historyCount >= 10\nOPTIONAL MATCH (p)<-[r:LINKS_TO|LINKS_RELATED_TO]-(pl:postLinks)\nWITH p, count(pl) AS linkCount\nRETURN avg(linkCount) AS averagePostLinks"
+  },
+  {
+    "question": "Determine the `UserId` who has the highest number of posts where the `OwnerUserId` is different from the `UserId` who made the `postHistory` entry, and the post also has an `AcceptedAnswerId`.",
+    "sql": "SELECT\n  ph.UserId,\n  COUNT(DISTINCT ph.PostId)\nFROM postHistory AS ph\nJOIN posts AS p\n  ON ph.PostId = p.Id\nWHERE\n  ph.UserId <> p.OwnerUserId AND p.AcceptedAnswerId IS NOT NULL\nGROUP BY\n  ph.UserId\nORDER BY\n  COUNT(DISTINCT ph.PostId) DESC\nLIMIT 1;",
+    "cypher": "MATCH (editor:users)-[:MADE_BY]->(ph:postHistory)-[:HAS_HISTORY]->(p:posts)\nWHERE editor.Id <> p.OwnerUserId AND p.AcceptedAnswerId IS NOT NULL\nRETURN editor.Id AS userId, count(DISTINCT p) AS editedPostsWithAcceptedAnswer\nORDER BY editedPostsWithAcceptedAnswer DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find posts that have been voted on by users who have never created any posts, and the post has at least 3 distinct `VoteTypeIds`.",
+    "sql": "SELECT\n  v.PostId\nFROM votes AS v\nJOIN users AS u\n  ON v.UserId = u.Id\nLEFT JOIN posts AS p_owned\n  ON u.Id = p_owned.OwnerUserId\nWHERE\n  p_owned.Id IS NULL\nGROUP BY\n  v.PostId\nHAVING\n  COUNT(DISTINCT v.VoteTypeId) >= 3;",
+    "cypher": "MATCH (voter:users)-[:CAST_BY]->(v:votes)-[:VOTED_ON]->(p:posts)\nWHERE NOT EXISTS((voter)-[:OWNS_POST]->(:posts))\nWITH p, collect(DISTINCT v.VoteTypeId) AS distinctVoteTypes\nWHERE size(distinctVoteTypes) >= 3\nRETURN p.Id"
+  },
+  {
+    "question": "Calculate the ratio of posts with at least one `comment` to posts with no `comments` for all posts that also have at least one `badge` associated with their `OwnerUserId`.",
+    "sql": "WITH PostsByUserWithBadges AS (\n  SELECT\n    p.Id AS PostId,\n    CASE WHEN EXISTS(SELECT\n      1\n    FROM comments AS c\n    WHERE\n      c.PostId = p.Id) THEN 1 ELSE 0 END AS HasComment\n  FROM posts AS p\n  JOIN badges AS b\n    ON p.OwnerUserId = b.UserId\n  GROUP BY\n    p.Id\n)\nSELECT\n  CAST(SUM(CASE WHEN HasComment = 1 THEN 1 ELSE 0 END) AS REAL) / SUM(CASE WHEN HasComment = 0 THEN 1 ELSE 0 END)\nFROM PostsByUserWithBadges\nWHERE\n  SUM(CASE WHEN HasComment = 0 THEN 1 ELSE 0 END) > 0;",
+    "cypher": "MATCH (u:users)-[:HAS_BADGE]->(:badges)\nMATCH (u)-[:OWNS_POST]->(p:posts)\nOPTIONAL MATCH (p)-[:HAS_COMMENT]->(c:comments)\nWITH p, count(c) AS numComments\nWITH count(CASE WHEN numComments > 0 THEN p END) AS postsWithComments,\n     count(CASE WHEN numComments = 0 THEN p END) AS postsWithoutComments\nWHERE postsWithoutComments > 0\nRETURN toFloat(postsWithComments) / postsWithoutComments"
+  },
+  {
+    "question": "Identify `UserId` who have received at least 5 badges, where the badge `Date` is within 30 days of one of their `postHistory` `CreationDate` entries.",
+    "sql": "SELECT DISTINCT\n  u.Id\nFROM users AS u\nJOIN badges AS b\n  ON u.Id = b.UserId\nJOIN postHistory AS ph\n  ON u.Id = ph.UserId\nWHERE\n  b.Date BETWEEN ph.CreationDate AND DATETIME(ph.CreationDate, '+30 days')\nGROUP BY\n  u.Id\nHAVING\n  COUNT(DISTINCT b.Id) >= 5;",
+    "cypher": "MATCH (u:users)-[:HAS_BADGE]->(b:badges)\nMATCH (u)-[:MADE_BY]->(ph:postHistory)\nWHERE duration.inDays(datetime(ph.CreationDate), datetime(b.Date)).days >= 0 AND duration.inDays(datetime(ph.CreationDate), datetime(b.Date)).days <= 30\nWITH u, collect(DISTINCT b) AS relevantBadges\nWHERE size(relevantBadges) >= 5\nRETURN u.Id"
+  },
+  {
+    "question": "Find the `PostId` of posts that are questions (`PostTypeId` = 1) created in `2023`, have a `Title` length greater than 50 characters, and have been linked to (`RelatedPostId`) by at least two other posts from different `LinkTypeIds`.",
+    "sql": "SELECT\n  p.Id\nFROM posts AS p\nJOIN postLinks AS pl\n  ON p.Id = pl.RelatedPostId\nWHERE\n  p.PostTypeId = 1 AND STRFTIME('%Y', p.CreationDate) = '2023' AND LENGTH(p.Title) > 50\nGROUP BY\n  p.Id\nHAVING\n  COUNT(DISTINCT pl.LinkTypeId) >= 2;",
+    "cypher": "MATCH (q:posts {PostTypeId: 1})<-[:LINKS_RELATED_TO]-(pl:postLinks)\nWHERE q.CreationDate STARTS WITH '2023' AND size(q.Title) > 50\nWITH q, collect(DISTINCT pl.LinkTypeId) AS distinctLinkTypes\nWHERE size(distinctLinkTypes) >= 2\nRETURN q.Id"
+  },
+  {
+    "question": "Calculate the average `CreationDate` (in minutes since epoch) of all comments made by users whose `AccountId` is prime.",
+    "sql": "WITH PrimeAccounts AS (\n  SELECT\n    Id\n  FROM users\n  WHERE\n    AccountId > 1 AND AccountId NOT IN (SELECT\n      n.AccountId * m.AccountId\n    FROM users AS n,\n      users AS m\n    WHERE\n      n.AccountId * m.AccountId = u.AccountId AND n.AccountId > 1 AND m.AccountId > 1) -- Simplified prime check for demonstration\n)\nSELECT\n  AVG(STRFTIME('%s', c.CreationDate) / 60)\nFROM comments AS c\nJOIN users AS u\n  ON c.UserId = u.Id\nJOIN PrimeAccounts AS pa\n  ON u.Id = pa.Id;",
+    "cypher": "MATCH (u:users)-[:MADE_BY]->(c:comments)\nWHERE apoc.math.isPrime(u.AccountId)\nRETURN avg(apoc.date.parse(c.CreationDate, 'yyyy-MM-dd HH:mm:ss').epochMillis / 60000) AS avgCreationDateMinutes"
+  },
+  {
+    "question": "Find the `UserId` who has contributed to the `postHistory` of more than 10 posts, and all these posts were created before 2020-01-01.",
+    "sql": "SELECT\n  ph.UserId,\n  COUNT(DISTINCT ph.PostId)\nFROM postHistory AS ph\nJOIN posts AS p\n  ON ph.PostId = p.Id\nWHERE\n  p.CreationDate < '2020-01-01 00:00:00'\nGROUP BY\n  ph.UserId\nHAVING\n  COUNT(DISTINCT ph.PostId) > 10\nORDER BY\n  COUNT(DISTINCT ph.PostId) DESC\nLIMIT 1;",
+    "cypher": "MATCH (editor:users)-[:MADE_BY]->(ph:postHistory)-[:HAS_HISTORY]->(p:posts)\nWHERE p.CreationDate < '2020-01-01 00:00:00'\nWITH editor, collect(DISTINCT p) AS postsEdited\nWHERE size(postsEdited) > 10\nRETURN editor.Id AS userId, size(postsEdited) AS numPostsEdited\nORDER BY numPostsEdited DESC\nLIMIT 1"
+  },
+  {
+    "question": "Identify posts (questions, `PostTypeId` = 1) that have an `AcceptedAnswerId`, and the answer's `OwnerUserId` has an `AccountId` which is an even number, and the question itself has more than 50 characters in its `Title`.",
+    "sql": "SELECT\n  q.Id\nFROM posts AS q\nJOIN posts AS a\n  ON q.AcceptedAnswerId = a.Id\nJOIN users AS u_a\n  ON a.OwnerUserId = u_a.Id\nWHERE\n  q.PostTypeId = 1 AND q.AcceptedAnswerId IS NOT NULL AND u_a.AccountId % 2 = 0 AND LENGTH(q.Title) > 50;",
+    "cypher": "MATCH (q:posts {PostTypeId: 1})-[:HAS_ACCEPTED_ANSWER]->(a:posts)-[:OWNS_POST]->(u_a:users)\nWHERE u_a.AccountId % 2 = 0 AND size(q.Title) > 50\nRETURN q.Id"
+  },
+  {
+    "question": "Find the `LinkTypeId` that has the most links between posts where one post has a `PostTypeId` of 1 and the other has a `PostTypeId` of 2.",
+    "sql": "SELECT\n  pl.LinkTypeId,\n  COUNT(pl.Id)\nFROM postLinks AS pl\nJOIN posts AS p1\n  ON pl.PostId = p1.Id\nJOIN posts AS p2\n  ON pl.RelatedPostId = p2.Id\nWHERE\n  (p1.PostTypeId = 1 AND p2.PostTypeId = 2) OR (p1.PostTypeId = 2 AND p2.PostTypeId = 1)\nGROUP BY\n  pl.LinkTypeId\nORDER BY\n  COUNT(pl.Id) DESC\nLIMIT 1;",
+    "cypher": "MATCH (pl:postLinks)\nMATCH (pl)-[:LINKS_TO]->(p1:posts)\nMATCH (pl)-[:LINKS_RELATED_TO]->(p2:posts)\nWHERE (p1.PostTypeId = 1 AND p2.PostTypeId = 2) OR (p1.PostTypeId = 2 AND p2.PostTypeId = 1)\nRETURN pl.LinkTypeId AS linkType, count(pl) AS linkCount\nORDER BY linkCount DESC\nLIMIT 1"
+  },
+  {
+    "question": "Determine the `UserId` who has the highest total number of characters in all their `comments` for posts that were created on a `Wednesday`.",
+    "sql": "SELECT\n  c.UserId,\n  SUM(LENGTH(c.Text))\nFROM comments AS c\nJOIN posts AS p\n  ON c.PostId = p.Id\nWHERE\n  STRFTIME('%w', p.CreationDate) = '3' -- 3 is Wednesday for SQLite STRFTIME\nGROUP BY\n  c.UserId\nORDER BY\n  SUM(LENGTH(c.Text)) DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)-[:MADE_BY]->(c:comments)-[:HAS_COMMENT]->(p:posts)\nWHERE datetime(p.CreationDate).dayOfWeek = 3 -- 3 for Wednesday in Neo4j\nRETURN u.Id AS userId, sum(size(c.Text)) AS totalCommentLength\nORDER BY totalCommentLength DESC\nLIMIT 1"
+  },
+  {
+    "question": "Find the percentage of `users` who have an `AboutMe` field containing 'student' (case-insensitive) and have created at least one `postHistory` entry.",
+    "sql": "WITH UsersWithStudentAboutMe AS (\n  SELECT DISTINCT\n    Id\n  FROM users\n  WHERE\n    LOWER(AboutMe) LIKE '%student%'\n)\nSELECT\n  CAST(COUNT(DISTINCT uwsm.Id) AS REAL) * 100 / (SELECT\n    COUNT(DISTINCT Id)\n  FROM users)\nFROM UsersWithStudentAboutMe AS uwsm\nJOIN postHistory AS ph\n  ON uwsm.Id = ph.UserId;",
+    "cypher": "MATCH (u:users)\nWHERE toLower(u.AboutMe) CONTAINS 'student'\nOPTIONAL MATCH (u)-[:MADE_BY]->(ph:postHistory)\nWITH count(DISTINCT u) AS totalUsers, count(DISTINCT CASE WHEN ph IS NOT NULL THEN u END) AS studentUsersWithHistory\nWHERE totalUsers > 0\nRETURN toFloat(studentUsersWithHistory) * 100 / totalUsers AS percentage"
+  },
+  {
+    "question": "Identify posts with more than 100 characters in their `Body` and having at least 5 'upvotes' (`VoteTypeId` = 2) and exactly 0 'downvotes' (`VoteTypeId` = 3), and created after 2022-01-01.",
+    "sql": "WITH PostVoteSummary AS (\n  SELECT\n    PostId,\n    SUM(CASE WHEN VoteTypeId = 2 THEN 1 ELSE 0 END) AS Upvotes,\n    SUM(CASE WHEN VoteTypeId = 3 THEN 1 ELSE 0 END) AS Downvotes\n  FROM votes\n  GROUP BY\n    PostId\n)\nSELECT\n  p.Id\nFROM posts AS p\nJOIN PostVoteSummary AS pvs\n  ON p.Id = pvs.PostId\nWHERE\n  LENGTH(p.Body) > 100 AND pvs.Upvotes >= 5 AND pvs.Downvotes = 0 AND p.CreationDate > '2022-01-01 00:00:00';",
+    "cypher": "MATCH (p:posts)\nWHERE size(p.Body) > 100 AND p.CreationDate > '2022-01-01 00:00:00'\nMATCH (p)<-[r:VOTED_ON]-(v:votes)\nWITH p, collect(v.VoteTypeId) AS voteTypes\nWITH p, size(apoc.coll.filter(voteTypes, s => s = 2)) AS upvotes, size(apoc.coll.filter(voteTypes, s => s = 3)) AS downvotes\nWHERE upvotes >= 5 AND downvotes = 0\nRETURN p.Id"
+  },
+  {
+    "question": "Find the `UserId` who has the highest number of posts where they are the `OwnerUserId`, and the post has at least one `comment` from a user whose `CreationDate` is earlier than the `post`'s `CreationDate`.",
+    "sql": "SELECT\n  p.OwnerUserId,\n  COUNT(DISTINCT p.Id)\nFROM posts AS p\nJOIN comments AS c\n  ON p.Id = c.PostId\nJOIN users AS u_c\n  ON c.UserId = u_c.Id\nWHERE\n  u_c.CreationDate < p.CreationDate\nGROUP BY\n  p.OwnerUserId\nORDER BY\n  COUNT(DISTINCT p.Id) DESC\nLIMIT 1;",
+    "cypher": "MATCH (u_owner:users)-[:OWNS_POST]->(p:posts)-[:HAS_COMMENT]->(c:comments)-[:MADE_BY]->(u_commenter:users)\nWHERE datetime(u_commenter.CreationDate) < datetime(p.CreationDate)\nRETURN u_owner.Id AS userId, count(DISTINCT p) AS postsCount\nORDER BY postsCount DESC\nLIMIT 1"
+  },
+  {
+    "question": "Calculate the average `CreationDate` (in seconds since epoch) of all posts that have been linked to (`PostId` in `postLinks`) and have at least one `vote`.",
+    "sql": "SELECT\n  AVG(STRFTIME('%s', p.CreationDate))\nFROM posts AS p\nJOIN postLinks AS pl\n  ON p.Id = pl.PostId\nJOIN votes AS v\n  ON p.Id = v.PostId;",
+    "cypher": "MATCH (p:posts)<-[:LINKS_TO]-(pl:postLinks)\nMATCH (p)<-[:VOTED_ON]-(v:votes)\nRETURN avg(apoc.date.parse(p.CreationDate, 'yyyy-MM-dd HH:mm:ss').epochMillis / 1000) AS avgCreationDateSeconds"
+  },
+  {
+    "question": "Identify `UserId` who have received more 'Gold' badges (`Class` = 1) than 'Silver' badges (`Class` = 2) in the year `2023`, and have created at least one post that has a `Title` containing 'help' (case-insensitive).",
+    "sql": "WITH UserBadges2023 AS (\n  SELECT\n    UserId,\n    SUM(CASE WHEN Class = 1 THEN 1 ELSE 0 END) AS GoldBadges,\n    SUM(CASE WHEN Class = 2 THEN 1 ELSE 0 END) AS SilverBadges\n  FROM badges\n  WHERE\n    STRFTIME('%Y', Date) = '2023'\n  GROUP BY\n    UserId\n  HAVING\n    SUM(CASE WHEN Class = 1 THEN 1 ELSE 0 END) > SUM(CASE WHEN Class = 2 THEN 1 ELSE 0 END)\n)\nSELECT DISTINCT\n  ub.UserId\nFROM UserBadges2023 AS ub\nJOIN posts AS p\n  ON ub.UserId = p.OwnerUserId\nWHERE\n  LOWER(p.Title) LIKE '%help%';",
+    "cypher": "MATCH (u:users)-[:HAS_BADGE]->(b:badges)\nWHERE b.Date STARTS WITH '2023'\nWITH u, count(CASE WHEN b.Class = 1 THEN 1 ELSE null END) AS goldBadges, count(CASE WHEN b.Class = 2 THEN 1 ELSE null END) AS silverBadges\nWHERE goldBadges > silverBadges\nMATCH (u)-[:OWNS_POST]->(p:posts)\nWHERE toLower(p.Title) CONTAINS 'help'\nRETURN DISTINCT u.Id"
+  },
+  {
+    "question": "Find the `PostId` of questions (`PostTypeId` = 1) that have received at least 10 votes, and all these votes were `upvotes` (`VoteTypeId` = 2), and the question has no `postHistory` entries.",
+    "sql": "WITH PostUpvotes AS (\n  SELECT\n    PostId,\n    COUNT(Id) AS UpvoteCount\n  FROM votes\n  WHERE\n    VoteTypeId = 2\n  GROUP BY\n    PostId\n  HAVING\n    COUNT(Id) >= 10\n),\nPostTotalVotes AS (\n  SELECT\n    PostId,\n    COUNT(Id) AS TotalVoteCount\n  FROM votes\n  GROUP BY\n    PostId\n)\nSELECT\n  p.Id\nFROM posts AS p\nJOIN PostUpvotes AS pu\n  ON p.Id = pu.PostId\nJOIN PostTotalVotes AS ptv\n  ON p.Id = ptv.PostId\nLEFT JOIN postHistory AS ph\n  ON p.Id = ph.PostId\nWHERE\n  p.PostTypeId = 1 AND pu.UpvoteCount = ptv.TotalVoteCount\nGROUP BY\n  p.Id\nHAVING\n  COUNT(ph.Id) = 0;",
+    "cypher": "MATCH (q:posts {PostTypeId: 1})\nMATCH (q)<-[:VOTED_ON]-(v:votes)\nWITH q, collect(v.VoteTypeId) AS voteTypeIds, count(v) AS totalVotes\nWHERE totalVotes >= 10 AND all(typeId IN voteTypeIds WHERE typeId = 2)\nOPTIONAL MATCH (q)-[:HAS_HISTORY]->(ph:postHistory)\nWITH q, count(ph) AS historyCount\nWHERE historyCount = 0\nRETURN q.Id"
+  },
+  {
+    "question": "Calculate the cumulative sum of `AccountId` for users who created at least one post, ordered by their `CreationDate`.",
+    "sql": "SELECT\n  u.Id AS UserId,\n  u.CreationDate,\n  u.AccountId,\n  SUM(u.AccountId) OVER (ORDER BY u.CreationDate) AS CumulativeAccountId\nFROM users AS u\nJOIN posts AS p\n  ON u.Id = p.OwnerUserId\nGROUP BY\n  u.Id,\n  u.CreationDate,\n  u.AccountId\nORDER BY\n  u.CreationDate;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(:posts)\nWITH u ORDER BY u.CreationDate\nWITH collect({id: u.Id, creationDate: u.CreationDate, accountId: u.AccountId}) AS userData\nUNWIND range(0, size(userData) - 1) AS i\nWITH userData[i].id AS userId, userData[i].creationDate AS userCreationDate, reduce(sum = 0, item IN userData[0..i+1] | sum + item.accountId) AS cumulativeAccountId\nRETURN userId, userCreationDate, cumulativeAccountId\nORDER BY userCreationDate"
+  },
+  {
+    "question": "Find the `UserId` who has edited more of their own posts (`postHistory` entry `UserId` = `posts.OwnerUserId`) than posts owned by other users, and has also commented on at least 5 different posts.",
+    "sql": "WITH UserEditedPosts AS (\n  SELECT\n    ph.UserId AS EditorId,\n    COUNT(CASE WHEN ph.UserId = p.OwnerUserId THEN ph.Id ELSE NULL END) AS OwnPostsEdited,\n    COUNT(CASE WHEN ph.UserId <> p.OwnerUserId THEN ph.Id ELSE NULL END) AS OtherPostsEdited\n  FROM postHistory AS ph\n  JOIN posts AS p\n    ON ph.PostId = p.Id\n  GROUP BY\n    ph.UserId\n  HAVING\n    COUNT(CASE WHEN ph.UserId = p.OwnerUserId THEN ph.Id ELSE NULL END) > COUNT(CASE WHEN ph.UserId <> p.OwnerUserId THEN ph.Id ELSE NULL END)\n)\nSELECT\n  uep.EditorId\nFROM UserEditedPosts AS uep\nJOIN (\n  SELECT\n    UserId,\n    COUNT(DISTINCT PostId) AS DistinctCommentedPosts\n  FROM comments\n  GROUP BY\n    UserId\n  HAVING\n    COUNT(DISTINCT PostId) >= 5\n) AS UserCommentCounts\n  ON uep.EditorId = UserCommentCounts.UserId\nRETURN\n  uep.EditorId;",
+    "cypher": "MATCH (editor:users)-[:MADE_BY]->(ph:postHistory)-[:HAS_HISTORY]->(p:posts)\nWITH editor, count(CASE WHEN editor.Id = p.OwnerUserId THEN ph END) AS ownEdits, count(CASE WHEN editor.Id <> p.OwnerUserId THEN ph END) AS otherEdits\nWHERE ownEdits > otherEdits\nMATCH (editor)-[:MADE_BY]->(c:comments)\nWITH editor, ownEdits, otherEdits, count(DISTINCT c.PostId) AS distinctCommentedPosts\nWHERE distinctCommentedPosts >= 5\nRETURN editor.Id"
+  },
+  {
+    "question": "Which `PostTypeId` has the lowest average number of unique `tags` (count tags in `Tags` column) for posts that have at least one `comment` and at least one `vote`?",
+    "sql": "WITH PostTagCounts AS (\n  SELECT\n    Id,\n    PostTypeId,\n    LENGTH(Tags) - LENGTH(REPLACE(Tags, '<', '')) AS UniqueTagCount\n  FROM posts\n  WHERE\n    Tags IS NOT NULL\n),\nPostsWithCommentsAndVotes AS (\n  SELECT\n    p.Id\n  FROM posts AS p\n  JOIN comments AS c\n    ON p.Id = c.PostId\n  JOIN votes AS v\n    ON p.Id = v.PostId\n  GROUP BY\n    p.Id\n  HAVING\n    COUNT(DISTINCT c.Id) >= 1 AND COUNT(DISTINCT v.Id) >= 1\n)\nSELECT\n  ptc.PostTypeId,\n  AVG(CAST(ptc.UniqueTagCount AS REAL))\nFROM PostTagCounts AS ptc\nJOIN PostsWithCommentsAndVotes AS pwcav\n  ON ptc.Id = pwcav.Id\nGROUP BY\n  ptc.PostTypeId\nORDER BY\n  AVG(CAST(ptc.UniqueTagCount AS REAL))\nLIMIT 1;",
+    "cypher": "MATCH (p:posts)\nWHERE p.Tags IS NOT NULL\nMATCH (p)-[:HAS_COMMENT]->(:comments)\nMATCH (p)<-[:VOTED_ON]-(:votes)\nWITH p, size(split(p.Tags, '><')) AS uniqueTagCount\nRETURN p.PostTypeId AS postType, avg(uniqueTagCount) AS averageUniqueTags\nORDER BY averageUniqueTags\nLIMIT 1"
+  },
+  {
+    "question": "Find the `UserId` who has an `AccountId` which is a perfect square, and has received at least one `badge` of `Class` 3, and has never created any `postHistory` entries.",
+    "sql": "WITH PerfectSquares AS (\n  SELECT\n    Id\n  FROM users\n  WHERE\n    SQRT(AccountId) = CAST(SQRT(AccountId) AS INTEGER) AND AccountId > 0\n)\nSELECT\n  u.Id\nFROM users AS u\nJOIN PerfectSquares AS ps\n  ON u.Id = ps.Id\nJOIN badges AS b\n  ON u.Id = b.UserId\nLEFT JOIN postHistory AS ph\n  ON u.Id = ph.UserId\nWHERE\n  b.Class = 3\nGROUP BY\n  u.Id\nHAVING\n  COUNT(ph.Id) = 0;",
+    "cypher": "MATCH (u:users)\nWHERE apoc.math.isInteger(sqrt(u.AccountId)) AND u.AccountId > 0\nMATCH (u)-[:HAS_BADGE]->(b:badges {Class: 3})\nWHERE NOT EXISTS((u)-[:MADE_BY]->(:postHistory))\nRETURN u.Id"
+  },
+  {
+    "question": "Calculate the total number of `postLinks` for posts whose `CreationDate` falls on a `Friday` and have `PostTypeId` 2, aggregated by year of creation.",
+    "sql": "SELECT\n  STRFTIME('%Y', p.CreationDate) AS Year,\n  COUNT(pl.Id)\nFROM posts AS p\nJOIN postLinks AS pl\n  ON p.Id = pl.PostId OR p.Id = pl.RelatedPostId\nWHERE\n  p.PostTypeId = 2 AND STRFTIME('%w', p.CreationDate) = '5' -- 5 is Friday for SQLite STRFTIME\nGROUP BY\n  Year\nORDER BY\n  Year;",
+    "cypher": "MATCH (p:posts {PostTypeId: 2})\nWHERE datetime(p.CreationDate).dayOfWeek = 5 -- 5 for Friday in Neo4j\nMATCH (p)<-[r:LINKS_TO|LINKS_RELATED_TO]-(pl:postLinks)\nRETURN toString(datetime(p.CreationDate).year) AS year, count(pl) AS totalPostLinks\nORDER BY year"
+  },
+  {
+    "question": "Find the `UserId` who has the highest difference between the number of `posts` they own with `PostTypeId` 1 and the number of `posts` they own with `PostTypeId` 2.",
+    "sql": "SELECT\n  p.OwnerUserId,\n  ABS(SUM(CASE WHEN p.PostTypeId = 1 THEN 1 ELSE 0 END) - SUM(CASE WHEN p.PostTypeId = 2 THEN 1 ELSE 0 END))\nFROM posts AS p\nGROUP BY\n  p.OwnerUserId\nORDER BY\n  ABS(SUM(CASE WHEN p.PostTypeId = 1 THEN 1 ELSE 0 END) - SUM(CASE WHEN p.PostTypeId = 2 THEN 1 ELSE 0 END)) DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)\nWITH u, count(CASE WHEN p.PostTypeId = 1 THEN 1 ELSE null END) AS questionsCount,\n        count(CASE WHEN p.PostTypeId = 2 THEN 1 ELSE null END) AS answersCount\nRETURN u.Id AS userId, abs(questionsCount - answersCount) AS postTypeDifference\nORDER BY postTypeDifference DESC\nLIMIT 1"
+  },
+  {
+    "question": "Identify posts with a `Body` length greater than 1000 characters, created before 2020-01-01, and linked to (`RelatedPostId`) by at least one other post which has more than 5 `votes`.",
+    "sql": "SELECT DISTINCT\n  target_p.Id\nFROM posts AS target_p\nJOIN postLinks AS pl\n  ON target_p.Id = pl.RelatedPostId\nJOIN posts AS source_p\n  ON pl.PostId = source_p.Id\nJOIN votes AS v\n  ON source_p.Id = v.PostId\nWHERE\n  LENGTH(target_p.Body) > 1000 AND target_p.CreationDate < '2020-01-01 00:00:00'\nGROUP BY\n  target_p.Id,\n  source_p.Id\nHAVING\n  COUNT(v.Id) > 5;",
+    "cypher": "MATCH (target_p:posts)<-[:LINKS_RELATED_TO]-(pl:postLinks)<-[:LINKS_TO]-(source_p:posts)<-[:VOTED_ON]-(v:votes)\nWHERE size(target_p.Body) > 1000 AND target_p.CreationDate < '2020-01-01 00:00:00'\nWITH target_p, source_p, count(v) AS numVotes\nWHERE numVotes > 5\nRETURN DISTINCT target_p.Id"
+  },
+  {
+    "question": "Find the percentage of `PostTypeId` 1 posts that have at least one `postHistory` entry from a `UserId` different from the `OwnerUserId`, and where the `Text` of that `postHistory` entry contains 'edited' (case-insensitive).",
+    "sql": "WITH QuestionsWithExternalEditedHistory AS (\n  SELECT DISTINCT\n    p.Id\n  FROM posts AS p\n  JOIN postHistory AS ph\n    ON p.Id = ph.PostId\n  WHERE\n    p.PostTypeId = 1 AND p.OwnerUserId <> ph.UserId AND LOWER(ph.Text) LIKE '%edited%'\n)\nSELECT\n  CAST(COUNT(qweeh.Id) AS REAL) * 100 / (SELECT\n    COUNT(Id)\n  FROM posts\n  WHERE\n    PostTypeId = 1)\nFROM QuestionsWithExternalEditedHistory AS qweeh;",
+    "cypher": "MATCH (q:posts {PostTypeId: 1})<-[:HAS_HISTORY]-(ph:postHistory)-[:MADE_BY]->(editor:users)\nWHERE q.OwnerUserId <> editor.Id AND toLower(ph.Text) CONTAINS 'edited'\nWITH count(DISTINCT q) AS questionsWithExternalEditedHistory\nMATCH (allQ:posts {PostTypeId: 1})\nWITH toFloat(questionsWithExternalEditedHistory) AS qwehCount, count(allQ) AS totalQuestions\nWHERE totalQuestions > 0\nRETURN qwehCount * 100 / totalQuestions AS percentage"
+  },
+  {
+    "question": "Which `UserId` has cast the most `votes` in a single day across all posts, and also received at least one badge in the same year?",
+    "sql": "WITH DailyVotes AS (\n  SELECT\n    UserId,\n    STRFTIME('%Y-%m-%d', CreationDate) AS VoteDate,\n    COUNT(Id) AS VotesCount\n  FROM votes\n  GROUP BY\n    UserId,\n    VoteDate\n),\nMaxDailyVotes AS (\n  SELECT\n    UserId,\n    MAX(VotesCount) AS MaxVotesInDay,\n    STRFTIME('%Y', VoteDate) AS VoteYear\n  FROM DailyVotes\n  GROUP BY\n    UserId,\n    STRFTIME('%Y', VoteDate)\n)\nSELECT\n  mdv.UserId,\n  mdv.MaxVotesInDay\nFROM MaxDailyVotes AS mdv\nJOIN badges AS b\n  ON mdv.UserId = b.UserId AND mdv.VoteYear = STRFTIME('%Y', b.Date)\nORDER BY\n  mdv.MaxVotesInDay DESC\nLIMIT 1;",
+    "cypher": "MATCH (u:users)-[:CAST_BY]->(v:votes)\nWITH u, date(v.CreationDate) AS voteDay, toString(datetime(v.CreationDate).year) AS voteYear, count(v) AS dailyVotes\nORDER BY dailyVotes DESC\nWITH u, voteYear, dailyVotes AS maxDailyVotes\nLIMIT 1 -- Get the user with the single highest daily vote count\nMATCH (u)-[:HAS_BADGE]->(b:badges)\nWHERE toString(datetime(b.Date).year) = voteYear\nRETURN u.Id AS userId, maxDailyVotes"
+  },
+  {
+    "question": "Find the `PostId` of posts that are linked to (as `RelatedPostId`) by another post which has more `comments` than `votes`.",
+    "sql": "WITH SourcePostsWithMoreCommentsThanVotes AS (\n  SELECT\n    p.Id AS SourcePostId\n  FROM posts AS p\n  LEFT JOIN comments AS c\n    ON p.Id = c.PostId\n  LEFT JOIN votes AS v\n    ON p.Id = v.PostId\n  GROUP BY\n    p.Id\n  HAVING\n    COUNT(c.Id) > COUNT(v.Id)\n)\nSELECT DISTINCT\n  pl.RelatedPostId\nFROM postLinks AS pl\nJOIN SourcePostsWithMoreCommentsThanVotes AS spwmc\n  ON pl.PostId = spwmc.SourcePostId;",
+    "cypher": "MATCH (source_p:posts)<-[:LINKS_TO]-(pl:postLinks)-[:LINKS_RELATED_TO]->(target_p:posts)\nOPTIONAL MATCH (source_p)-[:HAS_COMMENT]->(c:comments)\nWITH source_p, target_p, count(c) AS numComments\nOPTIONAL MATCH (source_p)<-[:VOTED_ON]-(v:votes)\nWITH source_p, target_p, numComments, count(v) AS numVotes\nWHERE numComments > numVotes\nRETURN DISTINCT target_p.Id"
+  },
+  {
+    "question": "Calculate the ratio of the total number of `badges` of `Class` 1 to the total number of `badges` of `Class` 3, for all users whose `AccountId` is odd.",
+    "sql": "WITH OddAccountUsersBadges AS (\n  SELECT\n    b.Class,\n    COUNT(b.Id) AS BadgeCount\n  FROM badges AS b\n  JOIN users AS u\n    ON b.UserId = u.Id\n  WHERE\n    u.AccountId % 2 <> 0\n  GROUP BY\n    b.Class\n)\nSELECT\n  CAST(SUM(CASE WHEN Class = 1 THEN BadgeCount ELSE 0 END) AS REAL) / SUM(CASE WHEN Class = 3 THEN BadgeCount ELSE 0 END) AS GoldToBronzeRatio\nFROM OddAccountUsersBadges\nWHERE\n  SUM(CASE WHEN Class = 3 THEN BadgeCount ELSE 0 END) > 0;",
+    "cypher": "MATCH (u:users)-[:HAS_BADGE]->(b:badges)\nWHERE u.AccountId % 2 <> 0\nWITH count(CASE WHEN b.Class = 1 THEN 1 ELSE null END) AS goldBadges,\n     count(CASE WHEN b.Class = 3 THEN 1 ELSE null END) AS bronzeBadges\nWHERE bronzeBadges > 0\nRETURN toFloat(goldBadges) / bronzeBadges AS goldToBronzeRatio"
+  },
+  {
+    "question": "Identify users who have at least one post, and all their `posts` have a `Body` containing 'solution' (case-insensitive), and also have received at least one `badge` that is `TagBased`.",
+    "sql": "SELECT DISTINCT\n  u.Id\nFROM users AS u\nJOIN posts AS p\n  ON u.Id = p.OwnerUserId\nJOIN badges AS b\n  ON u.Id = b.UserId\nWHERE\n  b.TagBased IS NOT NULL AND LOWER(p.Body) LIKE '%solution%'\nGROUP BY\n  u.Id\nHAVING\n  COUNT(p.Id) = (\n    SELECT\n      COUNT(p_inner.Id)\n    FROM posts AS p_inner\n    WHERE\n      p_inner.OwnerUserId = u.Id AND LOWER(p_inner.Body) LIKE '%solution%'\n  );",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p:posts)\nMATCH (u)-[:HAS_BADGE]->(b:badges)\nWHERE b.TagBased IS NOT NULL\nWITH u, collect(p) AS userPosts, collect(CASE WHEN toLower(p.Body) CONTAINS 'solution' THEN p END) AS solutionPosts\nWHERE size(userPosts) > 0 AND all(post IN userPosts WHERE toLower(post.Body) CONTAINS 'solution')\nRETURN DISTINCT u.Id"
+  },
+  {
+    "question": "Find the `PostId` of posts that have been modified (via `postHistory`) by at least 2 distinct `UserId`s in `2023`, and the post was originally created in `2022`.",
+    "sql": "SELECT\n  p.Id\nFROM posts AS p\nJOIN postHistory AS ph\n  ON p.Id = ph.PostId\nWHERE\n  STRFTIME('%Y', p.CreationDate) = '2022' AND STRFTIME('%Y', ph.CreationDate) = '2023'\nGROUP BY\n  p.Id\nHAVING\n  COUNT(DISTINCT ph.UserId) >= 2;",
+    "cypher": "MATCH (p:posts)-[:HAS_HISTORY]->(ph:postHistory)-[:MADE_BY]->(editor:users)\nWHERE p.CreationDate STARTS WITH '2022' AND ph.CreationDate STARTS WITH '2023'\nWITH p, collect(DISTINCT editor) AS distinctEditors\nWHERE size(distinctEditors) >= 2\nRETURN p.Id"
+  },
+  {
+    "question": "Calculate the total number of `comments` created per month in `2024` for posts that have at least 5 `votes`.",
+    "sql": "SELECT\n  STRFTIME('%Y-%m', c.CreationDate) AS CommentMonth,\n  COUNT(c.Id)\nFROM comments AS c\nJOIN posts AS p\n  ON c.PostId = p.Id\nJOIN votes AS v\n  ON p.Id = v.PostId\nWHERE\n  STRFTIME('%Y', c.CreationDate) = '2024'\nGROUP BY\n  c.PostId,\n  STRFTIME('%Y-%m', c.CreationDate)\nHAVING\n  COUNT(v.Id) >= 5\nGROUP BY\n  CommentMonth\nORDER BY\n  CommentMonth;",
+    "cypher": "MATCH (c:comments)-[:HAS_COMMENT]->(p:posts)<-[:VOTED_ON]-(v:votes)\nWHERE c.CreationDate STARTS WITH '2024'\nWITH c, toString(datetime(c.CreationDate).year) + '-' + toString(datetime(c.CreationDate).month) AS commentMonth, p, count(v) AS numVotes\nWHERE numVotes >= 5\nRETURN commentMonth, count(c) AS totalComments\nORDER BY commentMonth"
+  },
+  {
+    "question": "Find the `UserId` who has the highest number of posts where `PostTypeId` = 2, and the post was accepted (`AcceptedAnswerId` points to it), and the question (`PostTypeId` = 1) `Title` contains 'javascript' (case-insensitive).",
+    "sql": "SELECT\n  a.OwnerUserId,\n  COUNT(a.Id)\nFROM posts AS a\nJOIN posts AS q\n  ON a.Id = q.AcceptedAnswerId\nWHERE\n  a.PostTypeId = 2 AND q.PostTypeId = 1 AND LOWER(q.Title) LIKE '%javascript%'\nGROUP BY\n  a.OwnerUserId\nORDER BY\n  COUNT(a.Id) DESC\nLIMIT 1;",
+    "cypher": "MATCH (answerer:users)-[:OWNS_POST]->(a:posts {PostTypeId: 2})<-[:HAS_ACCEPTED_ANSWER]-(q:posts {PostTypeId: 1})\nWHERE toLower(q.Title) CONTAINS 'javascript'\nRETURN answerer.Id AS userId, count(a) AS acceptedJavaScriptAnswers\nORDER BY acceptedJavaScriptAnswers DESC\nLIMIT 1"
+  },
+  {
+    "question": "Identify users whose `AboutMe` contains both 'backend' and 'frontend' (case-insensitive) and have created at least one `post` that has been commented on by more than 3 distinct users.",
+    "sql": "SELECT DISTINCT\n  u.Id\nFROM users AS u\nJOIN posts AS p\n  ON u.Id = p.OwnerUserId\nJOIN comments AS c\n  ON p.Id = c.PostId\nWHERE\n  LOWER(u.AboutMe) LIKE '%backend%' AND LOWER(u.AboutMe) LIKE '%frontend%'\nGROUP BY\n  u.Id,\n  p.Id\nHAVING\n  COUNT(DISTINCT c.UserId) > 3;",
+    "cypher": "MATCH (u:users)\nWHERE toLower(u.AboutMe) CONTAINS 'backend' AND toLower(u.AboutMe) CONTAINS 'frontend'\nMATCH (u)-[:OWNS_POST]->(p:posts)-[:HAS_COMMENT]->(c:comments)-[:MADE_BY]->(commenter:users)\nWITH u, p, collect(DISTINCT commenter) AS distinctCommenters\nWHERE size(distinctCommenters) > 3\nRETURN DISTINCT u.Id"
+  },
+  {
+    "question": "Find the average `LinkType` value for `postLinks` where the `RelatedPostId` refers to a post with `PostTypeId` = 1, and that post has at least 5 `postHistory` entries.",
+    "sql": "WITH PostsWithHistory AS (\n  SELECT\n    PostId,\n    COUNT(Id) AS HistoryCount\n  FROM postHistory\n  GROUP BY\n    PostId\n  HAVING\n    COUNT(Id) >= 5\n)\nSELECT\n  AVG(CAST(pl.LinkTypeId AS REAL))\nFROM postLinks AS pl\nJOIN posts AS p\n  ON pl.RelatedPostId = p.Id\nJOIN PostsWithHistory AS pwh\n  ON p.Id = pwh.PostId\nWHERE\n  p.PostTypeId = 1;",
+    "cypher": "MATCH (p:posts {PostTypeId: 1})-[:HAS_HISTORY]->(ph:postHistory)\nWITH p, count(ph) AS historyCount\nWHERE historyCount >= 5\nMATCH (pl:postLinks)-[:LINKS_RELATED_TO]->(p)\nRETURN avg(toFloat(pl.LinkTypeId)) AS averageLinkType"
+  },
+  {
+    "question": "Calculate the difference (in days) between the earliest `CreationDate` of a `PostTypeId` 1 post and the latest `CreationDate` of a `PostTypeId` 2 post, for posts created by users who have created at least 3 posts overall.",
+    "sql": "WITH UsersWithThreePosts AS (\n  SELECT\n    OwnerUserId AS UserId\n  FROM posts\n  GROUP BY\n    OwnerUserId\n  HAVING\n    COUNT(Id) >= 3\n),\nEarliestQuestionDate AS (\n  SELECT\n    MIN(p.CreationDate) AS EarliestDate\n  FROM posts AS p\n  JOIN UsersWithThreePosts AS uw3p\n    ON p.OwnerUserId = uw3p.UserId\n  WHERE\n    p.PostTypeId = 1\n),\nLatestAnswerDate AS (\n  SELECT\n    MAX(p.CreationDate) AS LatestDate\n  FROM posts AS p\n  JOIN UsersWithThreePosts AS uw3p\n    ON p.OwnerUserId = uw3p.UserId\n  WHERE\n    p.PostTypeId = 2\n)\nSELECT\n  JULIANDAY(eqd.EarliestDate) - JULIANDAY(lad.LatestDate) AS DateDifferenceInDays\nFROM EarliestQuestionDate AS eqd,\n  LatestAnswerDate AS lad;",
+    "cypher": "MATCH (u:users)-[:OWNS_POST]->(p_all:posts)\nWITH u, count(p_all) AS totalPosts\nWHERE totalPosts >= 3\nMATCH (u)-[:OWNS_POST]->(p_q:posts {PostTypeId: 1})\nWITH u, totalPosts, min(datetime(p_q.CreationDate)) AS earliestQuestionDate\nMATCH (u)-[:OWNS_POST]->(p_a:posts {PostTypeId: 2})\nWITH earliestQuestionDate, max(datetime(p_a.CreationDate)) AS latestAnswerDate\nRETURN duration.between(latestAnswerDate, earliestQuestionDate).days AS dateDifferenceInDays"
+  }
+]
