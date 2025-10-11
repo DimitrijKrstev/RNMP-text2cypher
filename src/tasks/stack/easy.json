@@ -1,0 +1,502 @@
+[
+  {
+    "question": "How many posts are there in total?",
+    "sql": "SELECT COUNT(*) FROM posts;",
+    "cypher": "MATCH (p:posts) RETURN count(p);"
+  },
+  {
+    "question": "What is the ID and creation date of the post with the title 'How to use React hooks?'?",
+    "sql": "SELECT Id, CreationDate FROM posts WHERE Title = 'How to use React hooks?';",
+    "cypher": "MATCH (p:posts {Title: 'How to use React hooks?'}) RETURN p.Id, p.CreationDate;"
+  },
+  {
+    "question": "List all user IDs who have made comments.",
+    "sql": "SELECT DISTINCT UserId FROM comments;",
+    "cypher": "MATCH (c:comments) RETURN DISTINCT c.UserId;"
+  },
+  {
+    "question": "Find the body text of the post with ID 101.",
+    "sql": "SELECT Body FROM posts WHERE Id = 101;",
+    "cypher": "MATCH (p:posts {Id: 101}) RETURN p.Body;"
+  },
+  {
+    "question": "What are the IDs of all posts created on '2023-01-15'?",
+    "sql": "SELECT Id FROM posts WHERE CreationDate = '2023-01-15';",
+    "cypher": "MATCH (p:posts {CreationDate: '2023-01-15'}) RETURN p.Id;"
+  },
+  {
+    "question": "How many badges have been awarded?",
+    "sql": "SELECT COUNT(*) FROM badges;",
+    "cypher": "MATCH (b:badges) RETURN count(b);"
+  },
+  {
+    "question": "Retrieve the 'AboutMe' text for the user with ID 50.",
+    "sql": "SELECT AboutMe FROM users WHERE Id = 50;",
+    "cypher": "MATCH (u:users {Id: 50}) RETURN u.AboutMe;"
+  },
+  {
+    "question": "List the post IDs and user IDs for all entries in 'postHistory'.",
+    "sql": "SELECT PostId, UserId FROM postHistory;",
+    "cypher": "MATCH (ph:postHistory) RETURN ph.PostId, ph.UserId;"
+  },
+  {
+    "question": "Find all posts with a 'PostTypeId' of 1.",
+    "sql": "SELECT * FROM posts WHERE PostTypeId = 1;",
+    "cypher": "MATCH (p:posts {PostTypeId: 1}) RETURN p;"
+  },
+  {
+    "question": "What is the number of votes recorded?",
+    "sql": "SELECT COUNT(*) FROM votes;",
+    "cypher": "MATCH (v:votes) RETURN count(v);"
+  },
+  {
+    "question": "Show the 'LinkTypeId' for all 'postLinks' where 'RelatedPostId' is 200.",
+    "sql": "SELECT LinkTypeId FROM postLinks WHERE RelatedPostId = 200;",
+    "cypher": "MATCH (pl:postLinks {RelatedPostId: 200}) RETURN pl.LinkTypeId;"
+  },
+  {
+    "question": "List all 'CreationDate' values from the 'comments' table.",
+    "sql": "SELECT CreationDate FROM comments;",
+    "cypher": "MATCH (c:comments) RETURN c.CreationDate;"
+  },
+  {
+    "question": "Retrieve the 'ContentLicense' for all entries in 'postHistory'.",
+    "sql": "SELECT ContentLicense FROM postHistory;",
+    "cypher": "MATCH (ph:postHistory) RETURN ph.ContentLicense;"
+  },
+  {
+    "question": "Find all 'PostId' values where a vote of 'VoteTypeId' 5 was cast.",
+    "sql": "SELECT PostId FROM votes WHERE VoteTypeId = 5;",
+    "cypher": "MATCH (v:votes {VoteTypeId: 5}) RETURN v.PostId;"
+  },
+  {
+    "question": "How many users have an 'AccountId' of 123?",
+    "sql": "SELECT COUNT(*) FROM users WHERE AccountId = 123;",
+    "cypher": "MATCH (u:users {AccountId: 123}) RETURN count(u);"
+  },
+  {
+    "question": "List the 'Class' of all badges awarded to 'UserId' 75.",
+    "sql": "SELECT Class FROM badges WHERE UserId = 75;",
+    "cypher": "MATCH (b:badges {UserId: 75}) RETURN b.Class;"
+  },
+  {
+    "question": "What are the 'Tags' for the post with ID 300?",
+    "sql": "SELECT Tags FROM posts WHERE Id = 300;",
+    "cypher": "MATCH (p:posts {Id: 300}) RETURN p.Tags;"
+  },
+  {
+    "question": "Find the 'Text' of the comment with ID 150.",
+    "sql": "SELECT Text FROM comments WHERE Id = 150;",
+    "cypher": "MATCH (c:comments {Id: 150}) RETURN c.Text;"
+  },
+  {
+    "question": "Count the number of 'postHistory' entries for 'UserId' 42.",
+    "sql": "SELECT COUNT(*) FROM postHistory WHERE UserId = 42;",
+    "cypher": "MATCH (ph:postHistory {UserId: 42}) RETURN count(ph);"
+  },
+  {
+    "question": "Retrieve all 'PostId' from 'postLinks' where 'LinkTypeId' is 3.",
+    "sql": "SELECT PostId FROM postLinks WHERE LinkTypeId = 3;",
+    "cypher": "MATCH (pl:postLinks {LinkTypeId: 3}) RETURN pl.PostId;"
+  },
+  {
+    "question": "List all 'Id' and 'CreationDate' from the 'users' table.",
+    "sql": "SELECT Id, CreationDate FROM users;",
+    "cypher": "MATCH (u:users) RETURN u.Id, u.CreationDate;"
+  },
+  {
+    "question": "What is the 'PostTypeId' for the post with 'AcceptedAnswerId' 500?",
+    "sql": "SELECT PostTypeId FROM posts WHERE AcceptedAnswerId = 500;",
+    "cypher": "MATCH (p:posts {AcceptedAnswerId: 500}) RETURN p.PostTypeId;"
+  },
+  {
+    "question": "Find the 'OwnerUserId' for all posts created after '2023-05-01'.",
+    "sql": "SELECT OwnerUserId FROM posts WHERE CreationDate > '2023-05-01';",
+    "cypher": "MATCH (p:posts) WHERE p.CreationDate > '2023-05-01' RETURN p.OwnerUserId;"
+  },
+  {
+    "question": "How many distinct 'PostId' values are there in the 'comments' table?",
+    "sql": "SELECT COUNT(DISTINCT PostId) FROM comments;",
+    "cypher": "MATCH (c:comments) RETURN count(DISTINCT c.PostId);"
+  },
+  {
+    "question": "List all 'CreationDate' from the 'votes' table.",
+    "sql": "SELECT CreationDate FROM votes;",
+    "cypher": "MATCH (v:votes) RETURN v.CreationDate;"
+  },
+  {
+    "question": "Count the total number of users.",
+    "sql": "SELECT COUNT(*) FROM users;",
+    "cypher": "MATCH (u:users) RETURN count(u);"
+  },
+  {
+    "question": "Find the 'Body' of all posts that have 'JavaScript' in their tags.",
+    "sql": "SELECT Body FROM posts WHERE Tags LIKE '%JavaScript%';",
+    "cypher": "MATCH (p:posts) WHERE p.Tags CONTAINS 'JavaScript' RETURN p.Body;"
+  },
+  {
+    "question": "List all comments made by 'UserId' 25.",
+    "sql": "SELECT Text FROM comments WHERE UserId = 25;",
+    "cypher": "MATCH (c:comments {UserId: 25}) RETURN c.Text;"
+  },
+  {
+    "question": "Retrieve the 'PostId' and 'RelatedPostId' from 'postLinks' where 'LinkTypeId' is 1.",
+    "sql": "SELECT PostId, RelatedPostId FROM postLinks WHERE LinkTypeId = 1;",
+    "cypher": "MATCH (pl:postLinks {LinkTypeId: 1}) RETURN pl.PostId, pl.RelatedPostId;"
+  },
+  {
+    "question": "What is the 'CreationDate' of the user with 'Id' 10?",
+    "sql": "SELECT CreationDate FROM users WHERE Id = 10;",
+    "cypher": "MATCH (u:users {Id: 10}) RETURN u.CreationDate;"
+  },
+  {
+    "question": "How many posts have a 'ParentId' of 1234?",
+    "sql": "SELECT COUNT(*) FROM posts WHERE ParentId = 1234;",
+    "cypher": "MATCH (p:posts {ParentId: 1234}) RETURN count(p);"
+  },
+  {
+    "question": "List all 'UserId' values from the 'badges' table.",
+    "sql": "SELECT UserId FROM badges;",
+    "cypher": "MATCH (b:badges) RETURN b.UserId;"
+  },
+  {
+    "question": "Find all 'PostHistoryTypeId' from 'postHistory' for 'PostId' 500.",
+    "sql": "SELECT PostHistoryTypeId FROM postHistory WHERE PostId = 500;",
+    "cypher": "MATCH (ph:postHistory {PostId: 500}) RETURN ph.PostHistoryTypeId;"
+  },
+  {
+    "question": "What is the 'Text' of the post history entry with 'Id' 99?",
+    "sql": "SELECT Text FROM postHistory WHERE Id = 99;",
+    "cypher": "MATCH (ph:postHistory {Id: 99}) RETURN ph.Text;"
+  },
+  {
+    "question": "Count the number of votes with 'VoteTypeId' 2.",
+    "sql": "SELECT COUNT(*) FROM votes WHERE VoteTypeId = 2;",
+    "cypher": "MATCH (v:votes {VoteTypeId: 2}) RETURN count(v);"
+  },
+  {
+    "question": "List the 'Title' of all posts.",
+    "sql": "SELECT Title FROM posts;",
+    "cypher": "MATCH (p:posts) RETURN p.Title;"
+  },
+  {
+    "question": "Retrieve the 'Date' of all badges awarded to 'UserId' 150.",
+    "sql": "SELECT Date FROM badges WHERE UserId = 150;",
+    "cypher": "MATCH (b:badges {UserId: 150}) RETURN b.Date;"
+  },
+  {
+    "question": "Find the 'CreationDate' of comments for 'PostId' 200.",
+    "sql": "SELECT CreationDate FROM comments WHERE PostId = 200;",
+    "cypher": "MATCH (c:comments {PostId: 200}) RETURN c.CreationDate;"
+  },
+  {
+    "question": "How many 'postLinks' entries exist?",
+    "sql": "SELECT COUNT(*) FROM postLinks;",
+    "cypher": "MATCH (pl:postLinks) RETURN count(pl);"
+  },
+  {
+    "question": "List all 'AccountId' from the 'users' table.",
+    "sql": "SELECT AccountId FROM users;",
+    "cypher": "MATCH (u:users) RETURN u.AccountId;"
+  },
+  {
+    "question": "Show the 'PostId' and 'OwnerUserId' for posts with 'AcceptedAnswerId' not null.",
+    "sql": "SELECT Id, OwnerUserId FROM posts WHERE AcceptedAnswerId IS NOT NULL;",
+    "cypher": "MATCH (p:posts) WHERE p.AcceptedAnswerId IS NOT NULL RETURN p.Id, p.OwnerUserId;"
+  },
+  {
+    "question": "Count the number of unique 'PostId' values in 'postHistory'.",
+    "sql": "SELECT COUNT(DISTINCT PostId) FROM postHistory;",
+    "cypher": "MATCH (ph:postHistory) RETURN count(DISTINCT ph.PostId);"
+  },
+  {
+    "question": "Retrieve all 'PostId' and 'UserId' from the 'votes' table.",
+    "sql": "SELECT PostId, UserId FROM votes;",
+    "cypher": "MATCH (v:votes) RETURN v.PostId, v.UserId;"
+  },
+  {
+    "question": "List all 'TagBased' values from the 'badges' table.",
+    "sql": "SELECT TagBased FROM badges;",
+    "cypher": "MATCH (b:badges) RETURN b.TagBased;"
+  },
+  {
+    "question": "Find the 'Id' and 'CreationDate' of all posts where 'PostTypeId' is 2.",
+    "sql": "SELECT Id, CreationDate FROM posts WHERE PostTypeId = 2;",
+    "cypher": "MATCH (p:posts {PostTypeId: 2}) RETURN p.Id, p.CreationDate;"
+  },
+  {
+    "question": "How many comments were made on 'PostId' 700?",
+    "sql": "SELECT COUNT(*) FROM comments WHERE PostId = 700;",
+    "cypher": "MATCH (c:comments {PostId: 700}) RETURN count(c);"
+  },
+  {
+    "question": "Show the 'CreationDate' of the 'postLink' with 'Id' 1000.",
+    "sql": "SELECT CreationDate FROM postLinks WHERE Id = 1000;",
+    "cypher": "MATCH (pl:postLinks {Id: 1000}) RETURN pl.CreationDate;"
+  },
+  {
+    "question": "List the 'PostId' and 'UserId' from 'postHistory' for 'PostHistoryTypeId' 8.",
+    "sql": "SELECT PostId, UserId FROM postHistory WHERE PostHistoryTypeId = 8;",
+    "cypher": "MATCH (ph:postHistory {PostHistoryTypeId: 8}) RETURN ph.PostId, ph.UserId;"
+  },
+  {
+    "question": "Retrieve the 'OwnerUserId' for the post with 'Title' containing 'Next.js'.",
+    "sql": "SELECT OwnerUserId FROM posts WHERE Title LIKE '%Next.js%';",
+    "cypher": "MATCH (p:posts) WHERE p.Title CONTAINS 'Next.js' RETURN p.OwnerUserId;"
+  },
+  {
+    "question": "Count the number of users who have 'AboutMe' text.",
+    "sql": "SELECT COUNT(*) FROM users WHERE AboutMe IS NOT NULL;",
+    "cypher": "MATCH (u:users) WHERE u.AboutMe IS NOT NULL RETURN count(u);"
+  },
+  {
+    "question": "What is the most recent creation date among all posts?",
+    "sql": "SELECT MAX(CreationDate) FROM posts;",
+    "cypher": "MATCH (p:posts) RETURN max(p.CreationDate);"
+  },
+  {
+    "question": "List all 'Class' of badges that are 'TagBased'.",
+    "sql": "SELECT Class FROM badges WHERE TagBased = TRUE;",
+    "cypher": "MATCH (b:badges {TagBased: TRUE}) RETURN b.Class;"
+  },
+  {
+    "question": "How many 'postLinks' have the same 'PostId' as 'RelatedPostId'?",
+    "sql": "SELECT COUNT(*) FROM postLinks WHERE PostId = RelatedPostId;",
+    "cypher": "MATCH (pl:postLinks) WHERE pl.PostId = pl.RelatedPostId RETURN count(pl);"
+  },
+  {
+    "question": "Find the 'PostId' of all comments created before '2023-01-01'.",
+    "sql": "SELECT PostId FROM comments WHERE CreationDate < '2023-01-01';",
+    "cypher": "MATCH (c:comments) WHERE c.CreationDate < '2023-01-01' RETURN c.PostId;"
+  },
+  {
+    "question": "Retrieve the 'PostHistoryTypeId' for all 'postHistory' entries created on '2023-02-10'.",
+    "sql": "SELECT PostHistoryTypeId FROM postHistory WHERE CreationDate = '2023-02-10';",
+    "cypher": "MATCH (ph:postHistory {CreationDate: '2023-02-10'}) RETURN ph.PostHistoryTypeId;"
+  },
+  {
+    "question": "What is the 'AccountId' of the user whose 'CreationDate' is '2020-07-20'?",
+    "sql": "SELECT AccountId FROM users WHERE CreationDate = '2020-07-20';",
+    "cypher": "MATCH (u:users {CreationDate: '2020-07-20'}) RETURN u.AccountId;"
+  },
+  {
+    "question": "Count the number of posts with a 'Title' that starts with 'What'.",
+    "sql": "SELECT COUNT(*) FROM posts WHERE Title LIKE 'What%';",
+    "cypher": "MATCH (p:posts) WHERE p.Title STARTS WITH 'What' RETURN count(p);"
+  },
+  {
+    "question": "List all 'UserId' values from the 'votes' table that have 'VoteTypeId' 1.",
+    "sql": "SELECT UserId FROM votes WHERE VoteTypeId = 1;",
+    "cypher": "MATCH (v:votes {VoteTypeId: 1}) RETURN v.UserId;"
+  },
+  {
+    "question": "Find the 'Body' of posts that do not have any tags.",
+    "sql": "SELECT Body FROM posts WHERE Tags IS NULL OR Tags = '';",
+    "cypher": "MATCH (p:posts) WHERE p.Tags IS NULL OR p.Tags = '' RETURN p.Body;"
+  },
+  {
+    "question": "Retrieve the 'Id' and 'LinkTypeId' from 'postLinks' ordered by 'CreationDate' descending.",
+    "sql": "SELECT Id, LinkTypeId FROM postLinks ORDER BY CreationDate DESC;",
+    "cypher": "MATCH (pl:postLinks) RETURN pl.Id, pl.LinkTypeId ORDER BY pl.CreationDate DESC;"
+  },
+  {
+    "question": "How many users have an 'AboutMe' field that contains the word 'developer'?",
+    "sql": "SELECT COUNT(*) FROM users WHERE AboutMe LIKE '%developer%';",
+    "cypher": "MATCH (u:users) WHERE u.AboutMe CONTAINS 'developer' RETURN count(u);"
+  },
+  {
+    "question": "List all 'PostId' from 'comments' where the 'Text' contains 'bug'.",
+    "sql": "SELECT PostId FROM comments WHERE Text LIKE '%bug%';",
+    "cypher": "MATCH (c:comments) WHERE c.Text CONTAINS 'bug' RETURN c.PostId;"
+  },
+  {
+    "question": "Find all 'UserId' values from 'badges' where the 'Date' is before '2022-01-01'.",
+    "sql": "SELECT UserId FROM badges WHERE Date < '2022-01-01';",
+    "cypher": "MATCH (b:badges) WHERE b.Date < '2022-01-01' RETURN b.UserId;"
+  },
+  {
+    "question": "What is the earliest 'CreationDate' found in the 'comments' table?",
+    "sql": "SELECT MIN(CreationDate) FROM comments;",
+    "cypher": "MATCH (c:comments) RETURN min(c.CreationDate);"
+  },
+  {
+    "question": "Count the number of 'postHistory' entries with 'ContentLicense' as 'CC BY-SA 4.0'.",
+    "sql": "SELECT COUNT(*) FROM postHistory WHERE ContentLicense = 'CC BY-SA 4.0';",
+    "cypher": "MATCH (ph:postHistory {ContentLicense: 'CC BY-SA 4.0'}) RETURN count(ph);"
+  },
+  {
+    "question": "List the 'PostId' and 'VoteTypeId' for votes cast by 'UserId' 300.",
+    "sql": "SELECT PostId, VoteTypeId FROM votes WHERE UserId = 300;",
+    "cypher": "MATCH (v:votes {UserId: 300}) RETURN v.PostId, v.VoteTypeId;"
+  },
+  {
+    "question": "Show all 'Id' and 'OwnerUserId' for posts that have 'PostTypeId' 3.",
+    "sql": "SELECT Id, OwnerUserId FROM posts WHERE PostTypeId = 3;",
+    "cypher": "MATCH (p:posts {PostTypeId: 3}) RETURN p.Id, p.OwnerUserId;"
+  },
+  {
+    "question": "Retrieve all information about the user with the lowest 'Id'.",
+    "sql": "SELECT * FROM users ORDER BY Id ASC LIMIT 1;",
+    "cypher": "MATCH (u:users) RETURN u ORDER BY u.Id ASC LIMIT 1;"
+  },
+  {
+    "question": "How many comments were created on '2023-03-10'?",
+    "sql": "SELECT COUNT(*) FROM comments WHERE CreationDate = '2023-03-10';",
+    "cypher": "MATCH (c:comments {CreationDate: '2023-03-10'}) RETURN count(c);"
+  },
+  {
+    "question": "List all 'Id' from 'postLinks' where 'RelatedPostId' is greater than 1000.",
+    "sql": "SELECT Id FROM postLinks WHERE RelatedPostId > 1000;",
+    "cypher": "MATCH (pl:postLinks) WHERE pl.RelatedPostId > 1000 RETURN pl.Id;"
+  },
+  {
+    "question": "Find the 'CreationDate' of all 'badges' with 'Class' 'Gold'.",
+    "sql": "SELECT Date FROM badges WHERE Class = 'Gold';",
+    "cypher": "MATCH (b:badges {Class: 'Gold'}) RETURN b.Date;"
+  },
+  {
+    "question": "Retrieve the 'Text' of 'postHistory' entries for 'UserId' 777.",
+    "sql": "SELECT Text FROM postHistory WHERE UserId = 777;",
+    "cypher": "MATCH (ph:postHistory {UserId: 777}) RETURN ph.Text;"
+  },
+  {
+    "question": "What is the average 'VoteTypeId' in the 'votes' table?",
+    "sql": "SELECT AVG(VoteTypeId) FROM votes;",
+    "cypher": "MATCH (v:votes) RETURN avg(v.VoteTypeId);"
+  },
+  {
+    "question": "List the 'Id' and 'Body' of posts where the 'Title' is exactly 'React Best Practices'.",
+    "sql": "SELECT Id, Body FROM posts WHERE Title = 'React Best Practices';",
+    "cypher": "MATCH (p:posts {Title: 'React Best Practices'}) RETURN p.Id, p.Body;"
+  },
+  {
+    "question": "Count the number of unique 'UserId' values in the 'badges' table.",
+    "sql": "SELECT COUNT(DISTINCT UserId) FROM badges;",
+    "cypher": "MATCH (b:badges) RETURN count(DISTINCT b.UserId);"
+  },
+  {
+    "question": "Find the 'CreationDate' of the user with 'AccountId' 456.",
+    "sql": "SELECT CreationDate FROM users WHERE AccountId = 456;",
+    "cypher": "MATCH (u:users {AccountId: 456}) RETURN u.CreationDate;"
+  },
+  {
+    "question": "List all posts that have 'TypeScript' in their 'Tags' and 'PostTypeId' is 1.",
+    "sql": "SELECT Id, Title FROM posts WHERE Tags LIKE '%TypeScript%' AND PostTypeId = 1;",
+    "cypher": "MATCH (p:posts {PostTypeId: 1}) WHERE p.Tags CONTAINS 'TypeScript' RETURN p.Id, p.Title;"
+  },
+  {
+    "question": "How many comments exist for 'PostId' 5000?",
+    "sql": "SELECT COUNT(*) FROM comments WHERE PostId = 5000;",
+    "cypher": "MATCH (c:comments {PostId: 5000}) RETURN count(c);"
+  },
+  {
+    "question": "Retrieve all 'PostId' values from 'postLinks' where 'LinkTypeId' is 4.",
+    "sql": "SELECT PostId FROM postLinks WHERE LinkTypeId = 4;",
+    "cypher": "MATCH (pl:postLinks {LinkTypeId: 4}) RETURN pl.PostId;"
+  },
+  {
+    "question": "What is the 'Text' of the 'postHistory' entry with 'Id' 1010?",
+    "sql": "SELECT Text FROM postHistory WHERE Id = 1010;",
+    "cypher": "MATCH (ph:postHistory {Id: 1010}) RETURN ph.Text;"
+  },
+  {
+    "question": "Count the number of 'Silver' class badges.",
+    "sql": "SELECT COUNT(*) FROM badges WHERE Class = 'Silver';",
+    "cypher": "MATCH (b:badges {Class: 'Silver'}) RETURN count(b);"
+  },
+  {
+    "question": "List all 'Id' and 'CreationDate' from the 'votes' table where 'VoteTypeId' is 7.",
+    "sql": "SELECT Id, CreationDate FROM votes WHERE VoteTypeId = 7;",
+    "cypher": "MATCH (v:votes {VoteTypeId: 7}) RETURN v.Id, v.CreationDate;"
+  },
+  {
+    "question": "Find the 'OwnerUserId' for posts that were created on '2023-04-20'.",
+    "sql": "SELECT OwnerUserId FROM posts WHERE CreationDate = '2023-04-20';",
+    "cypher": "MATCH (p:posts {CreationDate: '2023-04-20'}) RETURN p.OwnerUserId;"
+  },
+  {
+    "question": "Retrieve the 'AboutMe' text for users whose 'CreationDate' is earlier than '2015-01-01'.",
+    "sql": "SELECT AboutMe FROM users WHERE CreationDate < '2015-01-01';",
+    "cypher": "MATCH (u:users) WHERE u.CreationDate < '2015-01-01' RETURN u.AboutMe;"
+  },
+  {
+    "question": "How many 'postHistory' entries have a 'UserId' of 200?",
+    "sql": "SELECT COUNT(*) FROM postHistory WHERE UserId = 200;",
+    "cypher": "MATCH (ph:postHistory {UserId: 200}) RETURN count(ph);"
+  },
+  {
+    "question": "List all 'Text' from 'comments' that contain the word 'solution'.",
+    "sql": "SELECT Text FROM comments WHERE Text LIKE '%solution%';",
+    "cypher": "MATCH (c:comments) WHERE c.Text CONTAINS 'solution' RETURN c.Text;"
+  },
+  {
+    "question": "Find the 'RelatedPostId' for 'postLinks' where 'PostId' is 600.",
+    "sql": "SELECT RelatedPostId FROM postLinks WHERE PostId = 600;",
+    "cypher": "MATCH (pl:postLinks {PostId: 600}) RETURN pl.RelatedPostId;"
+  },
+  {
+    "question": "What is the total number of 'postHistory' entries?",
+    "sql": "SELECT COUNT(*) FROM postHistory;",
+    "cypher": "MATCH (ph:postHistory) RETURN count(ph);"
+  },
+  {
+    "question": "Retrieve the 'Id' and 'AccountId' of users created after '2022-06-01'.",
+    "sql": "SELECT Id, AccountId FROM users WHERE CreationDate > '2022-06-01';",
+    "cypher": "MATCH (u:users) WHERE u.CreationDate > '2022-06-01' RETURN u.Id, u.AccountId;"
+  },
+  {
+    "question": "List all 'PostId' values in 'votes' where 'CreationDate' is '2023-01-01'.",
+    "sql": "SELECT PostId FROM votes WHERE CreationDate = '2023-01-01';",
+    "cypher": "MATCH (v:votes {CreationDate: '2023-01-01'}) RETURN v.PostId;"
+  },
+  {
+    "question": "Count the number of posts with a 'Body' that contains 'error handling'.",
+    "sql": "SELECT COUNT(*) FROM posts WHERE Body LIKE '%error handling%';",
+    "cypher": "MATCH (p:posts) WHERE p.Body CONTAINS 'error handling' RETURN count(p);"
+  },
+  {
+    "question": "Show the 'CreationDate' of all 'badges' awarded to 'UserId' 999.",
+    "sql": "SELECT Date FROM badges WHERE UserId = 999;",
+    "cypher": "MATCH (b:badges {UserId: 999}) RETURN b.Date;"
+  },
+  {
+    "question": "Find the 'UserId' for comments created on '2023-07-07'.",
+    "sql": "SELECT UserId FROM comments WHERE CreationDate = '2023-07-07';",
+    "cypher": "MATCH (c:comments {CreationDate: '2023-07-07'}) RETURN c.UserId;"
+  },
+  {
+    "question": "Retrieve the 'ContentLicense' and 'PostHistoryTypeId' for 'postHistory' entries by 'UserId' 500.",
+    "sql": "SELECT ContentLicense, PostHistoryTypeId FROM postHistory WHERE UserId = 500;",
+    "cypher": "MATCH (ph:postHistory {UserId: 500}) RETURN ph.ContentLicense, ph.PostHistoryTypeId;"
+  },
+  {
+    "question": "What is the maximum 'Id' in the 'postLinks' table?",
+    "sql": "SELECT MAX(Id) FROM postLinks;",
+    "cypher": "MATCH (pl:postLinks) RETURN max(pl.Id);"
+  },
+  {
+    "question": "List all 'Id' and 'PostTypeId' for posts whose 'Title' ends with 'problem'.",
+    "sql": "SELECT Id, PostTypeId FROM posts WHERE Title LIKE '%problem';",
+    "cypher": "MATCH (p:posts) WHERE p.Title ENDS WITH 'problem' RETURN p.Id, p.PostTypeId;"
+  },
+  {
+    "question": "How many 'badges' are not 'TagBased'?",
+    "sql": "SELECT COUNT(*) FROM badges WHERE TagBased = FALSE OR TagBased IS NULL;",
+    "cypher": "MATCH (b:badges) WHERE b.TagBased = FALSE OR b.TagBased IS NULL RETURN count(b);"
+  },
+  {
+    "question": "Show all 'PostId' where 'VoteTypeId' is 6.",
+    "sql": "SELECT PostId FROM votes WHERE VoteTypeId = 6;",
+    "cypher": "MATCH (v:votes {VoteTypeId: 6}) RETURN v.PostId;"
+  },
+  {
+    "question": "Find the 'AboutMe' text of users with 'Id' between 100 and 105 (inclusive).",
+    "sql": "SELECT AboutMe FROM users WHERE Id BETWEEN 100 AND 105;",
+    "cypher": "MATCH (u:users) WHERE u.Id >= 100 AND u.Id <= 105 RETURN u.AboutMe;"
+  },
+  {
+    "question": "Retrieve the 'Id' and 'CreationDate' of all 'comments' with a 'PostId' of 1500.",
+    "sql": "SELECT Id, CreationDate FROM comments WHERE PostId = 1500;",
+    "cypher": "MATCH (c:comments {PostId: 1500}) RETURN c.Id, c.CreationDate;"
+  }
+]
