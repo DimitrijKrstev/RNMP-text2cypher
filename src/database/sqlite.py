@@ -2,13 +2,12 @@ from functools import reduce
 from pathlib import Path
 from sqlite3 import Row, connect
 
-from database.constants import SQLITE_DB_PATH
 from models import SQLTableWithHeaders
 
 
-def query_sqlite(sql: str) -> list[Row]:
-    db_path = Path(SQLITE_DB_PATH)
-    db_path.parent.mkdir(parents=True, exist_ok=True)
+def query_sqlite(sql: str, db_path: Path) -> list[Row]:
+    if not db_path.exists():
+        raise FileNotFoundError(f"Database file not found: {db_path}")
 
     with connect(db_path.as_posix()) as conn:
         conn.row_factory = Row
@@ -16,8 +15,9 @@ def query_sqlite(sql: str) -> list[Row]:
         return cur.fetchall()
 
 
-def get_sqlite_tables() -> str:
-    with connect(SQLITE_DB_PATH) as conn:
+
+def get_sqlite_tables(db_path: Path) -> str:
+    with connect(db_path.as_posix()) as conn:
         tables = [
             row[0]
             for row in conn.execute(
