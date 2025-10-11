@@ -12,10 +12,10 @@ COPY scripts/constraints/ /var/lib/neo4j/scripts/
 RUN echo "dbms.directories.import=/var/lib/neo4j/import" >> /var/lib/neo4j/conf/neo4j.conf \
     && echo "browser.remote_content_hostname_whitelist=*" >> /var/lib/neo4j/conf/neo4j.conf \
     && echo "dbms.security.allow_csv_import_from_file_urls=true" >> /var/lib/neo4j/conf/neo4j.conf \
-    && echo "server.memory.heap.initial_size=6G" >> /var/lib/neo4j/conf/neo4j.conf \
-    && echo "server.memory.heap.max_size=6G" >> /var/lib/neo4j/conf/neo4j.conf \
-    && echo "server.memory.pagecache.size=2G" >> /var/lib/neo4j/conf/neo4j.conf \
-    && echo "db.memory.transaction.total.max=4G" >> /var/lib/neo4j/conf/neo4j.conf
+    && echo "server.memory.heap.initial_size=2G" >> /var/lib/neo4j/conf/neo4j.conf \
+    && echo "server.memory.heap.max_size=2G" >> /var/lib/neo4j/conf/neo4j.conf \
+    && echo "server.memory.pagecache.size=1G" >> /var/lib/neo4j/conf/neo4j.conf \
+    && echo "db.memory.transaction.total.max=1G" >> /var/lib/neo4j/conf/neo4j.conf
 
 
 RUN /var/lib/neo4j/scripts/import-nodes.sh
