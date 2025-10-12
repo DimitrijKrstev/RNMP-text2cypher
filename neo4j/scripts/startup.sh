@@ -2,8 +2,6 @@
 
 set -euo pipefail
 
-echo "DEBUG: Received argument: '$1'"
-echo "DEBUG: All arguments: '$@'"
 
 DATASET_NAME=${1:-${DATASET_NAME:-rel-f1}}
 USER=neo4j
