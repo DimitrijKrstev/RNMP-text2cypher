@@ -1,16 +1,18 @@
 import json
 from pathlib import Path
 
+from constants import get_sqlite_db_path
 from database.neo4j import query_neo4j
 from database.sqlite import query_sqlite
 from models import Task
 
 
-def validate(tasks_path: Path) -> None:
+def validate(tasks_path: Path, database_name: str) -> None:
     with open(tasks_path, "r") as f:
         tasks = [Task.from_dict(task) for task in json.load(f)]
 
     valid_tasks = set()
+    db_path = get_sqlite_db_path(database_name)
 
     for task in tasks:
         sql = task.sql
@@ -20,7 +22,7 @@ def validate(tasks_path: Path) -> None:
         cypher_valid = False
 
         try:
-            sql_result = query_sqlite(sql)
+            sql_result = query_sqlite(sql, db_path)
             if sql_result:
                 sql_valid = True
         except Exception as e:
