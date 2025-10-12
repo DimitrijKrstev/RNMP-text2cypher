@@ -1,19 +1,13 @@
-// All counts should be zero
-
-// 1. Range checks
-// Invalid post scores
 MATCH (p:posts)
 WHERE p.score IS NOT NULL 
   AND (toInteger(p.score) < -100 OR toInteger(p.score) > 5000)
 RETURN 'invalid_post_score' AS issue, count(*) AS cnt;
 
-// Invalid user reputation
 MATCH (u:users)
 WHERE u.reputation IS NOT NULL
   AND (toInteger(u.reputation) < 1 OR toInteger(u.reputation) > 1000000)
 RETURN 'invalid_reputation' AS issue, count(*) AS cnt;
 
-// Implausible creation years
 MATCH (p:posts)
 WHERE toInteger(substring(p.CreationDate, 0, 4)) < 2008 OR toInteger(substring(p.CreationDate, 0, 4)) > 2024
 RETURN 'implausible_year' AS issue,
@@ -21,7 +15,6 @@ RETURN 'implausible_year' AS issue,
        min(toInteger(substring(p.CreationDate, 0, 4))) AS minYear,
        max(toInteger(substring(p.CreationDate, 0, 4))) AS maxYear;
 
-// 2. Duplicate PKs
 MATCH (n:users)
 WITH n.Id AS id, count(*) AS c WHERE c>1
 RETURN 'dup_userId' AS issue, sum(c) AS cnt;
@@ -50,7 +43,6 @@ MATCH (n:postLinks)
 WITH n.Id AS id, count(*) AS c WHERE c>1
 RETURN 'dup_postLinkId' AS issue, sum(c) AS cnt;
 
-// 3. Completeness
 MATCH (p:posts)
 WHERE p.Title IS NULL
 RETURN 'posts_missing_title' AS issue, count(*) AS cnt;
@@ -59,7 +51,6 @@ MATCH (p:posts)
 WHERE p.CreationDate IS NULL
 RETURN 'posts_missing_creation_date' AS issue, count(*) AS cnt;
 
-// 4. Business logic violations
 MATCH (p:posts)
 WHERE p.Id = p.ParentId
 RETURN 'self_referencing_posts' AS issue, count(*) AS cnt;
