@@ -15,9 +15,5 @@ neo4j-admin database import full neo4j --verbose \
 --skip-duplicate-nodes=true \
 --delimiter="," \
 --array-delimiter=";" \
-<<<<<<< Updated upstream
 --multiline-fields=true \
 $(for f in /var/lib/neo4j/import/*_nodes.csv; do [ -e "$f" ] && echo --nodes="$f"; done)
-=======
-$(for f in import/rel-stack/*_nodes.csv; do [ -e "$f" ] && echo --nodes="$f"; done)
->>>>>>> Stashed changes
