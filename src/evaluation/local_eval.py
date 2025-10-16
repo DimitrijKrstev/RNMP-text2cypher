@@ -1,34 +1,34 @@
+from logging import getLogger
 from typing import Any
 
 import torch
 from tqdm import tqdm
 
-from logging import getLogger
-
-from constants import TASKS_DIRECTORY, get_sqlite_db_path, get_tasks_directory
+from constants import get_sqlite_db_path, get_tasks_directory
 from database.neo4j import get_neo4j_schema
 from database.sqlite import get_sqlite_tables
 from evaluation.scoring import get_task_result
-
-from models import TaskDifficulty, TaskType
+from models import DatasetName, TaskDifficulty, TaskType
 from utils import build_local_prompt, get_tasks_from_json, save_task_results
 
 logger = getLogger(__name__)
 
 
 def evaluate_local_model_for_task(
-    dataset_name: str, model: Any, tokenizer: Any, task_type: TaskType, model_name: str
+    model: Any,
+    tokenizer: Any,
+    dataset_name: DatasetName,
+    task_type: TaskType,
+    model_name: str,
 ) -> None:
-    """Evaluate a local model for a given dataset and task type."""
     if task_type == TaskType.SQL:
         db_path = get_sqlite_db_path(dataset_name)
         schema = get_sqlite_tables(db_path)
-    else:  
+    else:
         schema = get_neo4j_schema()
 
     tasks_dir = get_tasks_directory(dataset_name)
 
-    # was just for easy tasks, will revert back if needed
     for task_difficulty in TaskDifficulty:
         tasks_file = tasks_dir / f"{task_difficulty.value}.json"
         if not tasks_file.exists():
@@ -38,7 +38,9 @@ def evaluate_local_model_for_task(
         tasks = get_tasks_from_json(tasks_file)
         task_results = []
 
-        for task in tqdm(tasks, f"Tasks ({dataset_name}, {task_difficulty}, {task_type})"):
+        for task in tqdm(
+            tasks, f"Tasks ({dataset_name}, {task_difficulty}, {task_type})"
+        ):
             prompt = build_local_prompt(task_type, task.question, schema)
             tokenized_prompt = tokenizer(prompt, return_tensors="pt").to("cuda")
 
@@ -57,8 +59,10 @@ def evaluate_local_model_for_task(
             generated_tokens = outputs[0, tokenized_prompt["input_ids"].size(1) :]
             generated_query = tokenizer.decode(
                 generated_tokens, skip_special_tokens=True
-            ) or "<no_query>"
+            )
             result = get_task_result(task, generated_query, task_type)
             task_results.append(result)
 
-        save_task_results(task_results, dataset_name, task_difficulty, task_type, model_name)
+        save_task_results(
+            task_results, dataset_name, task_difficulty, task_type, model_name
+        )

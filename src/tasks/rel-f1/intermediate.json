@@ -31,8 +31,8 @@
   },
   {
     "question": "List the drivers who scored points in every race of 2020.",
-    "sql": "SELECT d.forename, d.surname FROM drivers d WHERE NOT EXISTS (SELECT 1 FROM results r JOIN races ra ON r.raceId = ra.raceId WHERE ra.year = 2020 AND r.driverId = d.driverId AND r.points = 0);",
-    "cypher": "MATCH (d:drivers) WHERE NOT EXISTS { MATCH (d)-[:ACHIEVED]->(r:results {points: 0})-[:IN_RACE]->(ra:races {year: 2020}) } RETURN d.forename + ' ' + d.surname AS driver;"
+    "sql": "SELECT d.forename, d.surname FROM drivers d WHERE d.driverId IN (SELECT r.driverId FROM results r JOIN races ra ON r.raceId = ra.raceId WHERE ra.year = 2020 GROUP BY r.driverId HAVING COUNT(*) = (SELECT COUNT(*) FROM races WHERE year = 2020) AND MIN(r.points) > 0);",
+    "cypher": "MATCH (d:drivers)-[:ACHIEVED]->(r:results)-[:IN_RACE]->(ra:races {year: 2020}) WITH d, collect(r.points) AS points, count(r) AS race_count MATCH (totalRaces:races {year: 2020}) WITH d, points, race_count, count(totalRaces) AS total_races WHERE race_count = total_races AND all(p IN points WHERE p > 0) RETURN d.forename + ' ' + d.surname AS driver;"
   },
   {
     "question": "Show the number of races held at each circuit.",
@@ -51,8 +51,8 @@
   },
   {
     "question": "List the constructors who scored at least 1 point in every race of 2020.",
-    "sql": "SELECT c.name FROM constructors c WHERE NOT EXISTS (SELECT 1 FROM results r JOIN races ra ON r.raceId = ra.raceId WHERE ra.year = 2020 AND r.constructorId = c.constructorId AND r.points = 0);",
-    "cypher": "MATCH (c:constructors) WHERE NOT EXISTS { MATCH (c)-[:ACHIEVED]->(r:results {points:0})-[:IN_RACE]->(ra:races {year:2020}) } RETURN c.name;"
+    "sql": "SELECT c.name FROM constructors c WHERE c.constructorId IN (SELECT r.constructorId FROM results r JOIN races ra ON r.raceId = ra.raceId WHERE ra.year = 2020 GROUP BY r.constructorId HAVING MIN(r.points) > 0);",
+    "cypher": "MATCH (c:constructors)-[:ACHIEVED]->(r:results)-[:IN_RACE]->(ra:races {year: 2020}) WITH c, collect(r.points) AS points WHERE all(p IN points WHERE p > 0) RETURN c.name;"
   },
   {
     "question": "List the top 10 drivers with the most career starts.",
@@ -62,7 +62,7 @@
   {
     "question": "Show the number of drivers per surname initial, use aliases initial and count.",
     "sql": "SELECT SUBSTR(surname, 1, 1) AS initial, COUNT(*) AS count FROM drivers GROUP BY initial;",
-    "cypher": "MATCH (d:drivers) RETURN substring(d.surname,0,1) AS initial, COUNT(d) AS count;"
+    "cypher": "MATCH (d:drivers) RETURN left(d.surname, 1) AS initial, COUNT(d) AS count;"
   },
   {
     "question": "Show the number of races per constructorId.",

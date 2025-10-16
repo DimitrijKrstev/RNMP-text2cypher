@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Tuple 
+from typing import Any, Tuple
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedModel

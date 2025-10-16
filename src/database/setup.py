@@ -6,7 +6,6 @@ from relbench.datasets import get_dataset
 
 from database.constants import CSV_OUTPUT_DIR, SQLITE_DB_PATH
 
-
 logger = getLogger(__name__)
 
 
@@ -37,10 +36,9 @@ def load_dataset_to_sqlite(dataset_name: str) -> None:
     dataset = get_dataset(name=dataset_name, download=True)
     database = dataset.get_db()
 
-    sql_database_dir = SQLITE_DB_PATH.parent / dataset_name
-    sql_database_dir.mkdir(parents=True, exist_ok=True)
-
-    db_path = sql_database_dir / "relbench.db"
+    sqlite_dir = SQLITE_DB_PATH.parent
+    sqlite_dir.mkdir(parents=True, exist_ok=True)
+    db_path = sqlite_dir / f"{dataset_name}.db"
 
     con = connect(db_path.as_posix())
     try:

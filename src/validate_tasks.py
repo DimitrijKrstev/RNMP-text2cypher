@@ -4,10 +4,10 @@ from pathlib import Path
 from constants import get_sqlite_db_path
 from database.neo4j import query_neo4j
 from database.sqlite import query_sqlite
-from models import Task
+from models import DatasetName, Task
 
 
-def validate(tasks_path: Path, database_name: str) -> None:
+def validate(tasks_path: Path, database_name: DatasetName) -> None:
     with open(tasks_path, "r") as f:
         tasks = [Task.from_dict(task) for task in json.load(f)]
 
