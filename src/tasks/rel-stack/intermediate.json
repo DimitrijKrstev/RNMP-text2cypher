@@ -1,627 +1,77 @@
 [
   {
-    "question": "List the titles of posts that have an accepted answer and at least 3 comments.",
-    "sql": "SELECT p.Title FROM posts p JOIN comments c ON p.Id = c.PostId WHERE p.AcceptedAnswerId IS NOT NULL GROUP BY p.Id, p.Title HAVING COUNT(c.Id) >= 3;",
-    "cypher": "MATCH (p:posts)-[:HAS_ACCEPTED_ANSWER]->(:posts) MATCH (p)<-[:COMMENTS_ON]-(c:comments) WITH p, COUNT(c) AS commentCount WHERE commentCount >= 3 RETURN p.Title;"
+    "question": "Get the top 10 most voted posts. Return post ID, title, author account ID, and vote count for the top 10 posts.",
+    "sql": "SELECT p.Id, p.Title, u.AccountId, COUNT(v.Id) as vote_count FROM posts p JOIN users u ON p.OwnerUserId = u.Id LEFT JOIN votes v ON p.Id = v.PostId GROUP BY p.Id, p.Title, u.AccountId ORDER BY vote_count DESC LIMIT 10;",
+    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts) OPTIONAL MATCH (p)<-[:VOTED_ON]-(v:votes) WITH p, u, COUNT(v) as vote_count ORDER BY vote_count DESC LIMIT 10 RETURN p.Id, p.Title, u.AccountId, vote_count;"
   },
   {
-    "question": "Find the users who have created posts and also commented on posts they do not own.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN posts p ON u.Id = p.OwnerUserId WHERE u.Id IN (SELECT DISTINCT c.UserId FROM comments c JOIN posts p_comment ON c.PostId = p_comment.Id WHERE c.UserId <> p_comment.OwnerUserId);",
-    "cypher": "MATCH (u:users)-[:OWNS]->(:posts) MATCH (u)-[:MAKES]->(c:comments)-[:COMMENTS_ON]->(p_comment:posts) WHERE NOT (u)-[:OWNS]->(p_comment) RETURN DISTINCT u.Id, u.AccountId;"
+    "question": "Get users who earned multiple badge classes (more than 1 distinct class). Return user ID, account ID, distinct class count, gold count, silver count, bronze count, and most recent badge date.",
+    "sql": "SELECT u.Id, u.AccountId, COUNT(DISTINCT b.Class) as class_count, SUM(CASE WHEN b.Class = 'gold' THEN 1 ELSE 0 END) as gold_count, SUM(CASE WHEN b.Class = 'silver' THEN 1 ELSE 0 END) as silver_count, SUM(CASE WHEN b.Class = 'bronze' THEN 1 ELSE 0 END) as bronze_count, MAX(b.Date) as latest_badge FROM users u JOIN badges b ON u.Id = b.UserId GROUP BY u.Id, u.AccountId HAVING COUNT(DISTINCT b.Class) > 1;",
+    "cypher": "MATCH (u:users)<-[:BELONG_TO]-(b:badges) WITH u, COUNT(DISTINCT b.Class) AS class_count, SUM(CASE WHEN b.Class = 'gold' THEN 1 ELSE 0 END) AS gold_count, SUM(CASE WHEN b.Class = 'silver' THEN 1 ELSE 0 END) AS silver_count, SUM(CASE WHEN b.Class = 'bronze' THEN 1 ELSE 0 END) AS bronze_count, MAX(b.Date) AS latest_badge WHERE class_count > 1 RETURN u.Id, u.AccountId, class_count, gold_count, silver_count, bronze_count, latest_badge;"
   },
   {
-    "question": "Count the number of posts created on each unique creation date, where the count is greater than 10.",
-    "sql": "SELECT CreationDate, COUNT(Id) FROM posts GROUP BY CreationDate HAVING COUNT(Id) > 10;",
-    "cypher": "MATCH (p:posts) RETURN p.CreationDate, COUNT(p) AS post_count WHERE post_count > 10;"
+    "question": "Find the top 20 posts with most diverse interaction from commenters, voters, and editors (must have at least 1 commenter). Return post ID, title, unique commenter count, unique voter count, unique editor count, and total unique user count.",
+    "sql": "SELECT p.Id, p.Title, COUNT(DISTINCT c.UserId) as unique_commenters, COUNT(DISTINCT v.UserId) as unique_voters, COUNT(DISTINCT ph.UserId) as unique_editors, COUNT(DISTINCT c.UserId) + COUNT(DISTINCT v.UserId) + COUNT(DISTINCT ph.UserId) as total_unique_users FROM posts p LEFT JOIN comments c ON p.Id = c.PostId LEFT JOIN votes v ON p.Id = v.PostId LEFT JOIN postHistory ph ON p.Id = ph.PostId GROUP BY p.Id, p.Title HAVING COUNT(DISTINCT c.UserId) > 0 ORDER BY total_unique_users DESC LIMIT 20;",
+    "cypher": "MATCH (p:posts) OPTIONAL MATCH (p)<-[:COMMENTS_ON]-(c:comments)<-[:WROTE]-(cu:users) OPTIONAL MATCH (p)<-[:VOTED_ON]-(v:votes)<-[:VOTED_BY]-(vu:users) OPTIONAL MATCH (p)<-[:RELATES_TO]-(ph:postHistory) WITH p, COUNT(DISTINCT cu) as unique_commenters, COUNT(DISTINCT vu) as unique_voters, COUNT(DISTINCT ph.UserId) as unique_editors WHERE unique_commenters > 0 RETURN p.Id, p.Title, unique_commenters, unique_voters, unique_editors, unique_commenters + unique_voters + unique_editors as total_unique_users ORDER BY total_unique_users DESC LIMIT 20;"
   },
   {
-    "question": "Identify posts that have more votes than comments.",
-    "sql": "SELECT p.Id, p.Title FROM posts p LEFT JOIN votes v ON p.Id = v.PostId LEFT JOIN comments c ON p.Id = c.PostId GROUP BY p.Id, p.Title HAVING COUNT(DISTINCT v.Id) > COUNT(DISTINCT c.Id);",
-    "cypher": "MATCH (p:posts) OPTIONAL MATCH (p)<-[:VOTES_ON]-(v:votes) WITH p, COUNT(v) AS voteCount OPTIONAL MATCH (p)<-[:COMMENTS_ON]-(c:comments) WITH p, voteCount, COUNT(c) AS commentCount WHERE voteCount > commentCount RETURN p.Id, p.Title;"
+    "question": "Find the top 20 posts that have both comments and votes. Return post ID, title, comment count, and vote count.",
+    "sql": "SELECT p.Id, p.Title, COUNT(DISTINCT c.Id) as comment_count, COUNT(DISTINCT v.Id) as vote_count FROM posts p JOIN comments c ON p.Id = c.PostId JOIN votes v ON p.Id = v.PostId GROUP BY p.Id, p.Title ORDER BY comment_count + vote_count DESC LIMIT 20;",
+    "cypher": "MATCH (p:posts)<-[:COMMENTS_ON]-(c:comments) MATCH (p)<-[:VOTED_ON]-(v:votes) WITH p, COUNT(DISTINCT c) as comment_count, COUNT(DISTINCT v) as vote_count ORDER BY comment_count + vote_count DESC LIMIT 20 RETURN p.Id, p.Title, comment_count, vote_count;"
   },
   {
-    "question": "Find the users who have at least 5 posts and received at least 1 badge.",
-    "sql": "SELECT u.Id, u.AccountId FROM users u JOIN posts p ON u.Id = p.OwnerUserId JOIN badges b ON u.Id = b.UserId GROUP BY u.Id, u.AccountId HAVING COUNT(DISTINCT p.Id) >= 5 AND COUNT(DISTINCT b.Id) >= 1;",
-    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts) WITH u, COUNT(p) AS postCount WHERE postCount >= 5 MATCH (u)-[:EARNED]->(b:badges) WITH u, postCount, COUNT(b) AS badgeCount WHERE badgeCount >= 1 RETURN u.Id, u.AccountId;"
+    "question": "Get all users who have earned all three badge classes (gold, silver, and bronze with at least 1 of each). Return user ID, account ID, gold count, silver count, and bronze count.",
+    "sql": "SELECT u.Id, u.AccountId, SUM(CASE WHEN b.Class = 'gold' THEN 1 ELSE 0 END) as gold_count, SUM(CASE WHEN b.Class = 'silver' THEN 1 ELSE 0 END) as silver_count, SUM(CASE WHEN b.Class = 'bronze' THEN 1 ELSE 0 END) as bronze_count FROM users u JOIN badges b ON u.Id = b.UserId GROUP BY u.Id, u.AccountId HAVING gold_count > 0 AND silver_count > 0 AND bronze_count > 0;",
+    "cypher": "MATCH (u:users)<-[:BELONG_TO]-(b:badges) WITH u, SUM(CASE WHEN b.Class = 'gold' THEN 1 ELSE 0 END) as gold_count, SUM(CASE WHEN b.Class = 'silver' THEN 1 ELSE 0 END) as silver_count, SUM(CASE WHEN b.Class = 'bronze' THEN 1 ELSE 0 END) as bronze_count WHERE gold_count > 0 AND silver_count > 0 AND bronze_count > 0 RETURN u.Id, u.AccountId, gold_count, silver_count, bronze_count;"
   },
   {
-    "question": "List all posts that have been edited by at least 2 different users.",
-    "sql": "SELECT p.Id, p.Title FROM posts p JOIN postHistory ph ON p.Id = ph.PostId GROUP BY p.Id, p.Title HAVING COUNT(DISTINCT ph.UserId) >= 2;",
-    "cypher": "MATCH (p:posts)<-[:HAS_HISTORY]-(ph:postHistory)-[:MADE_BY]->(u:users) WITH p, COLLECT(DISTINCT u.Id) AS distinctUsers WHERE SIZE(distinctUsers) >= 2 RETURN p.Id, p.Title;"
+    "question": "Find the single most edited post with more than 5 edits. Return post ID, title, edit count, and unique editor count for the top 1 post.",
+    "sql": "SELECT p.Id, p.Title, COUNT(ph.Id) as edit_count, COUNT(DISTINCT ph.UserId) as unique_editors FROM posts p JOIN postHistory ph ON p.Id = ph.PostId GROUP BY p.Id, p.Title HAVING edit_count > 5 ORDER BY edit_count DESC LIMIT 1;",
+    "cypher": "MATCH (p:posts)<-[:RELATES_TO]-(ph:postHistory) WITH p, COUNT(ph) as edit_count, COUNT(DISTINCT ph.UserId) as unique_editors WHERE edit_count > 5 ORDER BY edit_count DESC LIMIT 1 RETURN p.Id, p.Title, edit_count, unique_editors;"
   },
   {
-    "question": "Retrieve the Ids of users who have cast votes on at least 10 different posts.",
-    "sql": "SELECT UserId FROM votes GROUP BY UserId HAVING COUNT(DISTINCT PostId) >= 10;",
-    "cypher": "MATCH (u:users)-[:CASTS]->(v:votes)-[:VOTES_ON]->(p:posts) WITH u, COLLECT(DISTINCT p.Id) AS distinctPosts WHERE SIZE(distinctPosts) >= 10 RETURN u.Id;"
+    "question": "Get the top 10 users with the most upvotes (VoteTypeId = 2) received across all their posts. Return user ID, account ID, and upvote count.",
+    "sql": "SELECT u.Id, u.AccountId, COUNT(v.Id) as upvote_count FROM users u JOIN posts p ON u.Id = p.OwnerUserId JOIN votes v ON p.Id = v.PostId WHERE v.VoteTypeId = 2 GROUP BY u.Id, u.AccountId ORDER BY upvote_count DESC LIMIT 10;",
+    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts)<-[:VOTED_ON]-(v:votes {VoteTypeId: '2'}) WITH u, COUNT(v) as upvote_count ORDER BY upvote_count DESC LIMIT 10 RETURN u.Id, u.AccountId, upvote_count;"
   },
   {
-    "question": "Find posts that have a 'ParentId' and were created after '2015-01-01 00:00:00'.",
-    "sql": "SELECT Id, Title, CreationDate FROM posts WHERE ParentId IS NOT NULL AND CreationDate > '2015-01-01 00:00:00';",
-    "cypher": "MATCH (p:posts) WHERE p.ParentId IS NOT NULL AND p.CreationDate > '2015-01-01 00:00:00' RETURN p.Id, p.Title, p.CreationDate;"
+    "question": "Get the top 15 posts with the highest comment-to-vote ratio having at least 10 votes. Return post ID, title, comment count, vote count, and comment-to-vote ratio.",
+    "sql": "SELECT p.Id, p.Title, COUNT(DISTINCT c.Id) as comment_count, COUNT(DISTINCT v.Id) as vote_count, CAST(COUNT(DISTINCT c.Id) AS REAL) / COUNT(DISTINCT v.Id) as comment_vote_ratio FROM posts p JOIN votes v ON p.Id = v.PostId LEFT JOIN comments c ON p.Id = c.PostId GROUP BY p.Id, p.Title HAVING vote_count >= 10 ORDER BY comment_vote_ratio DESC LIMIT 15;",
+    "cypher": "MATCH (p:posts)<-[:VOTED_ON]-(v:votes) OPTIONAL MATCH (p)<-[:COMMENTS_ON]-(c:comments) WITH p, COUNT(DISTINCT c) as comment_count, COUNT(DISTINCT v) as vote_count WHERE vote_count >= 10 WITH p, comment_count, vote_count, toFloat(comment_count) / vote_count as comment_vote_ratio ORDER BY comment_vote_ratio DESC LIMIT 15 RETURN p.Id, p.Title, comment_count, vote_count, comment_vote_ratio;"
   },
   {
-    "question": "Get the CreationDate of users who have received at least 3 badges of 'Class' type 'bronze'.",
-    "sql": "SELECT u.CreationDate FROM users u JOIN badges b ON u.Id = b.UserId WHERE b.Class = 'bronze' GROUP BY u.Id, u.CreationDate HAVING COUNT(b.Id) >= 3;",
-    "cypher": "MATCH (u:users)-[:EARNED]->(b:badges {Class: 'bronze'}) WITH u, COUNT(b) AS bronzeBadges WHERE bronzeBadges >= 3 RETURN u.CreationDate;"
+    "question": "Get the distribution of all vote types. Return vote type ID, total vote count, posts affected count, and users voting count.",
+    "sql": "SELECT v.VoteTypeId, COUNT(*) as vote_count, COUNT(DISTINCT v.PostId) as posts_affected, COUNT(DISTINCT v.UserId) as users_voting FROM votes v GROUP BY v.VoteTypeId ORDER BY vote_count DESC;",
+    "cypher": "MATCH (v:votes) WITH v.VoteTypeId as VoteTypeId, COUNT(v) as vote_count, COUNT(DISTINCT v.PostId) as posts_affected, COUNT(DISTINCT v.UserId) as users_voting RETURN VoteTypeId, vote_count, posts_affected, users_voting ORDER BY vote_count DESC;"
   },
   {
-    "question": "List posts with more than 50 votes and more than 1000 characters in their Body.",
-    "sql": "SELECT p.Id, p.Title FROM posts p JOIN votes v ON p.Id = v.PostId WHERE LENGTH(p.Body) > 1000 GROUP BY p.Id, p.Title, p.Body HAVING COUNT(v.Id) > 50;",
-    "cypher": "MATCH (p:posts) WHERE SIZE(p.Body) > 1000 OPTIONAL MATCH (p)<-[:VOTES_ON]-(v:votes) WITH p, COUNT(v) AS voteCount WHERE voteCount > 50 RETURN p.Id, p.Title;"
+    "question": "Find the top 10 most linked posts (posts that link to other posts via postLinks). Return post ID, title, and link count.",
+    "sql": "SELECT p.Id, p.Title, COUNT(pl.Id) as link_count FROM posts p JOIN postLinks pl ON p.Id = pl.PostId GROUP BY p.Id, p.Title ORDER BY link_count DESC LIMIT 10;",
+    "cypher": "MATCH (p:posts)-[:LINK_TO]-(pl:postLinks) WITH p, COUNT(pl) as link_count ORDER BY link_count DESC LIMIT 10 RETURN p.Id, p.Title, link_count;"
   },
   {
-    "question": "Find the average number of comments per post that have at least one comment.",
-    "sql": "SELECT AVG(comment_count) FROM (SELECT COUNT(Id) AS comment_count FROM comments GROUP BY PostId) AS post_comment_counts;",
-    "cypher": "MATCH (p:posts)<-[:COMMENTS_ON]-(c:comments) WITH p, COUNT(c) AS comment_count RETURN AVG(comment_count);"
+    "question": "Get the top 10 most active commenters. Return user ID, account ID, total comment count, and number of distinct posts commented on.",
+    "sql": "SELECT u.Id, u.AccountId, COUNT(c.Id) as comment_count, COUNT(DISTINCT c.PostId) as posts_commented FROM users u JOIN comments c ON u.Id = c.UserId GROUP BY u.Id, u.AccountId ORDER BY comment_count DESC LIMIT 10;",
+    "cypher": "MATCH (u:users)-[:WROTE]->(c:comments)-[:COMMENTS_ON]->(p:posts) WITH u, COUNT(c) as comment_count, COUNT(DISTINCT p) as posts_commented ORDER BY comment_count DESC LIMIT 10 RETURN u.Id, u.AccountId, comment_count, posts_commented;"
   },
   {
-    "question": "Retrieve the titles of posts that are linked to by at least 2 other posts.",
-    "sql": "SELECT p.Title FROM posts p JOIN postLinks pl ON p.Id = pl.PostId GROUP BY p.Id, p.Title HAVING COUNT(pl.RelatedPostId) >= 2;",
-    "cypher": "MATCH (p:posts)<-[:LINKED_FROM]-(pl:postLinks) WITH p, COUNT(pl) AS linkCount WHERE linkCount >= 2 RETURN p.Title;"
+    "question": "Get the top 15 posts edited by their original authors with at least 2 self-edits. Return post ID, title, owner account ID, and self-edit count.",
+    "sql": "SELECT p.Id, p.Title, u.AccountId, COUNT(ph.Id) as self_edit_count FROM posts p JOIN users u ON p.OwnerUserId = u.Id JOIN postHistory ph ON p.Id = ph.PostId AND ph.UserId = p.OwnerUserId GROUP BY p.Id, p.Title, u.AccountId HAVING self_edit_count >= 2 ORDER BY self_edit_count DESC LIMIT 15;",
+    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts)<-[:RELATES_TO]-(ph:postHistory)<-[:WAS_WRITTEN_BY]-(u) WITH p, u, COUNT(ph) as self_edit_count WHERE self_edit_count >= 2 ORDER BY self_edit_count DESC LIMIT 15 RETURN p.Id, p.Title, u.AccountId, self_edit_count;"
   },
   {
-    "question": "Count how many users joined in each year.",
-    "sql": "SELECT STRFTIME('%Y', CreationDate) AS join_year, COUNT(Id) FROM users GROUP BY join_year;",
-    "cypher": "MATCH (u:users) RETURN substring(u.CreationDate, 0, 4) AS join_year, COUNT(u);"
+    "question": "Find the single post with both upvotes (VoteTypeId = 2) and downvotes (VoteTypeId = 3) having the largest net vote difference. Return post ID, title, upvote count, downvote count, and net votes for the top 1 post.",
+    "sql": "SELECT p.Id, p.Title, SUM(CASE WHEN v.VoteTypeId = 2 THEN 1 ELSE 0 END) AS upvotes, SUM(CASE WHEN v.VoteTypeId = 3 THEN 1 ELSE 0 END) AS downvotes, SUM(CASE WHEN v.VoteTypeId = 2 THEN 1 ELSE 0 END) - SUM(CASE WHEN v.VoteTypeId = 3 THEN 1 ELSE 0 END) AS net_votes FROM posts p JOIN votes v ON p.Id = v.PostId WHERE v.VoteTypeId IN (2, 3) GROUP BY p.Id, p.Title HAVING upvotes > 0 AND downvotes > 0 ORDER BY net_votes DESC LIMIT 1;",
+    "cypher": "MATCH (p:posts)<-[:VOTED_ON]-(v:votes) WHERE v.VoteTypeId IN ['2', '3'] WITH p, SUM(CASE WHEN v.VoteTypeId = '2' THEN 1 ELSE 0 END) AS upvotes, SUM(CASE WHEN v.VoteTypeId = '3' THEN 1 ELSE 0 END) AS downvotes WITH p, upvotes, downvotes, (upvotes - downvotes) AS net_votes ORDER BY net_votes DESC LIMIT 1 RETURN p.Id, p.Title, upvotes, downvotes, net_votes;"
   },
   {
-    "question": "List the users who have created posts and also have a 'AboutMe' description that is not empty.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN posts p ON u.Id = p.OwnerUserId WHERE u.AboutMe IS NOT NULL AND LENGTH(TRIM(u.AboutMe)) > 0;",
-    "cypher": "MATCH (u:users)-[:OWNS]->(:posts) WHERE u.AboutMe IS NOT NULL AND SIZE(TRIM(u.AboutMe)) > 0 RETURN DISTINCT u.Id, u.AccountId;"
+    "question": "Get the top 15 users who received badges within their first week of joining (within 7 days). Return user ID, account ID, early badge count, and days to first badge.",
+    "sql": "SELECT u.Id, u.AccountId, COUNT(b.Id) as early_badge_count, MIN(julianday(b.Date) - julianday(u.CreationDate)) as days_to_first_badge FROM users u JOIN badges b ON u.Id = b.UserId WHERE julianday(b.Date) - julianday(u.CreationDate) <= 7 GROUP BY u.Id, u.AccountId ORDER BY early_badge_count DESC LIMIT 15;",
+    "cypher": "MATCH (u:users)<-[:BELONG_TO]-(b:badges) WHERE duration.between(datetime(replace(u.CreationDate, ' ', 'T')), datetime(replace(b.Date, ' ', 'T'))).days <= 7 WITH u, COUNT(b) as early_badge_count, MIN(duration.between(datetime(replace(u.CreationDate, ' ', 'T')), datetime(replace(b.Date, ' ', 'T'))).days) as days_to_first_badge ORDER BY early_badge_count DESC LIMIT 15 RETURN u.Id, u.AccountId, early_badge_count, days_to_first_badge;"
   },
   {
-    "question": "Find the most common PostTypeId among posts created by users who have received at least one badge.",
-    "sql": "SELECT p.PostTypeId FROM posts p JOIN users u ON p.OwnerUserId = u.Id JOIN badges b ON u.Id = b.UserId GROUP BY p.PostTypeId ORDER BY COUNT(p.Id) DESC LIMIT 1;",
-    "cypher": "MATCH (u:users)-[:EARNED]->(:badges) MATCH (u)-[:OWNS]->(p:posts) RETURN p.PostTypeId, COUNT(p) AS postTypeCount ORDER BY postTypeCount DESC LIMIT 1;"
-  },
-  {
-    "question": "List the PostHistoryTypeIds that have been associated with posts from at least 10 different users.",
-    "sql": "SELECT PostHistoryTypeId FROM postHistory GROUP BY PostHistoryTypeId HAVING COUNT(DISTINCT UserId) >= 10;",
-    "cypher": "MATCH (ph:postHistory)-[:MADE_BY]->(u:users) WITH ph.PostHistoryTypeId AS typeId, COLLECT(DISTINCT u.Id) AS distinctUsers WHERE SIZE(distinctUsers) >= 10 RETURN typeId;"
-  },
-  {
-    "question": "Retrieve the titles of posts that have 'programming' in their tags and were created before '2016-01-01 00:00:00'.",
-    "sql": "SELECT Title FROM posts WHERE Tags LIKE '%programming%' AND CreationDate < '2016-01-01 00:00:00';",
-    "cypher": "MATCH (p:posts) WHERE p.Tags CONTAINS 'programming' AND p.CreationDate < '2016-01-01 00:00:00' RETURN p.Title;"
-  },
-  {
-    "question": "Find the average length of 'Body' text for posts that have at least 5 votes.",
-    "sql": "SELECT AVG(LENGTH(p.Body)) FROM posts p JOIN votes v ON p.Id = v.PostId GROUP BY p.Id HAVING COUNT(v.Id) >= 5;",
-    "cypher": "MATCH (p:posts)<-[:VOTES_ON]-(v:votes) WITH p, COUNT(v) AS voteCount WHERE voteCount >= 5 RETURN AVG(SIZE(p.Body));"
-  },
-  {
-    "question": "List the titles of posts that are linked from another post AND are themselves accepted answers to another post.",
-    "sql": "SELECT p.Title FROM posts p JOIN postLinks pl ON p.Id = pl.RelatedPostId WHERE p.Id IN (SELECT AcceptedAnswerId FROM posts WHERE AcceptedAnswerId IS NOT NULL);",
-    "cypher": "MATCH (linkedPost:posts)-[:LINKS_TO]->(p:posts) MATCH (questionPost:posts)-[:HAS_ACCEPTED_ANSWER]->(p) RETURN p.Title;"
-  },
-  {
-    "question": "Count the number of users who have made comments on posts created in '2017'.",
-    "sql": "SELECT COUNT(DISTINCT c.UserId) FROM comments c JOIN posts p ON c.PostId = p.Id WHERE STRFTIME('%Y', p.CreationDate) = '2017';",
-    "cypher": "MATCH (u:users)-[:MAKES]->(c:comments)-[:COMMENTS_ON]->(p:posts) WHERE substring(p.CreationDate, 0, 4) = '2017' RETURN COUNT(DISTINCT u.Id);"
-  },
-  {
-    "question": "Find the users who have created posts but have not received any badges.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN posts p ON u.Id = p.OwnerUserId LEFT JOIN badges b ON u.Id = b.UserId WHERE b.Id IS NULL;",
-    "cypher": "MATCH (u:users)-[:OWNS]->(:posts) WHERE NOT (u)-[:EARNED]->(:badges) RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "List the PostTypeIds for posts that have at least 10 entries in `postHistory`.",
-    "sql": "SELECT p.PostTypeId FROM posts p JOIN postHistory ph ON p.Id = ph.PostId GROUP BY p.Id, p.PostTypeId HAVING COUNT(ph.Id) >= 10;",
-    "cypher": "MATCH (p:posts)<-[:HAS_HISTORY]-(ph:postHistory) WITH p, COUNT(ph) AS historyCount WHERE historyCount >= 10 RETURN p.PostTypeId;"
-  },
-  {
-    "question": "Find the users who have cast votes on posts created by themselves.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN votes v ON u.Id = v.UserId JOIN posts p ON v.PostId = p.Id WHERE u.Id = p.OwnerUserId;",
-    "cypher": "MATCH (u:users)-[:CASTS]->(v:votes)-[:VOTES_ON]->(p:posts) WHERE (u)-[:OWNS]->(p) RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "Retrieve the titles of posts that have an 'AcceptedAnswerId' and also have 'ParentId' pointing to another post.",
-    "sql": "SELECT Title FROM posts WHERE AcceptedAnswerId IS NOT NULL AND ParentId IS NOT NULL;",
-    "cypher": "MATCH (p:posts) WHERE p.AcceptedAnswerId IS NOT NULL AND p.ParentId IS NOT NULL RETURN p.Title;"
-  },
-  {
-    "question": "Count the number of posts that have both a 'Body' and 'Title' specified.",
-    "sql": "SELECT COUNT(Id) FROM posts WHERE Body IS NOT NULL AND Title IS NOT NULL;",
-    "cypher": "MATCH (p:posts) WHERE p.Body IS NOT NULL AND p.Title IS NOT NULL RETURN COUNT(p);"
-  },
-  {
-    "question": "Find the users who have created posts and also received badges in the same month.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN posts p ON u.Id = p.OwnerUserId JOIN badges b ON u.Id = b.UserId WHERE STRFTIME('%Y-%m', p.CreationDate) = STRFTIME('%Y-%m', b.Date);",
-    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts) MATCH (u)-[:EARNED]->(b:badges) WHERE substring(p.CreationDate, 0, 7) = substring(b.Date, 0, 7) RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "List posts where the 'CreationDate' in 'posts' table is earlier than the earliest 'CreationDate' in its 'postHistory'.",
-    "sql": "SELECT p.Id, p.Title FROM posts p JOIN (SELECT PostId, MIN(CreationDate) AS MinHistoryDate FROM postHistory GROUP BY PostId) AS ph_min ON p.Id = ph_min.PostId WHERE p.CreationDate < ph_min.MinHistoryDate;",
-    "cypher": "MATCH (p:posts)<-[:HAS_HISTORY]-(ph:postHistory) WITH p, MIN(ph.CreationDate) AS minHistoryDate WHERE p.CreationDate < minHistoryDate RETURN p.Id, p.Title;"
-  },
-  {
-    "question": "Retrieve the Id of users who have cast at least 5 votes of 'VoteTypeId' = 2.",
-    "sql": "SELECT UserId FROM votes WHERE VoteTypeId = 2 GROUP BY UserId HAVING COUNT(Id) >= 5;",
-    "cypher": "MATCH (u:users)-[:CASTS]->(v:votes {VoteTypeId: 2}) WITH u, COUNT(v) AS voteCount WHERE voteCount >= 5 RETURN u.Id;"
-  },
-  {
-    "question": "Count the number of posts that have a 'ParentId' and whose owner has an 'AccountId' greater than 1000.",
-    "sql": "SELECT COUNT(p.Id) FROM posts p JOIN users u ON p.OwnerUserId = u.Id WHERE p.ParentId IS NOT NULL AND u.AccountId > 1000;",
-    "cypher": "MATCH (p:posts) WHERE p.ParentId IS NOT NULL MATCH (p)-[:OWNS_POST_BY]->(u:users) WHERE u.AccountId > 1000 RETURN COUNT(p);"
-  },
-  {
-    "question": "Find the average number of 'postLinks' for posts that have at least one link.",
-    "sql": "SELECT AVG(link_count) FROM (SELECT COUNT(Id) AS link_count FROM postLinks GROUP BY PostId) AS post_link_counts;",
-    "cypher": "MATCH (p:posts)<-[:LINKED_FROM]-(pl:postLinks) WITH p, COUNT(pl) AS link_count RETURN AVG(link_count);"
-  },
-  {
-    "question": "List all users who have not made any comments.",
-    "sql": "SELECT u.Id, u.AccountId FROM users u LEFT JOIN comments c ON u.Id = c.UserId WHERE c.Id IS NULL;",
-    "cypher": "MATCH (u:users) WHERE NOT (u)-[:MAKES]->(:comments) RETURN u.Id, u.AccountId;"
-  },
-  {
-    "question": "Identify posts where the 'CreationDate' and the 'CreationDate' of its last history entry are more than 7 days apart.",
-    "sql": "SELECT p.Id, p.Title FROM posts p JOIN (SELECT PostId, MAX(CreationDate) AS MaxHistoryDate FROM postHistory GROUP BY PostId) AS ph_max ON p.Id = ph_max.PostId WHERE JULIANDAY(ph_max.MaxHistoryDate) - JULIANDAY(p.CreationDate) > 7;",
-    "cypher": "MATCH (p:posts)<-[:HAS_HISTORY]-(ph:postHistory) WITH p, MAX(ph.CreationDate) AS maxHistoryDate WHERE duration.inDays(datetime(p.CreationDate), datetime(maxHistoryDate)).days > 7 RETURN p.Id, p.Title;"
-  },
-  {
-    "question": "Retrieve the 'OwnerUserId' for posts that have at least 2 associated 'postLinks' of 'LinkTypeId' = 3.",
-    "sql": "SELECT p.OwnerUserId FROM posts p JOIN postLinks pl ON p.Id = pl.PostId WHERE pl.LinkTypeId = 3 GROUP BY p.OwnerUserId, p.Id HAVING COUNT(pl.Id) >= 2;",
-    "cypher": "MATCH (p:posts)<-[:LINKED_FROM]-(pl:postLinks {LinkTypeId: 3}) WITH p, COUNT(pl) AS linkCount WHERE linkCount >= 2 RETURN p.OwnerUserId;"
-  },
-  {
-    "question": "Find the users who have posted at least one question (PostTypeId = 1) and at least one answer (PostTypeId = 2).",
-    "sql": "SELECT u.Id, u.AccountId FROM users u WHERE u.Id IN (SELECT OwnerUserId FROM posts WHERE PostTypeId = 1) AND u.Id IN (SELECT OwnerUserId FROM posts WHERE PostTypeId = 2);",
-    "cypher": "MATCH (u:users)-[:OWNS]->(q:posts {PostTypeId: 1}) MATCH (u)-[:OWNS]->(a:posts {PostTypeId: 2}) RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "Count the number of posts that received votes with 'VoteTypeId' = 5.",
-    "sql": "SELECT COUNT(DISTINCT PostId) FROM votes WHERE VoteTypeId = 5;",
-    "cypher": "MATCH (p:posts)<-[:VOTES_ON]-(v:votes {VoteTypeId: 5}) RETURN COUNT(DISTINCT p);"
-  },
-  {
-    "question": "List the PostIds and Titles of posts that have 'AcceptedAnswerId' set and also have comments.",
-    "sql": "SELECT DISTINCT p.Id, p.Title FROM posts p JOIN comments c ON p.Id = c.PostId WHERE p.AcceptedAnswerId IS NOT NULL;",
-    "cypher": "MATCH (p:posts)-[:HAS_ACCEPTED_ANSWER]->(:posts) MATCH (p)<-[:COMMENTS_ON]-(:comments) RETURN DISTINCT p.Id, p.Title;"
-  },
-  {
-    "question": "Find the users whose 'CreationDate' is earlier than '2012-01-01 00:00:00' and have at least one 'TagBased' badge.",
-    "sql": "SELECT u.Id, u.AccountId FROM users u JOIN badges b ON u.Id = b.UserId WHERE u.CreationDate < '2012-01-01 00:00:00' AND b.TagBased = 'True' GROUP BY u.Id, u.AccountId HAVING COUNT(b.Id) >= 1;",
-    "cypher": "MATCH (u:users)-[:EARNED]->(b:badges {TagBased: 'True'}) WHERE u.CreationDate < '2012-01-01 00:00:00' RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "Retrieve the 'ContentLicense' of 'postHistory' entries made by users who have posted at least 3 times.",
-    "sql": "SELECT DISTINCT ph.ContentLicense FROM postHistory ph JOIN users u ON ph.UserId = u.Id JOIN posts p ON u.Id = p.OwnerUserId GROUP BY ph.ContentLicense, u.Id HAVING COUNT(DISTINCT p.Id) >= 3;",
-    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts) WITH u, COUNT(p) AS postCount WHERE postCount >= 3 MATCH (u)<-[:MADE_BY]-(ph:postHistory) RETURN DISTINCT ph.ContentLicense;"
-  },
-  {
-    "question": "Count the number of posts where 'Title' contains the word 'question' (case-insensitive).",
-    "sql": "SELECT COUNT(Id) FROM posts WHERE LOWER(Title) LIKE '%question%';",
-    "cypher": "MATCH (p:posts) WHERE toLower(p.Title) CONTAINS 'question' RETURN COUNT(p);"
-  },
-  {
-    "question": "List all PostIds that have more than 5 comments and also have an 'AcceptedAnswerId'.",
-    "sql": "SELECT p.Id FROM posts p JOIN comments c ON p.Id = c.PostId WHERE p.AcceptedAnswerId IS NOT NULL GROUP BY p.Id HAVING COUNT(c.Id) > 5;",
-    "cypher": "MATCH (p:posts)-[:HAS_ACCEPTED_ANSWER]->(:posts) MATCH (p)<-[:COMMENTS_ON]-(c:comments) WITH p, COUNT(c) AS commentCount WHERE commentCount > 5 RETURN p.Id;"
-  },
-  {
-    "question": "Find the users who have posted at least one post and their 'AccountId' is less than the 'Id' of any badge they received.",
-    "sql": "SELECT DISTINCT u.Id FROM users u JOIN posts p ON u.Id = p.OwnerUserId JOIN badges b ON u.Id = b.UserId WHERE u.AccountId < b.Id;",
-    "cypher": "MATCH (u:users)-[:OWNS]->(:posts) MATCH (u)-[:EARNED]->(b:badges) WHERE u.AccountId < b.Id RETURN DISTINCT u.Id;"
-  },
-  {
-    "question": "Retrieve the 'OwnerUserId' of posts that have 'PostTypeId' 1 and whose 'Body' text is longer than 2000 characters.",
-    "sql": "SELECT OwnerUserId FROM posts WHERE PostTypeId = 1 AND LENGTH(Body) > 2000;",
-    "cypher": "MATCH (p:posts {PostTypeId: 1}) WHERE SIZE(p.Body) > 2000 RETURN p.OwnerUserId;"
-  },
-  {
-    "question": "Count the total number of votes for each 'VoteTypeId'.",
-    "sql": "SELECT VoteTypeId, COUNT(Id) FROM votes GROUP BY VoteTypeId;",
-    "cypher": "MATCH (v:votes) RETURN v.VoteTypeId, COUNT(v);"
-  },
-  {
-    "question": "Find posts that have been edited by at least one user other than the owner of the post.",
-    "sql": "SELECT DISTINCT p.Id, p.Title FROM posts p JOIN postHistory ph ON p.Id = ph.PostId WHERE ph.UserId <> p.OwnerUserId;",
-    "cypher": "MATCH (p:posts)<-[:HAS_HISTORY]-(ph:postHistory)-[:MADE_BY]->(u:users) WHERE NOT (u)-[:OWNS]->(p) RETURN DISTINCT p.Id, p.Title;"
-  },
-  {
-    "question": "List the users who have created a comment on a post and that post has at least one vote.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN comments c ON u.Id = c.UserId JOIN votes v ON c.PostId = v.PostId;",
-    "cypher": "MATCH (u:users)-[:MAKES]->(:comments)-[:COMMENTS_ON]->(p:posts)<-[:VOTES_ON]-(:votes) RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "Retrieve the 'Id' and 'CreationDate' of the latest 'postHistory' entry for each 'PostId'.",
-    "sql": "SELECT PostId, MAX(CreationDate) AS LatestHistoryDate FROM postHistory GROUP BY PostId;",
-    "cypher": "MATCH (ph:postHistory) WITH ph.PostId AS PostId, MAX(ph.CreationDate) AS LatestHistoryDate RETURN PostId, LatestHistoryDate;"
-  },
-  {
-    "question": "Find the users who have received at least two different 'Class' of badges.",
-    "sql": "SELECT UserId FROM badges GROUP BY UserId HAVING COUNT(DISTINCT Class) >= 2;",
-    "cypher": "MATCH (u:users)-[:EARNED]->(b:badges) WITH u, COLLECT(DISTINCT b.Class) AS distinctClasses WHERE SIZE(distinctClasses) >= 2 RETURN u.Id;"
-  },
-  {
-    "question": "Count the number of unique tags used across all posts where 'PostTypeId' is 1.",
-    "sql": "SELECT COUNT(DISTINCT Tag) FROM posts, (SELECT TRIM(SUBSTR(Tags, INSTR(Tags, '<', 1, n) + 1, INSTR(Tags, '>', 1, n) - INSTR(Tags, '<', 1, n) - 1)) AS Tag FROM posts CROSS JOIN (SELECT 1 AS n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10) WHERE Tags IS NOT NULL AND INSTR(Tags, '<', 1, n) > 0 AND PostTypeId = 1) WHERE Tag IS NOT NULL;",
-    "cypher": "MATCH (p:posts {PostTypeId: 1}) WHERE p.Tags IS NOT NULL WITH p UNWIND apoc.text.split(p.Tags, '><') AS tag RETURN COUNT(DISTINCT replace(replace(tag, '<', ''), '>', '')) AS uniqueTagCount;"
-  },
-  {
-    "question": "List 'PostHistoryTypeIds' that are associated with posts created after '2018-01-01 00:00:00'.",
-    "sql": "SELECT DISTINCT ph.PostHistoryTypeId FROM postHistory ph JOIN posts p ON ph.PostId = p.Id WHERE p.CreationDate > '2018-01-01 00:00:00';",
-    "cypher": "MATCH (ph:postHistory)-[:HISTORY_OF]->(p:posts) WHERE p.CreationDate > '2018-01-01 00:00:00' RETURN DISTINCT ph.PostHistoryTypeId;"
-  },
-  {
-    "question": "Find the users who have created a post, and this post received at least one vote of 'VoteTypeId' 1 or 2.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN posts p ON u.Id = p.OwnerUserId JOIN votes v ON p.Id = v.PostId WHERE v.VoteTypeId IN (1, 2);",
-    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts)<-[:VOTES_ON]-(v:votes) WHERE v.VoteTypeId IN [1, 2] RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "Find the users who have commented on their own posts.",
-    "sql": "SELECT DISTINCT c.UserId FROM comments c JOIN posts p ON c.PostId = p.Id WHERE c.UserId = p.OwnerUserId;",
-    "cypher": "MATCH (u:users)-[:MAKES]->(c:comments)-[:COMMENTS_ON]->(p:posts) WHERE (u)-[:OWNS]->(p) RETURN DISTINCT u.Id;"
-  },
-  {
-    "question": "List posts that have received votes from at least 3 different users.",
-    "sql": "SELECT PostId FROM votes GROUP BY PostId HAVING COUNT(DISTINCT UserId) >= 3;",
-    "cypher": "MATCH (p:posts)<-[:VOTES_ON]-(v:votes)-[:CASTS]->(u:users) WITH p, COLLECT(DISTINCT u.Id) AS distinctVoters WHERE SIZE(distinctVoters) >= 3 RETURN p.Id;"
-  },
-  {
-    "question": "Get the Ids of users who have created posts with PostTypeId = 1 and also have an AboutMe description longer than 100 characters.",
-    "sql": "SELECT DISTINCT u.Id FROM users u JOIN posts p ON u.Id = p.OwnerUserId WHERE p.PostTypeId = 1 AND LENGTH(u.AboutMe) > 100;",
-    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts {PostTypeId: 1}) WHERE SIZE(u.AboutMe) > 100 RETURN DISTINCT u.Id;"
-  },
-  {
-    "question": "Count the number of posts that have an AcceptedAnswerId and were created after '2014-01-01 00:00:00'.",
-    "sql": "SELECT COUNT(Id) FROM posts WHERE AcceptedAnswerId IS NOT NULL AND CreationDate > '2014-01-01 00:00:00';",
-    "cypher": "MATCH (p:posts) WHERE p.AcceptedAnswerId IS NOT NULL AND p.CreationDate > '2014-01-01 00:00:00' RETURN COUNT(p);"
-  },
-  {
-    "question": "Find the PostIds of posts that have received comments and also have at least one postLinks entry where LinkTypeId is 1.",
-    "sql": "SELECT DISTINCT p.Id FROM posts p JOIN comments c ON p.Id = c.PostId JOIN postLinks pl ON p.Id = pl.PostId WHERE pl.LinkTypeId = 1;",
-    "cypher": "MATCH (p:posts)<-[:COMMENTS_ON]-(:comments) MATCH (p)<-[:LINKED_FROM]-(:postLinks {LinkTypeId: 1}) RETURN DISTINCT p.Id;"
-  },
-  {
-    "question": "List the PostHistoryTypeIds that have been used by at least 5 different users.",
-    "sql": "SELECT PostHistoryTypeId FROM postHistory GROUP BY PostHistoryTypeId HAVING COUNT(DISTINCT UserId) >= 5;",
-    "cypher": "MATCH (ph:postHistory)-[:MADE_BY]->(u:users) WITH ph.PostHistoryTypeId AS typeId, COLLECT(DISTINCT u.Id) AS distinctUsers WHERE SIZE(distinctUsers) >= 5 RETURN typeId;"
-  },
-  {
-    "question": "Retrieve the Id and AccountId of users who have received at least 2 badges of Class 'silver'.",
-    "sql": "SELECT u.Id, u.AccountId FROM users u JOIN badges b ON u.Id = b.UserId WHERE b.Class = 'silver' GROUP BY u.Id, u.AccountId HAVING COUNT(b.Id) >= 2;",
-    "cypher": "MATCH (u:users)-[:EARNED]->(b:badges {Class: 'silver'}) WITH u, COUNT(b) AS silverBadges WHERE silverBadges >= 2 RETURN u.Id, u.AccountId;"
-  },
-  {
-    "question": "Find posts with no comments but with at least one vote.",
-    "sql": "SELECT p.Id, p.Title FROM posts p LEFT JOIN comments c ON p.Id = c.PostId JOIN votes v ON p.Id = v.PostId WHERE c.Id IS NULL GROUP BY p.Id, p.Title HAVING COUNT(v.Id) >= 1;",
-    "cypher": "MATCH (p:posts)<-[:VOTES_ON]-(:votes) WHERE NOT EXISTS { MATCH (p)<-[:COMMENTS_ON]-(:comments) } RETURN p.Id, p.Title;"
-  },
-  {
-    "question": "Calculate the total number of postHistory entries for posts that have 'programming' in their tags.",
-    "sql": "SELECT COUNT(ph.Id) FROM postHistory ph JOIN posts p ON ph.PostId = p.Id WHERE p.Tags LIKE '%programming%';",
-    "cypher": "MATCH (ph:postHistory)-[:HISTORY_OF]->(p:posts) WHERE p.Tags CONTAINS 'programming' RETURN COUNT(ph);"
-  },
-  {
-    "question": "List the OwnerUserId for posts that are answers (PostTypeId = 2) and are also marked as accepted answers for some question.",
-    "sql": "SELECT DISTINCT p.OwnerUserId FROM posts p WHERE p.PostTypeId = 2 AND p.Id IN (SELECT AcceptedAnswerId FROM posts WHERE AcceptedAnswerId IS NOT NULL);",
-    "cypher": "MATCH (p:posts {PostTypeId: 2})<-[:HAS_ACCEPTED_ANSWER]-(:posts) RETURN DISTINCT p.OwnerUserId;"
-  },
-  {
-    "question": "Find users who have created posts and also made comments on posts that were created by users with a higher AccountId.",
-    "sql": "SELECT DISTINCT u_commenter.Id, u_commenter.AccountId FROM users u_commenter JOIN comments c ON u_commenter.Id = c.UserId JOIN posts p_commented ON c.PostId = p_commented.Id JOIN users u_post_owner ON p_commented.OwnerUserId = u_post_owner.Id WHERE u_commenter.Id IN (SELECT OwnerUserId FROM posts) AND u_commenter.AccountId < u_post_owner.AccountId;",
-    "cypher": "MATCH (u_commenter:users)-[:OWNS]->(:posts) MATCH (u_commenter)-[:MAKES]->(c:comments)-[:COMMENTS_ON]->(p_commented:posts)-[:OWNS_POST_BY]->(u_post_owner:users) WHERE u_commenter.AccountId < u_post_owner.AccountId RETURN DISTINCT u_commenter.Id, u_commenter.AccountId;"
-  },
-  {
-    "question": "List posts that have PostTypeId 1 and were created in the year 2018, and also have at least 100 votes.",
-    "sql": "SELECT p.Id, p.Title FROM posts p JOIN votes v ON p.Id = v.PostId WHERE p.PostTypeId = 1 AND STRFTIME('%Y', p.CreationDate) = '2018' GROUP BY p.Id, p.Title HAVING COUNT(v.Id) >= 100;",
-    "cypher": "MATCH (p:posts {PostTypeId: 1}) WHERE substring(p.CreationDate, 0, 4) = '2018' MATCH (p)<-[:VOTES_ON]-(v:votes) WITH p, COUNT(v) AS voteCount WHERE voteCount >= 100 RETURN p.Id, p.Title;"
-  },
-  {
-    "question": "Find the users whose CreationDate is earlier than '2013-01-01 00:00:00' and have posted at least 5 different posts.",
-    "sql": "SELECT u.Id, u.AccountId FROM users u JOIN posts p ON u.Id = p.OwnerUserId WHERE u.CreationDate < '2013-01-01 00:00:00' GROUP BY u.Id, u.AccountId HAVING COUNT(DISTINCT p.Id) >= 5;",
-    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts) WHERE u.CreationDate < '2013-01-01 00:00:00' WITH u, COUNT(p) AS postCount WHERE postCount >= 5 RETURN u.Id, u.AccountId;"
-  },
-  {
-    "question": "Count the total number of posts where Tags contain both 'javascript' and 'react'.",
-    "sql": "SELECT COUNT(Id) FROM posts WHERE Tags LIKE '%javascript%' AND Tags LIKE '%react%';",
-    "cypher": "MATCH (p:posts) WHERE p.Tags CONTAINS 'javascript' AND p.Tags CONTAINS 'react' RETURN COUNT(p);"
-  },
-  {
-    "question": "List all posts that have PostHistoryTypeId = 3 and have more than 500 characters in their Text content.",
-    "sql": "SELECT p.Id, p.Title FROM posts p JOIN postHistory ph ON p.Id = ph.PostId WHERE ph.PostHistoryTypeId = 3 AND LENGTH(ph.Text) > 500;",
-    "cypher": "MATCH (p:posts)<-[:HISTORY_OF]-(ph:postHistory {PostHistoryTypeId: 3}) WHERE SIZE(ph.Text) > 500 RETURN p.Id, p.Title;"
-  },
-  {
-    "question": "Find users who have at least 10 comments and have received at least 1 'gold' class badge.",
-    "sql": "SELECT u.Id, u.AccountId FROM users u JOIN comments c ON u.Id = c.UserId JOIN badges b ON u.Id = b.UserId WHERE b.Class = 'gold' GROUP BY u.Id, u.AccountId HAVING COUNT(DISTINCT c.Id) >= 10 AND COUNT(DISTINCT b.Id) >= 1;",
-    "cypher": "MATCH (u:users)-[:MAKES]->(c:comments) WITH u, COUNT(c) AS commentCount WHERE commentCount >= 10 MATCH (u)-[:EARNED]->(b:badges {Class: 'gold'}) WITH u, commentCount, COUNT(b) AS goldBadgeCount WHERE goldBadgeCount >= 1 RETURN u.Id, u.AccountId;"
-  },
-  {
-    "question": "Retrieve the Id and Title of posts that have an AcceptedAnswerId and the AcceptedAnswerId itself corresponds to a post whose PostTypeId is 2.",
-    "sql": "SELECT p.Id, p.Title FROM posts p WHERE p.AcceptedAnswerId IS NOT NULL AND (SELECT PostTypeId FROM posts WHERE Id = p.AcceptedAnswerId) = 2;",
-    "cypher": "MATCH (p:posts)-[:HAS_ACCEPTED_ANSWER]->(acceptedAnswer:posts) WHERE acceptedAnswer.PostTypeId = 2 RETURN p.Id, p.Title;"
-  },
-  {
-    "question": "Count the number of postLinks where the CreationDate is in the year 2019 and LinkTypeId is 3.",
-    "sql": "SELECT COUNT(Id) FROM postLinks WHERE STRFTIME('%Y', CreationDate) = '2019' AND LinkTypeId = 3;",
-    "cypher": "MATCH (pl:postLinks) WHERE substring(pl.CreationDate, 0, 4) = '2019' AND pl.LinkTypeId = 3 RETURN COUNT(pl);"
-  },
-  {
-    "question": "Find the users whose AccountId is between 5000 and 10000, and they have at least one post and at least one vote.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN posts p ON u.Id = p.OwnerUserId JOIN votes v ON u.Id = v.UserId WHERE u.AccountId BETWEEN 5000 AND 10000;",
-    "cypher": "MATCH (u:users)-[:OWNS]->(:posts) MATCH (u)-[:CASTS]->(:votes) WHERE u.AccountId >= 5000 AND u.AccountId <= 10000 RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "List the posts that have ParentId set and also have comments whose CreationDate is after '2017-06-01 00:00:00'.",
-    "sql": "SELECT DISTINCT p.Id, p.Title FROM posts p JOIN comments c ON p.Id = c.PostId WHERE p.ParentId IS NOT NULL AND c.CreationDate > '2017-06-01 00:00:00';",
-    "cypher": "MATCH (p:posts) WHERE p.ParentId IS NOT NULL MATCH (p)<-[:COMMENTS_ON]-(c:comments) WHERE c.CreationDate > '2017-06-01 00:00:00' RETURN DISTINCT p.Id, p.Title;"
-  },
-  {
-    "question": "Find the PostIds of posts that have received votes with VoteTypeId 5 and have also been edited (have a postHistory entry).",
-    "sql": "SELECT DISTINCT p.Id FROM posts p JOIN votes v ON p.Id = v.PostId JOIN postHistory ph ON p.Id = ph.PostId WHERE v.VoteTypeId = 5;",
-    "cypher": "MATCH (p:posts)<-[:VOTES_ON]-(v:votes {VoteTypeId: 5}) MATCH (p)<-[:HAS_HISTORY]-(:postHistory) RETURN DISTINCT p.Id;"
-  },
-  {
-    "question": "Retrieve the Id and CreationDate of users who have received a badge after '2016-01-01 00:00:00' and have no posts.",
-    "sql": "SELECT u.Id, u.CreationDate FROM users u JOIN badges b ON u.Id = b.UserId LEFT JOIN posts p ON u.Id = p.OwnerUserId WHERE b.Date > '2016-01-01 00:00:00' AND p.Id IS NULL GROUP BY u.Id, u.CreationDate HAVING COUNT(b.Id) >= 1;",
-    "cypher": "MATCH (u:users)-[:EARNED]->(b:badges) WHERE b.Date > '2016-01-01 00:00:00' AND NOT EXISTS { MATCH (u)-[:OWNS]->(:posts) } RETURN u.Id, u.CreationDate;"
-  },
-  {
-    "question": "Count the number of comments that contain the word 'thank you' (case-insensitive).",
-    "sql": "SELECT COUNT(Id) FROM comments WHERE LOWER(Text) LIKE '%thank you%';",
-    "cypher": "MATCH (c:comments) WHERE toLower(c.Text) CONTAINS 'thank you' RETURN COUNT(c);"
-  },
-  {
-    "question": "List the posts that have been edited by at least one user with 'AccountId' greater than 2000.",
-    "sql": "SELECT DISTINCT p.Id, p.Title FROM posts p JOIN postHistory ph ON p.Id = ph.PostId JOIN users u ON ph.UserId = u.Id WHERE u.AccountId > 2000;",
-    "cypher": "MATCH (p:posts)<-[:HAS_HISTORY]-(ph:postHistory)-[:MADE_BY]->(u:users) WHERE u.AccountId > 2000 RETURN DISTINCT p.Id, p.Title;"
-  },
-  {
-    "question": "Find the average CreationDate (year) of posts that have an 'AcceptedAnswerId'.",
-    "sql": "SELECT AVG(CAST(STRFTIME('%Y', CreationDate) AS REAL)) FROM posts WHERE AcceptedAnswerId IS NOT NULL;",
-    "cypher": "MATCH (p:posts) WHERE p.AcceptedAnswerId IS NOT NULL RETURN AVG(toFloat(substring(p.CreationDate, 0, 4)));"
-  },
-  {
-    "question": "List the users who have created a post, and all of their posts have at least one comment.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN posts p ON u.Id = p.OwnerUserId WHERE NOT EXISTS (SELECT 1 FROM posts p2 LEFT JOIN comments c ON p2.Id = c.PostId WHERE p2.OwnerUserId = u.Id AND c.Id IS NULL);",
-    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts) WHERE NOT EXISTS { MATCH (p) WHERE NOT EXISTS { MATCH (p)<-[:COMMENTS_ON]-(:comments) } } RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "Find the posts that have at least 2 post links and were created by a user whose AccountId is greater than 500.",
-    "sql": "SELECT p.Id, p.Title FROM posts p JOIN postLinks pl ON p.Id = pl.PostId JOIN users u ON p.OwnerUserId = u.Id WHERE u.AccountId > 500 GROUP BY p.Id, p.Title HAVING COUNT(pl.Id) >= 2;",
-    "cypher": "MATCH (p:posts)-[:OWNS_POST_BY]->(u:users) WHERE u.AccountId > 500 MATCH (p)<-[:LINKED_FROM]-(pl:postLinks) WITH p, COUNT(pl) AS linkCount WHERE linkCount >= 2 RETURN p.Id, p.Title;"
-  },
-  {
-    "question": "Count the number of posts that have an 'AcceptedAnswerId' and their 'Body' contains the word 'solution'.",
-    "sql": "SELECT COUNT(Id) FROM posts WHERE AcceptedAnswerId IS NOT NULL AND LOWER(Body) LIKE '%solution%';",
-    "cypher": "MATCH (p:posts) WHERE p.AcceptedAnswerId IS NOT NULL AND toLower(p.Body) CONTAINS 'solution' RETURN COUNT(p);"
-  },
-  {
-    "question": "Retrieve the users who have received at least one 'gold' badge and have a 'CreationDate' in the year 2015.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN badges b ON u.Id = b.UserId WHERE b.Class = 'gold' AND STRFTIME('%Y', u.CreationDate) = '2015';",
-    "cypher": "MATCH (u:users)-[:EARNED]->(b:badges {Class: 'gold'}) WHERE substring(u.CreationDate, 0, 4) = '2015' RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "Find the total number of votes for posts created by users whose AccountId is less than 1000.",
-    "sql": "SELECT COUNT(v.Id) FROM votes v JOIN posts p ON v.PostId = p.Id JOIN users u ON p.OwnerUserId = u.Id WHERE u.AccountId < 1000;",
-    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts)<-[:VOTES_ON]-(v:votes) WHERE u.AccountId < 1000 RETURN COUNT(v);"
-  },
-  {
-    "question": "List the PostIds and Titles of posts that have comments, but no votes.",
-    "sql": "SELECT p.Id, p.Title FROM posts p JOIN comments c ON p.Id = c.PostId LEFT JOIN votes v ON p.Id = v.PostId WHERE v.Id IS NULL GROUP BY p.Id, p.Title;",
-    "cypher": "MATCH (p:posts)<-[:COMMENTS_ON]-(:comments) WHERE NOT EXISTS { MATCH (p)<-[:VOTES_ON]-(:votes) } RETURN p.Id, p.Title;"
-  },
-  {
-    "question": "Count the number of users who have at least 5 posts and at least 5 comments.",
-    "sql": "SELECT COUNT(DISTINCT u.Id) FROM users u JOIN posts p ON u.Id = p.OwnerUserId JOIN comments c ON u.Id = c.UserId GROUP BY u.Id HAVING COUNT(DISTINCT p.Id) >= 5 AND COUNT(DISTINCT c.Id) >= 5;",
-    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts) WITH u, COUNT(p) AS postCount WHERE postCount >= 5 MATCH (u)-[:MAKES]->(c:comments) WITH u, postCount, COUNT(c) AS commentCount WHERE commentCount >= 5 RETURN COUNT(u);"
-  },
-  {
-    "question": "Find the PostHistoryTypeIds that are associated with posts that have an 'AcceptedAnswerId'.",
-    "sql": "SELECT DISTINCT ph.PostHistoryTypeId FROM postHistory ph JOIN posts p ON ph.PostId = p.Id WHERE p.AcceptedAnswerId IS NOT NULL;",
-    "cypher": "MATCH (ph:postHistory)-[:HISTORY_OF]->(p:posts) WHERE p.AcceptedAnswerId IS NOT NULL RETURN DISTINCT ph.PostHistoryTypeId;"
-  },
-  {
-    "question": "Retrieve the titles of posts that are linked to another post with a 'LinkTypeId' of 2 and the linked post also has a 'ParentId'.",
-    "sql": "SELECT p1.Title FROM posts p1 JOIN postLinks pl ON p1.Id = pl.RelatedPostId JOIN posts p2 ON pl.PostId = p2.Id WHERE pl.LinkTypeId = 2 AND p2.ParentId IS NOT NULL;",
-    "cypher": "MATCH (p1:posts)<-[:LINKS_TO]-(pl:postLinks {LinkTypeId: 2})<-[:LINKED_FROM]-(p2:posts) WHERE p2.ParentId IS NOT NULL RETURN p1.Title;"
-  },
-  {
-    "question": "List the users who have created posts containing the tag 'python' and have received at least one 'silver' class badge.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN posts p ON u.Id = p.OwnerUserId JOIN badges b ON u.Id = b.UserId WHERE p.Tags LIKE '%python%' AND b.Class = 'silver';",
-    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts) WHERE p.Tags CONTAINS 'python' MATCH (u)-[:EARNED]->(b:badges {Class: 'silver'}) RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "Count the number of distinct 'Tags' used in posts that were created in '2019' and have at least one vote.",
-    "sql": "SELECT COUNT(DISTINCT Tag) FROM posts, (SELECT TRIM(SUBSTR(Tags, INSTR(Tags, '<', 1, n) + 1, INSTR(Tags, '>', 1, n) - INSTR(Tags, '<', 1, n) - 1)) AS Tag FROM posts CROSS JOIN (SELECT 1 AS n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10) WHERE Tags IS NOT NULL AND INSTR(Tags, '<', 1, n) > 0 AND STRFTIME('%Y', CreationDate) = '2019' AND Id IN (SELECT DISTINCT PostId FROM votes)) WHERE Tag IS NOT NULL;",
-    "cypher": "MATCH (p:posts)<-[:VOTES_ON]-(:votes) WHERE substring(p.CreationDate, 0, 4) = '2019' AND p.Tags IS NOT NULL WITH p UNWIND apoc.text.split(p.Tags, '><') AS tag RETURN COUNT(DISTINCT replace(replace(tag, '<', ''), '>', ''));"
-  },
-  {
-    "question": "Find the users whose 'AboutMe' description contains the word 'developer' and have created at least 3 posts.",
-    "sql": "SELECT u.Id, u.AccountId FROM users u JOIN posts p ON u.Id = p.OwnerUserId WHERE LOWER(u.AboutMe) LIKE '%developer%' GROUP BY u.Id, u.AccountId HAVING COUNT(DISTINCT p.Id) >= 3;",
-    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts) WHERE toLower(u.AboutMe) CONTAINS 'developer' WITH u, COUNT(p) AS postCount WHERE postCount >= 3 RETURN u.Id, u.AccountId;"
-  },
-  {
-    "question": "List the Id and Title of posts that have 'PostTypeId' 1 and their 'CreationDate' is between '2017-01-01 00:00:00' and '2018-01-01 00:00:00'.",
-    "sql": "SELECT Id, Title FROM posts WHERE PostTypeId = 1 AND CreationDate BETWEEN '2017-01-01 00:00:00' AND '2018-01-01 00:00:00';",
-    "cypher": "MATCH (p:posts {PostTypeId: 1}) WHERE p.CreationDate >= '2017-01-01 00:00:00' AND p.CreationDate < '2018-01-01 00:00:00' RETURN p.Id, p.Title;"
-  },
-  {
-    "question": "Find the users who have made comments on posts created by themselves, and these comments were made after the post's creation date.",
-    "sql": "SELECT DISTINCT c.UserId FROM comments c JOIN posts p ON c.PostId = p.Id WHERE c.UserId = p.OwnerUserId AND c.CreationDate > p.CreationDate;",
-    "cypher": "MATCH (u:users)-[:MAKES]->(c:comments)-[:COMMENTS_ON]->(p:posts) WHERE (u)-[:OWNS]->(p) AND c.CreationDate > p.CreationDate RETURN DISTINCT u.Id;"
-  },
-  {
-    "question": "Retrieve the 'ContentLicense' values from 'postHistory' entries that are related to posts with 'PostTypeId' 2.",
-    "sql": "SELECT DISTINCT ph.ContentLicense FROM postHistory ph JOIN posts p ON ph.PostId = p.Id WHERE p.PostTypeId = 2;",
-    "cypher": "MATCH (ph:postHistory)-[:HISTORY_OF]->(p:posts {PostTypeId: 2}) RETURN DISTINCT ph.ContentLicense;"
-  },
-  {
-    "question": "Count the number of posts that have at least one comment whose 'UserId' matches the 'OwnerUserId' of the post.",
-    "sql": "SELECT COUNT(DISTINCT p.Id) FROM posts p JOIN comments c ON p.Id = c.PostId WHERE p.OwnerUserId = c.UserId;",
-    "cypher": "MATCH (p:posts)<-[:COMMENTS_ON]-(c:comments)-[:MAKES]->(u:users) WHERE (u)-[:OWNS]->(p) RETURN COUNT(DISTINCT p);"
-  },
-  {
-    "question": "List posts with 'PostTypeId' 1 that have received at least 10 votes of 'VoteTypeId' = 5.",
-    "sql": "SELECT p.Id, p.Title FROM posts p JOIN votes v ON p.Id = v.PostId WHERE p.PostTypeId = 1 AND v.VoteTypeId = 5 GROUP BY p.Id, p.Title HAVING COUNT(v.Id) >= 10;",
-    "cypher": "MATCH (p:posts {PostTypeId: 1})<-[:VOTES_ON]-(v:votes {VoteTypeId: 5}) WITH p, COUNT(v) AS voteCount WHERE voteCount >= 10 RETURN p.Id, p.Title;"
-  },
-  {
-    "question": "Find the users who have created posts and also have commented on posts created by other users.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN posts p ON u.Id = p.OwnerUserId JOIN comments c ON u.Id = c.UserId JOIN posts p2 ON c.PostId = p2.Id WHERE u.Id <> p2.OwnerUserId;",
-    "cypher": "MATCH (u:users)-[:OWNS]->(:posts) MATCH (u)-[:MAKES]->(:comments)-[:COMMENTS_ON]->(p2:posts) WHERE NOT (u)-[:OWNS]->(p2) RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "Retrieve the 'Text' content of 'postHistory' entries that were made for posts with more than 10 comments.",
-    "sql": "SELECT ph.Text FROM postHistory ph JOIN posts p ON ph.PostId = p.Id JOIN comments c ON p.Id = c.PostId GROUP BY ph.Id, ph.Text, p.Id HAVING COUNT(c.Id) > 10;",
-    "cypher": "MATCH (p:posts)<-[:COMMENTS_ON]-(c:comments) WITH p, COUNT(c) AS commentCount WHERE commentCount > 10 MATCH (p)<-[:HISTORY_OF]-(ph:postHistory) RETURN ph.Text;"
-  },
-  {
-    "question": "Count the number of posts that have 'AcceptedAnswerId' set, and also have 'Tags' containing 'database'.",
-    "sql": "SELECT COUNT(Id) FROM posts WHERE AcceptedAnswerId IS NOT NULL AND Tags LIKE '%database%';",
-    "cypher": "MATCH (p:posts) WHERE p.AcceptedAnswerId IS NOT NULL AND p.Tags CONTAINS 'database' RETURN COUNT(p);"
-  },
-  {
-    "question": "List the 'Id' of users who have cast votes on posts but have never created a post themselves.",
-    "sql": "SELECT DISTINCT v.UserId FROM votes v LEFT JOIN posts p ON v.UserId = p.OwnerUserId WHERE p.Id IS NULL;",
-    "cypher": "MATCH (u:users)-[:CASTS]->(:votes) WHERE NOT EXISTS { MATCH (u)-[:OWNS]->(:posts) } RETURN DISTINCT u.Id;"
-  },
-  {
-    "question": "Find posts whose 'CreationDate' is after '2016-01-01 00:00:00' and have at least 5 'postHistory' entries.",
-    "sql": "SELECT p.Id, p.Title FROM posts p JOIN postHistory ph ON p.Id = ph.PostId WHERE p.CreationDate > '2016-01-01 00:00:00' GROUP BY p.Id, p.Title HAVING COUNT(ph.Id) >= 5;",
-    "cypher": "MATCH (p:posts)<-[:HAS_HISTORY]-(ph:postHistory) WHERE p.CreationDate > '2016-01-01 00:00:00' WITH p, COUNT(ph) AS historyCount WHERE historyCount >= 5 RETURN p.Id, p.Title;"
-  },
-  {
-    "question": "Retrieve the 'PostId' and 'LinkTypeId' for 'postLinks' entries where the 'RelatedPostId' has an 'AcceptedAnswerId'.",
-    "sql": "SELECT pl.PostId, pl.LinkTypeId FROM postLinks pl JOIN posts p ON pl.RelatedPostId = p.Id WHERE p.AcceptedAnswerId IS NOT NULL;",
-    "cypher": "MATCH (pl:postLinks)-[:LINKS_TO]->(p:posts) WHERE p.AcceptedAnswerId IS NOT NULL RETURN pl.PostId, pl.LinkTypeId;"
-  },
-  {
-    "question": "Count the number of users who have received at least one 'bronze' badge and their 'AboutMe' is not empty.",
-    "sql": "SELECT COUNT(DISTINCT u.Id) FROM users u JOIN badges b ON u.Id = b.UserId WHERE b.Class = 'bronze' AND u.AboutMe IS NOT NULL AND LENGTH(TRIM(u.AboutMe)) > 0;",
-    "cypher": "MATCH (u:users)-[:EARNED]->(b:badges {Class: 'bronze'}) WHERE u.AboutMe IS NOT NULL AND SIZE(TRIM(u.AboutMe)) > 0 RETURN COUNT(DISTINCT u);"
-  },
-  {
-    "question": "List posts with PostTypeId 1 that have an AcceptedAnswerId, and the 'OwnerUserId' of the accepted answer is different from the owner of the question.",
-    "sql": "SELECT q.Id, q.Title FROM posts q JOIN posts a ON q.AcceptedAnswerId = a.Id WHERE q.PostTypeId = 1 AND q.AcceptedAnswerId IS NOT NULL AND q.OwnerUserId <> a.OwnerUserId;",
-    "cypher": "MATCH (q:posts {PostTypeId: 1})-[:HAS_ACCEPTED_ANSWER]->(a:posts) MATCH (q)-[:OWNS_POST_BY]->(ownerQ:users) MATCH (a)-[:OWNS_POST_BY]->(ownerA:users) WHERE ownerQ.Id <> ownerA.Id RETURN q.Id, q.Title;"
-  },
-  {
-    "question": "Find the users who have created posts and also received badges before '2015-01-01 00:00:00'.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN posts p ON u.Id = p.OwnerUserId JOIN badges b ON u.Id = b.UserId WHERE b.Date < '2015-01-01 00:00:00';",
-    "cypher": "MATCH (u:users)-[:OWNS]->(:posts) MATCH (u)-[:EARNED]->(b:badges) WHERE b.Date < '2015-01-01 00:00:00' RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "List the titles of posts that have at least 2 comments and their 'OwnerUserId' has an 'AccountId' greater than 3000.",
-    "sql": "SELECT p.Title FROM posts p JOIN comments c ON p.Id = c.PostId JOIN users u ON p.OwnerUserId = u.Id WHERE u.AccountId > 3000 GROUP BY p.Id, p.Title HAVING COUNT(c.Id) >= 2;",
-    "cypher": "MATCH (p:posts)-[:OWNS_POST_BY]->(u:users) WHERE u.AccountId > 3000 MATCH (p)<-[:COMMENTS_ON]-(c:comments) WITH p, COUNT(c) AS commentCount WHERE commentCount >= 2 RETURN p.Title;"
-  },
-  {
-    "question": "Count the number of users who have made comments on posts that were created by a user with a lower 'AccountId'.",
-    "sql": "SELECT COUNT(DISTINCT c.UserId) FROM comments c JOIN posts p ON c.PostId = p.Id JOIN users u_owner ON p.OwnerUserId = u_owner.Id JOIN users u_commenter ON c.UserId = u_commenter.Id WHERE u_commenter.AccountId > u_owner.AccountId;",
-    "cypher": "MATCH (u_commenter:users)-[:MAKES]->(c:comments)-[:COMMENTS_ON]->(p:posts)-[:OWNS_POST_BY]->(u_owner:users) WHERE u_commenter.AccountId > u_owner.AccountId RETURN COUNT(DISTINCT u_commenter.Id);"
-  },
-  {
-    "question": "Retrieve the 'Id' and 'Title' of posts that have 'Tags' containing 'database' and have received at least one vote with 'VoteTypeId' = 2.",
-    "sql": "SELECT DISTINCT p.Id, p.Title FROM posts p JOIN votes v ON p.Id = v.PostId WHERE p.Tags LIKE '%database%' AND v.VoteTypeId = 2;",
-    "cypher": "MATCH (p:posts)<-[:VOTES_ON]-(v:votes {VoteTypeId: 2}) WHERE p.Tags CONTAINS 'database' RETURN DISTINCT p.Id, p.Title;"
-  },
-  {
-    "question": "Find the users who have created posts and also have made 'postHistory' entries on those posts with 'PostHistoryTypeId' = 1.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN posts p ON u.Id = p.OwnerUserId JOIN postHistory ph ON p.Id = ph.PostId WHERE ph.UserId = u.Id AND ph.PostHistoryTypeId = 1;",
-    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts)<-[:HISTORY_OF]-(ph:postHistory)-[:MADE_BY]->(u) WHERE ph.PostHistoryTypeId = 1 RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "List posts that have a 'ParentId' and whose 'Body' text is shorter than 500 characters and longer than 100 characters.",
-    "sql": "SELECT Id, Title FROM posts WHERE ParentId IS NOT NULL AND LENGTH(Body) < 500 AND LENGTH(Body) > 100;",
-    "cypher": "MATCH (p:posts) WHERE p.ParentId IS NOT NULL AND SIZE(p.Body) < 500 AND SIZE(p.Body) > 100 RETURN p.Id, p.Title;"
-  },
-  {
-    "question": "Get the 'CreationDate' of users who have received all three badge classes: 'bronze', 'silver', and 'gold'.",
-    "sql": "SELECT u.CreationDate FROM users u JOIN badges b1 ON u.Id = b1.UserId AND b1.Class = 'bronze' JOIN badges b2 ON u.Id = b2.UserId AND b2.Class = 'silver' JOIN badges b3 ON u.Id = b3.UserId AND b3.Class = 'gold' GROUP BY u.Id, u.CreationDate HAVING COUNT(DISTINCT b1.Class) = 1 AND COUNT(DISTINCT b2.Class) = 1 AND COUNT(DISTINCT b3.Class) = 1;",
-    "cypher": "MATCH (u:users)-[:EARNED]->(b:badges) WITH u, COLLECT(DISTINCT b.Class) AS classes WHERE 'bronze' IN classes AND 'silver' IN classes AND 'gold' IN classes RETURN u.CreationDate;"
-  },
-  {
-    "question": "Count the number of posts that were created in '2016' and have at least 5 'postLinks' entries.",
-    "sql": "SELECT COUNT(DISTINCT p.Id) FROM posts p JOIN postLinks pl ON p.Id = pl.PostId WHERE STRFTIME('%Y', p.CreationDate) = '2016' GROUP BY p.Id HAVING COUNT(pl.Id) >= 5;",
-    "cypher": "MATCH (p:posts)<-[:LINKED_FROM]-(pl:postLinks) WHERE substring(p.CreationDate, 0, 4) = '2016' WITH p, COUNT(pl) AS linkCount WHERE linkCount >= 5 RETURN COUNT(p);"
-  },
-  {
-    "question": "Find the users who have made comments on more than 10 distinct posts.",
-    "sql": "SELECT UserId FROM comments GROUP BY UserId HAVING COUNT(DISTINCT PostId) > 10;",
-    "cypher": "MATCH (u:users)-[:MAKES]->(c:comments)-[:COMMENTS_ON]->(p:posts) WITH u, COLLECT(DISTINCT p.Id) AS distinctPosts WHERE SIZE(distinctPosts) > 10 RETURN u.Id;"
-  },
-  {
-    "question": "Retrieve the 'Id' and 'Title' of posts that have 'AcceptedAnswerId' set and whose 'Tags' contain 'javascript' and 'frontend'.",
-    "sql": "SELECT Id, Title FROM posts WHERE AcceptedAnswerId IS NOT NULL AND Tags LIKE '%javascript%' AND Tags LIKE '%frontend%';",
-    "cypher": "MATCH (p:posts) WHERE p.AcceptedAnswerId IS NOT NULL AND p.Tags CONTAINS 'javascript' AND p.Tags CONTAINS 'frontend' RETURN p.Id, p.Title;"
-  },
-  {
-    "question": "List the users whose 'CreationDate' is in the first half of '2014' and who have received at least one badge.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN badges b ON u.Id = b.UserId WHERE u.CreationDate BETWEEN '2014-01-01 00:00:00' AND '2014-06-30 23:59:59';",
-    "cypher": "MATCH (u:users)-[:EARNED]->(:badges) WHERE u.CreationDate >= '2014-01-01 00:00:00' AND u.CreationDate <= '2014-06-30 23:59:59' RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "Count the number of 'postHistory' entries where 'ContentLicense' is 'CC BY-SA 4.0' and 'CreationDate' is in '2018'.",
-    "sql": "SELECT COUNT(Id) FROM postHistory WHERE ContentLicense = 'CC BY-SA 4.0' AND STRFTIME('%Y', CreationDate) = '2018';",
-    "cypher": "MATCH (ph:postHistory) WHERE ph.ContentLicense = 'CC BY-SA 4.0' AND substring(ph.CreationDate, 0, 4) = '2018' RETURN COUNT(ph);"
-  },
-  {
-    "question": "Find posts that have at least 10 votes and at least 5 comments from different users.",
-    "sql": "SELECT p.Id, p.Title FROM posts p JOIN votes v ON p.Id = v.PostId JOIN comments c ON p.Id = c.PostId GROUP BY p.Id, p.Title HAVING COUNT(v.Id) >= 10 AND COUNT(DISTINCT c.UserId) >= 5;",
-    "cypher": "MATCH (p:posts)<-[:VOTES_ON]-(v:votes) WITH p, COUNT(v) AS voteCount WHERE voteCount >= 10 OPTIONAL MATCH (p)<-[:COMMENTS_ON]-(c:comments)-[:MAKES]->(u:users) WITH p, voteCount, COLLECT(DISTINCT u.Id) AS distinctCommenters WHERE SIZE(distinctCommenters) >= 5 RETURN p.Id, p.Title;"
-  },
-  {
-    "question": "List the 'OwnerUserId' for posts where 'PostTypeId' is 1 and the post has no 'ParentId' but has an 'AcceptedAnswerId'.",
-    "sql": "SELECT OwnerUserId FROM posts WHERE PostTypeId = 1 AND ParentId IS NULL AND AcceptedAnswerId IS NOT NULL;",
-    "cypher": "MATCH (p:posts {PostTypeId: 1}) WHERE p.ParentId IS NULL AND p.AcceptedAnswerId IS NOT NULL RETURN p.OwnerUserId;"
-  },
-  {
-    "question": "Retrieve the 'Id' and 'AccountId' of users who have received at least one badge and have never created any posts.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN badges b ON u.Id = b.UserId LEFT JOIN posts p ON u.Id = p.OwnerUserId WHERE p.Id IS NULL;",
-    "cypher": "MATCH (u:users)-[:EARNED]->(:badges) WHERE NOT EXISTS { MATCH (u)-[:OWNS]->(:posts) } RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "Count the average length of 'Body' for posts whose 'CreationDate' is after '2017-01-01 00:00:00'.",
-    "sql": "SELECT AVG(LENGTH(Body)) FROM posts WHERE CreationDate > '2017-01-01 00:00:00';",
-    "cypher": "MATCH (p:posts) WHERE p.CreationDate > '2017-01-01 00:00:00' RETURN AVG(SIZE(p.Body));"
-  },
-  {
-    "question": "Find the posts that have been linked to by a post with a 'LinkTypeId' of 1 and that also have 'PostHistoryTypeId' 1 in their history.",
-    "sql": "SELECT DISTINCT p.Id, p.Title FROM posts p JOIN postLinks pl ON p.Id = pl.RelatedPostId JOIN postHistory ph ON p.Id = ph.PostId WHERE pl.LinkTypeId = 1 AND ph.PostHistoryTypeId = 1;",
-    "cypher": "MATCH (linkedPost:posts)<-[:LINKS_TO]-(pl:postLinks {LinkTypeId: 1}) MATCH (linkedPost)<-[:HISTORY_OF]-(ph:postHistory {PostHistoryTypeId: 1}) RETURN DISTINCT linkedPost.Id, linkedPost.Title;"
-  },
-  {
-    "question": "List the users who have posted at least 10 times and whose 'AboutMe' contains 'React'.",
-    "sql": "SELECT u.Id, u.AccountId FROM users u JOIN posts p ON u.Id = p.OwnerUserId WHERE LOWER(u.AboutMe) LIKE '%react%' GROUP BY u.Id, u.AccountId HAVING COUNT(DISTINCT p.Id) >= 10;",
-    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts) WHERE toLower(u.AboutMe) CONTAINS 'react' WITH u, COUNT(p) AS postCount WHERE postCount >= 10 RETURN u.Id, u.AccountId;"
-  },
-  {
-    "question": "Count the number of votes made on posts that were created in '2015' and have an 'AcceptedAnswerId'.",
-    "sql": "SELECT COUNT(v.Id) FROM votes v JOIN posts p ON v.PostId = p.Id WHERE STRFTIME('%Y', p.CreationDate) = '2015' AND p.AcceptedAnswerId IS NOT NULL;",
-    "cypher": "MATCH (v:votes)-[:VOTES_ON]->(p:posts) WHERE substring(p.CreationDate, 0, 4) = '2015' AND p.AcceptedAnswerId IS NOT NULL RETURN COUNT(v);"
-  },
-  {
-    "question": "Retrieve the 'PostId' and 'UserId' from 'comments' table where the comment 'Text' contains 'bug' (case-insensitive) and the comment was made after '2017-01-01 00:00:00'.",
-    "sql": "SELECT PostId, UserId FROM comments WHERE LOWER(Text) LIKE '%bug%' AND CreationDate > '2017-01-01 00:00:00';",
-    "cypher": "MATCH (c:comments) WHERE toLower(c.Text) CONTAINS 'bug' AND c.CreationDate > '2017-01-01 00:00:00' RETURN c.PostId, c.UserId;"
-  },
-  {
-    "question": "Find users who have at least one post and their 'AboutMe' description is empty or null.",
-    "sql": "SELECT DISTINCT u.Id, u.AccountId FROM users u JOIN posts p ON u.Id = p.OwnerUserId WHERE u.AboutMe IS NULL OR LENGTH(TRIM(u.AboutMe)) = 0;",
-    "cypher": "MATCH (u:users)-[:OWNS]->(:posts) WHERE u.AboutMe IS NULL OR SIZE(TRIM(u.AboutMe)) = 0 RETURN DISTINCT u.Id, u.AccountId;"
-  },
-  {
-    "question": "List the 'PostTypeIds' that have been associated with posts having more than 5 distinct 'PostHistoryTypeId' entries.",
-    "sql": "SELECT p.PostTypeId FROM posts p JOIN postHistory ph ON p.Id = ph.PostId GROUP BY p.Id, p.PostTypeId HAVING COUNT(DISTINCT ph.PostHistoryTypeId) > 5;",
-    "cypher": "MATCH (p:posts)<-[:HISTORY_OF]-(ph:postHistory) WITH p, COLLECT(DISTINCT ph.PostHistoryTypeId) AS distinctHistoryTypes WHERE SIZE(distinctHistoryTypes) > 5 RETURN p.PostTypeId;"
-  },
-  {
-    "question": "Find posts that have at least 3 distinct votes, where at least one vote has 'VoteTypeId' = 1 and another has 'VoteTypeId' = 5.",
-    "sql": "SELECT p.Id, p.Title FROM posts p JOIN votes v ON p.Id = v.PostId GROUP BY p.Id, p.Title HAVING COUNT(DISTINCT v.Id) >= 3 AND SUM(CASE WHEN v.VoteTypeId = 1 THEN 1 ELSE 0 END) > 0 AND SUM(CASE WHEN v.VoteTypeId = 5 THEN 1 ELSE 0 END) > 0;",
-    "cypher": "MATCH (p:posts)<-[:VOTES_ON]-(v:votes) WITH p, COLLECT(v) AS allVotes, COLLECT(v.VoteTypeId) AS allVoteTypes WHERE SIZE(allVotes) >= 3 AND 1 IN allVoteTypes AND 5 IN allVoteTypes RETURN p.Id, p.Title;"
-  },
-  {
-    "question": "Retrieve the 'Id' and 'CreationDate' of users who have commented on posts created by themselves, but have not received any badges.",
-    "sql": "SELECT DISTINCT u.Id, u.CreationDate FROM users u JOIN comments c ON u.Id = c.UserId JOIN posts p ON c.PostId = p.Id LEFT JOIN badges b ON u.Id = b.UserId WHERE u.Id = p.OwnerUserId AND b.Id IS NULL;",
-    "cypher": "MATCH (u:users)-[:MAKES]->(c:comments)-[:COMMENTS_ON]->(p:posts) WHERE (u)-[:OWNS]->(p) AND NOT EXISTS { MATCH (u)-[:EARNED]->(:badges) } RETURN DISTINCT u.Id, u.CreationDate;"
-  },
-  {
-    "question": "Count the number of posts that have 'AcceptedAnswerId' set and whose accepted answer post also has at least one comment.",
-    "sql": "SELECT COUNT(DISTINCT p.Id) FROM posts p JOIN posts accepted_answer ON p.AcceptedAnswerId = accepted_answer.Id JOIN comments c ON accepted_answer.Id = c.PostId WHERE p.AcceptedAnswerId IS NOT NULL;",
-    "cypher": "MATCH (p:posts)-[:HAS_ACCEPTED_ANSWER]->(acceptedAnswer:posts)<-[:COMMENTS_ON]-(:comments) WHERE p.AcceptedAnswerId IS NOT NULL RETURN COUNT(DISTINCT p);"
+    "question": "Find the top 10 questions with accepted answers where the answer has more votes than the question. Return question ID, title, question vote count, answer vote count, and answer ID.",
+    "sql": "SELECT q.Id as question_id, q.Title, COUNT(DISTINCT qv.Id) as question_votes, COUNT(DISTINCT av.Id) as answer_votes, a.Id as answer_id FROM posts q JOIN posts a ON q.AcceptedAnswerId = a.Id LEFT JOIN votes qv ON q.Id = qv.PostId LEFT JOIN votes av ON a.Id = av.PostId GROUP BY q.Id, q.Title, a.Id HAVING answer_votes > question_votes ORDER BY answer_votes - question_votes DESC LIMIT 10;",
+    "cypher": "MATCH (q:posts)-[:ACCEPTED_ANSWER]->(a:posts) OPTIONAL MATCH (q)<-[:VOTED_ON]-(qv:votes) OPTIONAL MATCH (a)<-[:VOTED_ON]-(av:votes) WITH q, a, COUNT(DISTINCT qv) as question_votes, COUNT(DISTINCT av) as answer_votes WHERE answer_votes > question_votes RETURN q.Id as question_id, q.Title, question_votes, answer_votes, a.Id as answer_id ORDER BY answer_votes - question_votes DESC LIMIT 10;"
   }
 ]

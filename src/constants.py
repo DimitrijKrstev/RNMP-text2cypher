@@ -24,7 +24,8 @@ def get_tasks_directory(dataset_name: DatasetName) -> Path:
 
 
 def get_sqlite_db_path(dataset_name: DatasetName) -> Path:
-    return SQLITE_DIR / f"{dataset_name}.db"
+    print(SQLITE_DIR / dataset_name.value / "relbench.db")
+    return SQLITE_DIR / dataset_name.value / "relbench.db"
 
 
 def get_csv_output_dir(dataset_name: DatasetName) -> Path:

@@ -1,6 +1,7 @@
 import os
 from logging import basicConfig, getLogger, INFO
 from pathlib import Path
+from dotenv import load_dotenv
 
 import typer
 from openai import OpenAI
@@ -15,7 +16,9 @@ from utils import get_model_and_tokenizer
 from validate_tasks import validate
 
 
+load_dotenv()  
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
 
 app = typer.Typer()
 
@@ -58,11 +61,11 @@ def evaluate_local(dataset_name: DatasetName, task_types: list[TaskType]) -> Non
 
 @app.command()
 def evaluate_remote(dataset_name: DatasetName, task_types: list[TaskType]) -> None:
+    
     if not OPENAI_API_KEY:
         raise typer.Abort("OPENAI_API_KEY environment variable not set")
 
     client = OpenAI(api_key=OPENAI_API_KEY)
-
     for task_type in task_types:
         evaluate_remote_model_for_task(
             REMOTE_MODEL_NAME, dataset_name, task_type, client
