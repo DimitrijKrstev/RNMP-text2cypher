@@ -11,6 +11,7 @@ from database.neo4j import get_neo4j_schema
 from database.setup import get_node_csvs, load_dataset_to_sqlite
 from evaluation.local_eval import evaluate_local_model_for_task
 from evaluation.remote_eval import evaluate_remote_model_for_task
+from evaluation.re_evaluation import re_evaluate_sql_results
 from models import DatasetName, TaskType
 from utils import get_model_and_tokenizer
 from validate_tasks import validate
@@ -47,6 +48,18 @@ def get_neo4j() -> None:
     schema = get_neo4j_schema()
     logger.info(schema)
 
+
+@app.command()
+def re_evaluate_results(
+    dataset_name: DatasetName, 
+    task_type: TaskType = TaskType.SQL
+) -> None:
+    if task_type == TaskType.CYPHER:
+        # re_evaluate_cypher_results(dataset_name)
+        # TODO implement cypher re-evaluation
+        pass
+    else:
+        re_evaluate_sql_results(dataset_name)
 
 @app.command()
 def evaluate_local(dataset_name: DatasetName, task_types: list[TaskType]) -> None:

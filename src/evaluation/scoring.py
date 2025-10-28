@@ -12,17 +12,17 @@ QUERY_DB_BY_TASK_TYPE = {
 }
 
 
-def get_task_result(task: Task, model_response: str, task_type: TaskType) -> TaskResult:
+def get_task_result(task: Task, model_response: str, task_type: TaskType, db_path: str) -> TaskResult:
     syntaxically_correct = False
     correct_result = False
     exact_match = False
 
     try:
-        result = QUERY_DB_BY_TASK_TYPE[task_type](model_response)  # type: ignore
+        result = QUERY_DB_BY_TASK_TYPE[task_type](model_response, db_path)  # type: ignore
         syntaxically_correct = True
         optimal_response = task.get_response_by_task_type(task_type)
 
-        if result == QUERY_DB_BY_TASK_TYPE[task_type](optimal_response):  # type: ignore
+        if result == QUERY_DB_BY_TASK_TYPE[task_type](optimal_response, db_path):  # type: ignore
             correct_result = True
         if normalize_query(model_response, task_type) == normalize_query(
             optimal_response, task_type

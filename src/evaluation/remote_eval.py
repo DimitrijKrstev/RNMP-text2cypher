@@ -57,7 +57,7 @@ def evaluate_remote_model_for_task(
             )
 
             generated_query = response.output_text or "<no_query>"
-            result = get_task_result(task, generated_query, task_type)
+            result = get_task_result(task, generated_query, task_type, db_path)
             task_results.append(result)
 
         save_task_results(
