@@ -23,5 +23,8 @@ RETURN
 MATCH (u:users)-[:OWNS]->(p:posts)
 WITH count(p) AS totalPosts, count(DISTINCT u) AS totalUsers
 RETURN totalUsers,
-       totalPosts,
-       round(1.0*totalPosts/totalUsers,1) AS avgPostsPerUser;
+        totalPosts,
+        CASE
+          WHEN totalUsers = 0 THEN 0
+          ELSE round(1.0*totalPosts/totalUsers,1)
+        END AS avgPostsPerUser;

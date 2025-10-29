@@ -1,0 +1,77 @@
+[
+  {
+    "question": "Get the top 10 most voted posts. Return post ID, title, author account ID, and vote count for the top 10 posts.",
+    "sql": "SELECT p.Id, p.Title, u.AccountId, COUNT(v.Id) as vote_count FROM posts p JOIN users u ON p.OwnerUserId = u.Id LEFT JOIN votes v ON p.Id = v.PostId GROUP BY p.Id, p.Title, u.AccountId ORDER BY vote_count DESC LIMIT 10;",
+    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts) OPTIONAL MATCH (p)<-[:VOTED_ON]-(v:votes) WITH p, u, COUNT(v) as vote_count ORDER BY vote_count DESC LIMIT 10 RETURN p.Id, p.Title, u.AccountId, vote_count;"
+  },
+  {
+    "question": "Get users who earned multiple badge classes (more than 1 distinct class). Return user ID, account ID, distinct class count, gold count, silver count, bronze count, and most recent badge date.",
+    "sql": "SELECT u.Id, u.AccountId, COUNT(DISTINCT b.Class) as class_count, SUM(CASE WHEN b.Class = 'gold' THEN 1 ELSE 0 END) as gold_count, SUM(CASE WHEN b.Class = 'silver' THEN 1 ELSE 0 END) as silver_count, SUM(CASE WHEN b.Class = 'bronze' THEN 1 ELSE 0 END) as bronze_count, MAX(b.Date) as latest_badge FROM users u JOIN badges b ON u.Id = b.UserId GROUP BY u.Id, u.AccountId HAVING COUNT(DISTINCT b.Class) > 1;",
+    "cypher": "MATCH (u:users)<-[:BELONG_TO]-(b:badges) WITH u, COUNT(DISTINCT b.Class) AS class_count, SUM(CASE WHEN b.Class = 'gold' THEN 1 ELSE 0 END) AS gold_count, SUM(CASE WHEN b.Class = 'silver' THEN 1 ELSE 0 END) AS silver_count, SUM(CASE WHEN b.Class = 'bronze' THEN 1 ELSE 0 END) AS bronze_count, MAX(b.Date) AS latest_badge WHERE class_count > 1 RETURN u.Id, u.AccountId, class_count, gold_count, silver_count, bronze_count, latest_badge;"
+  },
+  {
+    "question": "Find the top 20 posts with most diverse interaction from commenters, voters, and editors (must have at least 1 commenter). Return post ID, title, unique commenter count, unique voter count, unique editor count, and total unique user count.",
+    "sql": "SELECT p.Id, p.Title, COUNT(DISTINCT c.UserId) as unique_commenters, COUNT(DISTINCT v.UserId) as unique_voters, COUNT(DISTINCT ph.UserId) as unique_editors, COUNT(DISTINCT c.UserId) + COUNT(DISTINCT v.UserId) + COUNT(DISTINCT ph.UserId) as total_unique_users FROM posts p LEFT JOIN comments c ON p.Id = c.PostId LEFT JOIN votes v ON p.Id = v.PostId LEFT JOIN postHistory ph ON p.Id = ph.PostId GROUP BY p.Id, p.Title HAVING COUNT(DISTINCT c.UserId) > 0 ORDER BY total_unique_users DESC LIMIT 20;",
+    "cypher": "MATCH (p:posts) OPTIONAL MATCH (p)<-[:COMMENTS_ON]-(c:comments)<-[:WROTE]-(cu:users) OPTIONAL MATCH (p)<-[:VOTED_ON]-(v:votes)<-[:VOTED_BY]-(vu:users) OPTIONAL MATCH (p)<-[:RELATES_TO]-(ph:postHistory) WITH p, COUNT(DISTINCT cu) as unique_commenters, COUNT(DISTINCT vu) as unique_voters, COUNT(DISTINCT ph.UserId) as unique_editors WHERE unique_commenters > 0 RETURN p.Id, p.Title, unique_commenters, unique_voters, unique_editors, unique_commenters + unique_voters + unique_editors as total_unique_users ORDER BY total_unique_users DESC LIMIT 20;"
+  },
+  {
+    "question": "Find the top 20 posts that have both comments and votes. Return post ID, title, comment count, and vote count.",
+    "sql": "SELECT p.Id, p.Title, COUNT(DISTINCT c.Id) as comment_count, COUNT(DISTINCT v.Id) as vote_count FROM posts p JOIN comments c ON p.Id = c.PostId JOIN votes v ON p.Id = v.PostId GROUP BY p.Id, p.Title ORDER BY comment_count + vote_count DESC LIMIT 20;",
+    "cypher": "MATCH (p:posts)<-[:COMMENTS_ON]-(c:comments) MATCH (p)<-[:VOTED_ON]-(v:votes) WITH p, COUNT(DISTINCT c) as comment_count, COUNT(DISTINCT v) as vote_count ORDER BY comment_count + vote_count DESC LIMIT 20 RETURN p.Id, p.Title, comment_count, vote_count;"
+  },
+  {
+    "question": "Get all users who have earned all three badge classes (gold, silver, and bronze with at least 1 of each). Return user ID, account ID, gold count, silver count, and bronze count.",
+    "sql": "SELECT u.Id, u.AccountId, SUM(CASE WHEN b.Class = 'gold' THEN 1 ELSE 0 END) as gold_count, SUM(CASE WHEN b.Class = 'silver' THEN 1 ELSE 0 END) as silver_count, SUM(CASE WHEN b.Class = 'bronze' THEN 1 ELSE 0 END) as bronze_count FROM users u JOIN badges b ON u.Id = b.UserId GROUP BY u.Id, u.AccountId HAVING gold_count > 0 AND silver_count > 0 AND bronze_count > 0;",
+    "cypher": "MATCH (u:users)<-[:BELONG_TO]-(b:badges) WITH u, SUM(CASE WHEN b.Class = 'gold' THEN 1 ELSE 0 END) as gold_count, SUM(CASE WHEN b.Class = 'silver' THEN 1 ELSE 0 END) as silver_count, SUM(CASE WHEN b.Class = 'bronze' THEN 1 ELSE 0 END) as bronze_count WHERE gold_count > 0 AND silver_count > 0 AND bronze_count > 0 RETURN u.Id, u.AccountId, gold_count, silver_count, bronze_count;"
+  },
+  {
+    "question": "Find the single most edited post with more than 5 edits. Return post ID, title, edit count, and unique editor count for the top 1 post.",
+    "sql": "SELECT p.Id, p.Title, COUNT(ph.Id) as edit_count, COUNT(DISTINCT ph.UserId) as unique_editors FROM posts p JOIN postHistory ph ON p.Id = ph.PostId GROUP BY p.Id, p.Title HAVING edit_count > 5 ORDER BY edit_count DESC LIMIT 1;",
+    "cypher": "MATCH (p:posts)<-[:RELATES_TO]-(ph:postHistory) WITH p, COUNT(ph) as edit_count, COUNT(DISTINCT ph.UserId) as unique_editors WHERE edit_count > 5 ORDER BY edit_count DESC LIMIT 1 RETURN p.Id, p.Title, edit_count, unique_editors;"
+  },
+  {
+    "question": "Get the top 10 users with the most upvotes (VoteTypeId = 2) received across all their posts. Return user ID, account ID, and upvote count.",
+    "sql": "SELECT u.Id, u.AccountId, COUNT(v.Id) as upvote_count FROM users u JOIN posts p ON u.Id = p.OwnerUserId JOIN votes v ON p.Id = v.PostId WHERE v.VoteTypeId = 2 GROUP BY u.Id, u.AccountId ORDER BY upvote_count DESC LIMIT 10;",
+    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts)<-[:VOTED_ON]-(v:votes {VoteTypeId: '2'}) WITH u, COUNT(v) as upvote_count ORDER BY upvote_count DESC LIMIT 10 RETURN u.Id, u.AccountId, upvote_count;"
+  },
+  {
+    "question": "Get the top 15 posts with the highest comment-to-vote ratio having at least 10 votes. Return post ID, title, comment count, vote count, and comment-to-vote ratio.",
+    "sql": "SELECT p.Id, p.Title, COUNT(DISTINCT c.Id) as comment_count, COUNT(DISTINCT v.Id) as vote_count, CAST(COUNT(DISTINCT c.Id) AS REAL) / COUNT(DISTINCT v.Id) as comment_vote_ratio FROM posts p JOIN votes v ON p.Id = v.PostId LEFT JOIN comments c ON p.Id = c.PostId GROUP BY p.Id, p.Title HAVING vote_count >= 10 ORDER BY comment_vote_ratio DESC LIMIT 15;",
+    "cypher": "MATCH (p:posts)<-[:VOTED_ON]-(v:votes) OPTIONAL MATCH (p)<-[:COMMENTS_ON]-(c:comments) WITH p, COUNT(DISTINCT c) as comment_count, COUNT(DISTINCT v) as vote_count WHERE vote_count >= 10 WITH p, comment_count, vote_count, toFloat(comment_count) / vote_count as comment_vote_ratio ORDER BY comment_vote_ratio DESC LIMIT 15 RETURN p.Id, p.Title, comment_count, vote_count, comment_vote_ratio;"
+  },
+  {
+    "question": "Get the distribution of all vote types. Return vote type ID, total vote count, posts affected count, and users voting count.",
+    "sql": "SELECT v.VoteTypeId, COUNT(*) as vote_count, COUNT(DISTINCT v.PostId) as posts_affected, COUNT(DISTINCT v.UserId) as users_voting FROM votes v GROUP BY v.VoteTypeId ORDER BY vote_count DESC;",
+    "cypher": "MATCH (v:votes) WITH v.VoteTypeId as VoteTypeId, COUNT(v) as vote_count, COUNT(DISTINCT v.PostId) as posts_affected, COUNT(DISTINCT v.UserId) as users_voting RETURN VoteTypeId, vote_count, posts_affected, users_voting ORDER BY vote_count DESC;"
+  },
+  {
+    "question": "Find the top 10 most linked posts (posts that link to other posts via postLinks). Return post ID, title, and link count.",
+    "sql": "SELECT p.Id, p.Title, COUNT(pl.Id) as link_count FROM posts p JOIN postLinks pl ON p.Id = pl.PostId GROUP BY p.Id, p.Title ORDER BY link_count DESC LIMIT 10;",
+    "cypher": "MATCH (p:posts)-[:LINK_TO]-(pl:postLinks) WITH p, COUNT(pl) as link_count ORDER BY link_count DESC LIMIT 10 RETURN p.Id, p.Title, link_count;"
+  },
+  {
+    "question": "Get the top 10 most active commenters. Return user ID, account ID, total comment count, and number of distinct posts commented on.",
+    "sql": "SELECT u.Id, u.AccountId, COUNT(c.Id) as comment_count, COUNT(DISTINCT c.PostId) as posts_commented FROM users u JOIN comments c ON u.Id = c.UserId GROUP BY u.Id, u.AccountId ORDER BY comment_count DESC LIMIT 10;",
+    "cypher": "MATCH (u:users)-[:WROTE]->(c:comments)-[:COMMENTS_ON]->(p:posts) WITH u, COUNT(c) as comment_count, COUNT(DISTINCT p) as posts_commented ORDER BY comment_count DESC LIMIT 10 RETURN u.Id, u.AccountId, comment_count, posts_commented;"
+  },
+  {
+    "question": "Get the top 15 posts edited by their original authors with at least 2 self-edits. Return post ID, title, owner account ID, and self-edit count.",
+    "sql": "SELECT p.Id, p.Title, u.AccountId, COUNT(ph.Id) as self_edit_count FROM posts p JOIN users u ON p.OwnerUserId = u.Id JOIN postHistory ph ON p.Id = ph.PostId AND ph.UserId = p.OwnerUserId GROUP BY p.Id, p.Title, u.AccountId HAVING self_edit_count >= 2 ORDER BY self_edit_count DESC LIMIT 15;",
+    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts)<-[:RELATES_TO]-(ph:postHistory)<-[:WAS_WRITTEN_BY]-(u) WITH p, u, COUNT(ph) as self_edit_count WHERE self_edit_count >= 2 ORDER BY self_edit_count DESC LIMIT 15 RETURN p.Id, p.Title, u.AccountId, self_edit_count;"
+  },
+  {
+    "question": "Find the single post with both upvotes (VoteTypeId = 2) and downvotes (VoteTypeId = 3) having the largest net vote difference. Return post ID, title, upvote count, downvote count, and net votes for the top 1 post.",
+    "sql": "SELECT p.Id, p.Title, SUM(CASE WHEN v.VoteTypeId = 2 THEN 1 ELSE 0 END) AS upvotes, SUM(CASE WHEN v.VoteTypeId = 3 THEN 1 ELSE 0 END) AS downvotes, SUM(CASE WHEN v.VoteTypeId = 2 THEN 1 ELSE 0 END) - SUM(CASE WHEN v.VoteTypeId = 3 THEN 1 ELSE 0 END) AS net_votes FROM posts p JOIN votes v ON p.Id = v.PostId WHERE v.VoteTypeId IN (2, 3) GROUP BY p.Id, p.Title HAVING upvotes > 0 AND downvotes > 0 ORDER BY net_votes DESC LIMIT 1;",
+    "cypher": "MATCH (p:posts)<-[:VOTED_ON]-(v:votes) WHERE v.VoteTypeId IN ['2', '3'] WITH p, SUM(CASE WHEN v.VoteTypeId = '2' THEN 1 ELSE 0 END) AS upvotes, SUM(CASE WHEN v.VoteTypeId = '3' THEN 1 ELSE 0 END) AS downvotes WITH p, upvotes, downvotes, (upvotes - downvotes) AS net_votes ORDER BY net_votes DESC LIMIT 1 RETURN p.Id, p.Title, upvotes, downvotes, net_votes;"
+  },
+  {
+    "question": "Get the top 15 users who received badges within their first week of joining (within 7 days). Return user ID, account ID, early badge count, and days to first badge.",
+    "sql": "SELECT u.Id, u.AccountId, COUNT(b.Id) as early_badge_count, MIN(julianday(b.Date) - julianday(u.CreationDate)) as days_to_first_badge FROM users u JOIN badges b ON u.Id = b.UserId WHERE julianday(b.Date) - julianday(u.CreationDate) <= 7 GROUP BY u.Id, u.AccountId ORDER BY early_badge_count DESC LIMIT 15;",
+    "cypher": "MATCH (u:users)<-[:BELONG_TO]-(b:badges) WHERE duration.between(datetime(replace(u.CreationDate, ' ', 'T')), datetime(replace(b.Date, ' ', 'T'))).days <= 7 WITH u, COUNT(b) as early_badge_count, MIN(duration.between(datetime(replace(u.CreationDate, ' ', 'T')), datetime(replace(b.Date, ' ', 'T'))).days) as days_to_first_badge ORDER BY early_badge_count DESC LIMIT 15 RETURN u.Id, u.AccountId, early_badge_count, days_to_first_badge;"
+  },
+  {
+    "question": "Find the top 10 questions with accepted answers where the answer has more votes than the question. Return question ID, title, question vote count, answer vote count, and answer ID.",
+    "sql": "SELECT q.Id as question_id, q.Title, COUNT(DISTINCT qv.Id) as question_votes, COUNT(DISTINCT av.Id) as answer_votes, a.Id as answer_id FROM posts q JOIN posts a ON q.AcceptedAnswerId = a.Id LEFT JOIN votes qv ON q.Id = qv.PostId LEFT JOIN votes av ON a.Id = av.PostId GROUP BY q.Id, q.Title, a.Id HAVING answer_votes > question_votes ORDER BY answer_votes - question_votes DESC LIMIT 10;",
+    "cypher": "MATCH (q:posts)-[:ACCEPTED_ANSWER]->(a:posts) OPTIONAL MATCH (q)<-[:VOTED_ON]-(qv:votes) OPTIONAL MATCH (a)<-[:VOTED_ON]-(av:votes) WITH q, a, COUNT(DISTINCT qv) as question_votes, COUNT(DISTINCT av) as answer_votes WHERE answer_votes > question_votes RETURN q.Id as question_id, q.Title, question_votes, answer_votes, a.Id as answer_id ORDER BY answer_votes - question_votes DESC LIMIT 10;"
+  }
+]

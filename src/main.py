@@ -1,9 +1,9 @@
 import os
-import sys
-from argparse import ArgumentParser
-from logging import INFO, basicConfig
+from logging import basicConfig, getLogger, INFO
 from pathlib import Path
+from dotenv import load_dotenv
 
+import typer
 from openai import OpenAI
 
 from constants import BASE_MODEL_NAME, REMOTE_MODEL_NAME
@@ -11,51 +11,58 @@ from database.neo4j import get_neo4j_schema
 from database.setup import get_node_csvs, load_dataset_to_sqlite, load_dataset_to_duckdb
 from evaluation.local_eval import evaluate_local_model_for_task
 from evaluation.remote_eval import evaluate_remote_model_for_task
-from models import TaskType
+from evaluation.re_evaluation import re_evaluate_sql_results
+from models import DatasetName, TaskType
 from utils import get_model_and_tokenizer
 from validate_tasks import validate
 
-basicConfig(level=INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
-
+load_dotenv()  
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
-def main(argv=None):
-    parser = build_parser()
-    args = parser.parse_args(argv)
-    return args.func(args)
+app = typer.Typer()
+
+basicConfig(level=INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = getLogger(__name__)
 
 
-def build_parser():
-    parser = ArgumentParser(prog="rnmp")
-    subparsers = parser.add_subparsers(dest="cmd", required=True)
-
-    for name, func, help_text, needs_dataset in COMMANDS:
-        cmd = subparsers.add_parser(name, help=help_text)
-        cmd.set_defaults(func=func)
-        if needs_dataset:
-            add_dataset_arg(cmd)
-
-    return parser
+@app.command()
+def generate_csvs(dataset_name: DatasetName) -> None:
+    get_node_csvs(dataset_name)
 
 
-def add_dataset_arg(cmd):
-    cmd.add_argument(
-        "--dataset-name",
-        type=str,
-        default="rel-f1",
-        help="Name of the RelBench dataset to use.",
-        choices=["rel-f1", "rel-stack"],
-    )
+@app.command()
+def load_sqlite(dataset_name: DatasetName) -> None:
+    load_dataset_to_sqlite(dataset_name)
 
 
-def generate_csvs(args):
-    get_node_csvs(args.dataset_name)
+@app.command()
+def validate_tasks(dataset_name: DatasetName) -> None:
+    for path in Path(f"src/tasks/{dataset_name}").glob("*.json"):
+        validate(path, dataset_name)
 
 
-def get_neo4j_schema_command(_):
+@app.command()
+def get_neo4j() -> None:
     schema = get_neo4j_schema()
+    logger.info(schema)
+
+
+@app.command()
+def re_evaluate_results(
+    dataset_name: DatasetName, 
+    task_type: TaskType = TaskType.SQL
+) -> None:
+    if task_type == TaskType.CYPHER:
+        # re_evaluate_cypher_results(dataset_name)
+        # TODO implement cypher re-evaluation
+        pass
+    else:
+        re_evaluate_sql_results(dataset_name)
+
+@app.command()
+def evaluate_local(dataset_name: DatasetName, task_types: list[TaskType]) -> None:
     print(schema)
 
 
@@ -72,16 +79,20 @@ def validate_tasks(_):
 
 def evaluate_local_model(_):
     model, tokenizer = get_model_and_tokenizer(BASE_MODEL_NAME)
+    model_short_name = BASE_MODEL_NAME.split("/")[-1]
 
-    evaluate_local_model_for_task(
-        model, tokenizer, TaskType.SQL, BASE_MODEL_NAME.split("/")[-1]
-    )
-    evaluate_local_model_for_task(
-        model, tokenizer, TaskType.CYPHER, BASE_MODEL_NAME.split("/")[-1]
-    )
+    for task_type in task_types:
+        evaluate_local_model_for_task(
+            model, tokenizer, dataset_name, task_type, model_short_name
+        )
 
 
-def evaluate_remote_model(_):
+@app.command()
+def evaluate_remote(dataset_name: DatasetName, task_types: list[TaskType]) -> None:
+    
+    if not OPENAI_API_KEY:
+        raise typer.Abort("OPENAI_API_KEY environment variable not set")
+
     client = OpenAI(api_key=OPENAI_API_KEY)
 
     evaluate_remote_model_for_task(REMOTE_MODEL_NAME, TaskType.SQL, client)
@@ -132,7 +143,11 @@ COMMANDS = [
         False,
     ),
 ]
+    for task_type in task_types:
+        evaluate_remote_model_for_task(
+            REMOTE_MODEL_NAME, dataset_name, task_type, client
+        )
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    app()

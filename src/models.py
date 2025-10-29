@@ -59,6 +59,11 @@ class TaskResult:
         }
 
 
+class DatasetName(StrEnum):
+    REL_F1 = "rel-f1"
+    REL_STACK = "rel-stack"
+
+
 class TaskDifficulty(StrEnum):
     EASY = "easy"
     INTERMEDIATE = "intermediate"

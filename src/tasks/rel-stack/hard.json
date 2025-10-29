@@ -1,0 +1,52 @@
+[
+  {
+    "question": "Find posts that are linked to other posts and have comments. Return post ID, title, link count, and comment count.",
+    "sql": "SELECT p.Id, p.Title, COUNT(DISTINCT pl.Id) as link_count, COUNT(DISTINCT c.Id) as comment_count FROM posts p JOIN postLinks pl ON p.Id = pl.PostId JOIN comments c ON p.Id = c.PostId GROUP BY p.Id, p.Title HAVING link_count >= 2 AND comment_count >= 3 ORDER BY link_count DESC, comment_count DESC LIMIT 15;",
+    "cypher": "MATCH (p:posts)-[:LINK_TO]->(pl:postLinks) MATCH (p)<-[:COMMENTS_ON]-(c:comments) WITH p, COUNT(DISTINCT pl) as link_count, COUNT(DISTINCT c) as comment_count WHERE link_count >= 2 AND comment_count >= 3 RETURN p.Id, p.Title, link_count, comment_count ORDER BY link_count DESC, comment_count DESC LIMIT 15;"
+  },
+  {
+    "question": "Find users who received votes on their posts within their first month of joining. Return user ID, account ID, early vote count, and days to first vote.",
+    "sql": "SELECT u.Id, u.AccountId, COUNT(v.Id) as early_vote_count, MIN(CAST(julianday(v.CreationDate) - julianday(u.CreationDate) AS INTEGER)) as days_to_first_vote FROM users u JOIN posts p ON u.Id = p.OwnerUserId JOIN votes v ON p.Id = v.PostId WHERE julianday(v.CreationDate) - julianday(u.CreationDate) <= 30 GROUP BY u.Id, u.AccountId HAVING early_vote_count >= 5 ORDER BY days_to_first_vote ASC LIMIT 20;",
+    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts)<-[:VOTED_ON]-(v:votes) WHERE duration.between(datetime(replace(u.CreationDate, ' ', 'T')), datetime(replace(v.CreationDate, ' ', 'T'))).days <= 30 WITH u, COUNT(v) as early_vote_count, MIN(duration.between(datetime(replace(u.CreationDate, ' ', 'T')), datetime(replace(v.CreationDate, ' ', 'T'))).days) as days_to_first_vote WHERE early_vote_count >= 5 RETURN u.Id, u.AccountId, early_vote_count, days_to_first_vote ORDER BY days_to_first_vote ASC LIMIT 20;"
+  },
+  {
+    "question": "Find posts that received comments from multiple users within the first day of posting. Return post ID, title, comment count, and unique commenter count.",
+    "sql": "SELECT p.Id, p.Title, COUNT(c.Id) as comment_count, COUNT(DISTINCT c.UserId) as unique_commenters FROM posts p JOIN comments c ON p.Id = c.PostId WHERE julianday(c.CreationDate) - julianday(p.CreationDate) <= 1 GROUP BY p.Id, p.Title HAVING unique_commenters >= 3 ORDER BY unique_commenters DESC, comment_count DESC LIMIT 15;",
+    "cypher": "MATCH (p:posts)<-[:COMMENTS_ON]-(c:comments) WHERE duration.between(datetime(replace(p.CreationDate, ' ', 'T')), datetime(replace(c.CreationDate, ' ', 'T'))).hours <= 24 WITH p, COUNT(c) as comment_count, COUNT(DISTINCT c.UserId) as unique_commenters WHERE unique_commenters >= 3 RETURN p.Id, p.Title, comment_count, unique_commenters ORDER BY unique_commenters DESC, comment_count DESC LIMIT 15;"
+  },
+  {
+    "question": "Find users who earned multiple badges on the same day. Return user ID, account ID, the date, and number of badges earned that day.",
+    "sql": "SELECT u.Id, u.AccountId, DATE(b.Date) as badge_date, COUNT(b.Id) as badges_in_day FROM users u JOIN badges b ON u.Id = b.UserId GROUP BY u.Id, u.AccountId, DATE(b.Date) HAVING badges_in_day >= 3 ORDER BY badges_in_day DESC LIMIT 20;",
+    "cypher": "MATCH (u:users)<-[:BELONG_TO]-(b:badges) WITH u, date(datetime(replace(b.Date, ' ', 'T'))) as badge_date, COUNT(b) as badges_in_day WHERE badges_in_day >= 3 RETURN u.Id, u.AccountId, toString(badge_date) as badge_date, badges_in_day ORDER BY badges_in_day DESC LIMIT 20;"
+  },
+  {
+    "question": "Find users who earned badges within their first two weeks of joining. Return user ID, account ID, early badge count, and days to first badge.",
+    "sql": "SELECT u.Id, u.AccountId, COUNT(b.Id) as early_badge_count, MIN(CAST(julianday(b.Date) - julianday(u.CreationDate) AS INTEGER)) as days_to_first_badge FROM users u JOIN badges b ON u.Id = b.UserId WHERE julianday(b.Date) - julianday(u.CreationDate) <= 14 GROUP BY u.Id, u.AccountId HAVING early_badge_count >= 2 ORDER BY days_to_first_badge ASC LIMIT 20;",
+    "cypher": "MATCH (u:users)<-[:BELONG_TO]-(b:badges) WHERE duration.between(datetime(replace(u.CreationDate, ' ', 'T')), datetime(replace(b.Date, ' ', 'T'))).days <= 14 WITH u, COUNT(b) as early_badge_count, MIN(duration.between(datetime(replace(u.CreationDate, ' ', 'T')), datetime(replace(b.Date, ' ', 'T'))).days) as days_to_first_badge WHERE early_badge_count >= 2 RETURN u.Id, u.AccountId, early_badge_count, days_to_first_badge ORDER BY days_to_first_badge ASC LIMIT 20;"
+  },
+  {
+    "question": "Find posts with both votes and comments showing post ID, title, vote count, and comment count.",
+    "sql": "SELECT p.Id, p.Title, COUNT(DISTINCT v.Id) as vote_count, COUNT(DISTINCT c.Id) as comment_count FROM posts p JOIN votes v ON p.Id = v.PostId JOIN comments c ON p.Id = c.PostId GROUP BY p.Id, p.Title HAVING vote_count >= 5 AND comment_count >= 2 ORDER BY vote_count DESC, comment_count DESC LIMIT 20;",
+    "cypher": "MATCH (p:posts)<-[:VOTED_ON]-(v:votes) MATCH (p)<-[:COMMENTS_ON]-(c:comments) WITH p, COUNT(DISTINCT v) as vote_count, COUNT(DISTINCT c) as comment_count WHERE vote_count >= 5 AND comment_count >= 2 RETURN p.Id, p.Title, vote_count, comment_count ORDER BY vote_count DESC, comment_count DESC LIMIT 20;"
+  },
+  {
+    "question": "Find users who posted within their first week of joining. Return user ID, account ID, early post count, and days to first post.",
+    "sql": "SELECT u.Id, u.AccountId, COUNT(p.Id) as early_post_count, MIN(CAST(julianday(p.CreationDate) - julianday(u.CreationDate) AS INTEGER)) as days_to_first_post FROM users u JOIN posts p ON u.Id = p.OwnerUserId WHERE julianday(p.CreationDate) - julianday(u.CreationDate) <= 7 GROUP BY u.Id, u.AccountId HAVING early_post_count >= 2 ORDER BY days_to_first_post ASC LIMIT 20;",
+    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts) WHERE duration.between(datetime(replace(u.CreationDate, ' ', 'T')), datetime(replace(p.CreationDate, ' ', 'T'))).days <= 7 WITH u, COUNT(p) as early_post_count, MIN(duration.between(datetime(replace(u.CreationDate, ' ', 'T')), datetime(replace(p.CreationDate, ' ', 'T'))).days) as days_to_first_post WHERE early_post_count >= 2 RETURN u.Id, u.AccountId, early_post_count, days_to_first_post ORDER BY days_to_first_post ASC LIMIT 20;"
+  },
+  {
+    "question": "Find posts that have been edited multiple times. Return post ID, title, edit count, and unique editor count.",
+    "sql": "SELECT p.Id, p.Title, COUNT(ph.Id) as edit_count, COUNT(DISTINCT ph.UserId) as unique_editors FROM posts p JOIN postHistory ph ON p.Id = ph.PostId WHERE ph.PostHistoryTypeId IN (4, 5, 6) GROUP BY p.Id, p.Title HAVING edit_count >= 2 ORDER BY edit_count DESC LIMIT 20;",
+    "cypher": "MATCH (p:posts)<-[:RELATES_TO]-(ph:postHistory) WHERE ph.PostHistoryTypeId IN [4, 5, 6] WITH p, COUNT(ph) as edit_count, COUNT(DISTINCT ph.UserId) as unique_editors WHERE edit_count >= 2 RETURN p.Id, p.Title, edit_count, unique_editors ORDER BY edit_count DESC LIMIT 20;"
+  },
+  {
+    "question": "Find users who have both created posts and written comments. Return user ID, account ID, post count, and comment count.",
+    "sql": "SELECT u.Id, u.AccountId, COUNT(DISTINCT p.Id) as post_count, COUNT(DISTINCT c.Id) as comment_count FROM users u JOIN posts p ON u.Id = p.OwnerUserId JOIN comments c ON u.Id = c.UserId GROUP BY u.Id, u.AccountId HAVING post_count >= 3 AND comment_count >= 5 ORDER BY post_count + comment_count DESC LIMIT 20;",
+    "cypher": "MATCH (u:users)-[:OWNS]->(p:posts) MATCH (u)-[:WROTE]->(c:comments) WITH u, COUNT(DISTINCT p) as post_count, COUNT(DISTINCT c) as comment_count WHERE post_count >= 3 AND comment_count >= 5 RETURN u.Id, u.AccountId, post_count, comment_count ORDER BY post_count + comment_count DESC LIMIT 20;"
+  },
+  {
+    "question": "Find posts that received multiple votes within the first three days. Return post ID, title, early vote count, and unique voter count.",
+    "sql": "SELECT p.Id, p.Title, COUNT(v.Id) as early_vote_count, COUNT(DISTINCT v.UserId) as unique_voters FROM posts p JOIN votes v ON p.Id = v.PostId WHERE julianday(v.CreationDate) - julianday(p.CreationDate) <= 3 GROUP BY p.Id, p.Title HAVING early_vote_count >= 5 ORDER BY early_vote_count DESC LIMIT 20;",
+    "cypher": "MATCH (p:posts)<-[:VOTED_ON]-(v:votes) WHERE duration.between(datetime(replace(p.CreationDate, ' ', 'T')), datetime(replace(v.CreationDate, ' ', 'T'))).days <= 3 WITH p, COUNT(v) as early_vote_count, COUNT(DISTINCT v.UserId) as unique_voters WHERE early_vote_count >= 5 RETURN p.Id, p.Title, early_vote_count, unique_voters ORDER BY early_vote_count DESC LIMIT 20;"
+  }
+]

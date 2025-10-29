@@ -18,25 +18,23 @@ Additionally [docker](https://www.docker.com/) is required to run the database.
 
 ## Running neo4j populated
 
-In order for the [relbench f1 database](https://relbench.stanford.edu/datasets/rel-f1/) to be loaded into neo4j it is first downloaded locally and converted to a csv format. To do so, run the following:
+In order for any [relbench database](https://relbench.stanford.edu/datasets/) to be loaded into neo4j it is first downloaded locally and converted to a csv format. To do so, run the following:
 
 ```bash
 uv run src/main.py generate-csvs --dataset-name <dataset_name>
 ```
 Replace `<dataset_name>` with either `rel-f1` or `rel-stack` (e.g., `--dataset-name rel-f1`).
 
-This will download the relbench f1 or stack database locally and then convert all required entities into node csv files.
+This will download the relbench database locally and then convert all required entities into node csv files.
 
-To run the neo4j database simply run the docker compose located inside the `/neo4j` folder, with the specified db after you have previous ran it's respective download csv's command:
-
-Run one of these rel-f1 or rel-stack depending on which db you want to initialize
+To run the neo4j database simply run the docker compose located inside the `/neo4j` folder, with the specified db after you have previously ran it's respective download csv's command:
 
 ```bash
 cd neo4j/
 DATASET_NAME=<dataset_name> docker compose up -d --build
 ```
 
-This will import the nodes via the `import-nodes.sh` script and will add the required constraints and relationships via the `import-relationships.sh` script inside the `scripts/` directory.
+This will import the nodes via the `import-nodes.sh` script and will add the required constraints and relationships via the `import-relationships.sh` script inside the `scripts/` directory. The docker compose uses persistant storage volumes, make sure to have only one database loaded at a time so there are no conflicts with the schema.
 
 ### Accessing remote interface
 

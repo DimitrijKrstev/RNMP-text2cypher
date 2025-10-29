@@ -1,11 +1,10 @@
-import os
 from logging import getLogger
+from os import makedirs
 from sqlite3 import connect
 
 from relbench.datasets import get_dataset
 
-from database.constants import CSV_OUTPUT_DIR, DUCKDB_PATH
-from database.sqlite import SQLITE_DB_PATH
+from database.constants import CSV_OUTPUT_DIR, DUCKDB_PATH, SQLITE_DB_PATH
 
 logger = getLogger(__name__)
 
@@ -18,11 +17,10 @@ def get_node_csvs(dataset_name: str) -> None:
     logger.info(f"Available tables: {tables}")
 
     csv_output_dir_name = CSV_OUTPUT_DIR / dataset_name
-    os.makedirs(csv_output_dir_name, exist_ok=True)
+    makedirs(csv_output_dir_name, exist_ok=True)
 
     for table_name in tables:
         table_df = db.table_dict[table_name].df.copy()
-
         table_df.rename(
             columns={table_df.columns[0]: f"{table_df.columns[0]}:ID({table_name}-ID)"},
             inplace=True,
@@ -38,10 +36,9 @@ def load_dataset_to_sqlite(dataset_name: str) -> None:
     dataset = get_dataset(name=dataset_name, download=True)
     database = dataset.get_db()
 
-    sql_database_dir = SQLITE_DB_PATH.parent / dataset_name
-    sql_database_dir.mkdir(parents=True, exist_ok=True)
-
-    db_path = sql_database_dir / "relbench.db"
+    sqlite_dir = SQLITE_DB_PATH.parent
+    sqlite_dir.mkdir(parents=True, exist_ok=True)
+    db_path = sqlite_dir / f"{dataset_name}.db"
 
     con = connect(db_path.as_posix())
     try:
