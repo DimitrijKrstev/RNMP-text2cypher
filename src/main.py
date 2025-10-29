@@ -8,7 +8,7 @@ from openai import OpenAI
 
 from constants import BASE_MODEL_NAME, REMOTE_MODEL_NAME
 from database.neo4j import get_neo4j_schema
-from database.setup import get_node_csvs, load_dataset_to_sqlite
+from database.setup import get_node_csvs, load_dataset_to_sqlite, load_dataset_to_duckdb
 from evaluation.local_eval import evaluate_local_model_for_task
 from evaluation.remote_eval import evaluate_remote_model_for_task
 from models import TaskType
@@ -62,6 +62,8 @@ def get_neo4j_schema_command(_):
 def load_sqlite(args):
     load_dataset_to_sqlite(args.dataset_name)
 
+def load_duckdb(args):
+    load_dataset_to_duckdb(args.dataset_name)
 
 def validate_tasks(_):
     for path in Path("src/tasks").glob("*.json"):
@@ -99,6 +101,12 @@ COMMANDS = [
         "Create/refresh the SQLite DB.",
         True,
     ),
+    (
+        "load-duckdb",           
+        load_duckdb,             
+        "Create/refresh the DuckDB.",  
+        True,                    
+    ),                           
     (
         "validate-tasks",
         validate_tasks,

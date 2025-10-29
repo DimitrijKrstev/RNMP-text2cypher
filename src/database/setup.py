@@ -4,7 +4,7 @@ from sqlite3 import connect
 
 from relbench.datasets import get_dataset
 
-from database.constants import CSV_OUTPUT_DIR
+from database.constants import CSV_OUTPUT_DIR, DUCKDB_PATH
 from database.sqlite import SQLITE_DB_PATH
 
 logger = getLogger(__name__)
@@ -63,3 +63,29 @@ def load_dataset_to_sqlite(dataset_name: str) -> None:
         logger.error(f"Error saving dataset to SQLite: {e}")
     finally:
         con.close()
+
+def load_dataset_to_duckdb(dataset_name: str) -> None:
+    import duckdb
+    
+    dataset = get_dataset(name=dataset_name, download=True)
+    database = dataset.get_db()
+
+    duckdb_dir = DUCKDB_PATH.parent / dataset_name
+    duckdb_dir.mkdir(parents=True, exist_ok=True)
+    db_path = duckdb_dir / "relbench.duckdb"
+
+    conn = duckdb.connect(str(db_path))
+    
+    try:
+        for name, tbl in database.table_dict.items():
+            dataframe = getattr(tbl, "df", None)
+            if dataframe is None:
+                print(f"Skipping {name}: no dataframe found")
+                continue
+
+            print(f"Writing {name} ({len(dataframe)} rows)…")
+            conn.execute(f"CREATE OR REPLACE TABLE {name} AS SELECT * FROM dataframe")
+
+        logger.info(f"Done. DuckDB at: {db_path.resolve()}")
+    finally:
+        conn.close()
