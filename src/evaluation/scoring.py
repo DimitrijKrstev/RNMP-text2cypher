@@ -1,16 +1,19 @@
 from re import sub
-
+from logging import getLogger
 import sqlparse
 
 from database.neo4j import query_neo4j
 from database.sqlite import query_sqlite
+from database.duckdb import query_duckdb
 from models import Task, TaskResult, TaskType
 
+logger = getLogger(__name__)
+
+
 QUERY_DB_BY_TASK_TYPE = {
-    TaskType.SQL: query_sqlite,
+    TaskType.SQL: query_duckdb,
     TaskType.CYPHER: query_neo4j,
 }
-
 
 def get_task_result(task: Task, model_response: str, task_type: TaskType, db_path: str) -> TaskResult:
     syntaxically_correct = False
@@ -28,6 +31,8 @@ def get_task_result(task: Task, model_response: str, task_type: TaskType, db_pat
             optimal_response, task_type
         ):
             exact_match = True
+    except Exception as e:
+        logger.error(f"Error: {e}")
 
     finally:
         return TaskResult(

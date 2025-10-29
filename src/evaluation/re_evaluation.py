@@ -1,7 +1,6 @@
 from logging import getLogger
 import json
 from tqdm import tqdm
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 
 from constants import REMOTE_MODEL_NAME, get_sqlite_db_path, RESULTS_DIR, get_duckdb_path
 from database.neo4j import get_neo4j_schema
@@ -15,6 +14,8 @@ def re_evaluate_sql_results(dataset_name: DatasetName) -> None:
     """Re-evaluate SQL results for a given already_generated dataset"""
 
     # db_path = get_sqlite_db_path(dataset_name)
+    # Should be duckdb for now
+    # TODO: Make this dynamic based on sql/db type used
     db_path = get_duckdb_path(dataset_name)
 
     for task_difficulty in TaskDifficulty:
@@ -30,7 +31,7 @@ def re_evaluate_sql_results(dataset_name: DatasetName) -> None:
         
         for result_data in tqdm(
             existing_results, 
-            f"Re-evaluating SQL Tasks ({dataset_name}, {task_difficulty})"
+            desc=f"Re-evaluating SQL Tasks ({dataset_name}, {task_difficulty})"
         ):
             task = Task(
                 question=result_data["question"],
@@ -41,12 +42,10 @@ def re_evaluate_sql_results(dataset_name: DatasetName) -> None:
             
             generated_query = result_data["generated_script"]
             
-            executor = ThreadPoolExecutor(max_workers=1)
-            future = executor.submit(get_task_result, task, generated_query, TaskType.SQL, db_path)
             try:
-                result = future.result(timeout=15)
-            except (FuturesTimeoutError, Exception) as e:
-                logger.error(f"Error/Timeout on query: {generated_query[:100]}... Error: {e}")
+                result = get_task_result(task, generated_query, TaskType.SQL, db_path)
+            except Exception as e:
+                logger.error(f"Error on query: {generated_query[:100]}... Error: {e}")
                 result = TaskResult(
                     task=task,
                     response=generated_query,
@@ -55,8 +54,6 @@ def re_evaluate_sql_results(dataset_name: DatasetName) -> None:
                     exact_match=False,
                     task_type=TaskType.SQL
                 )
-            finally:
-                executor.shutdown(wait=False, cancel_futures=True) 
 
             task_results.append(result)
         

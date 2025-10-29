@@ -58,6 +58,23 @@ class TaskResult:
             "exact_match": self.exact_match,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict, task_type: "TaskType") -> "TaskResult":
+        task = Task(
+            question=data["question"],
+            sql=data["sql"] if "sql" in data else "",
+            cypher=data["cypher"] if "cypher" in data else "",
+            cypher_result=data.get("cypher_result"),
+        )
+        return cls(
+            task=task,
+            response=data["generated_script"],
+            syntaxically_correct=data["syntaxically_correct"],
+            correct_result=data["correct_result"],
+            exact_match=data["exact_match"],
+            task_type=task_type,
+        )
+
 
 class DatasetName(StrEnum):
     REL_F1 = "rel-f1"

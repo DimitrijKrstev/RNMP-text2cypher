@@ -95,6 +95,12 @@ def evaluate_remote(dataset_name: DatasetName, task_types: list[TaskType]) -> No
             REMOTE_MODEL_NAME, dataset_name, task_type, client
         )
 
+@app.command()
+def plot_evaluation_results(dataset_name: DatasetName) -> None:
+    """Plot evaluation results."""
+    from evaluation.plot import plot_results
+
+    plot_results(dataset_name)
 
 if __name__ == "__main__":
     app()

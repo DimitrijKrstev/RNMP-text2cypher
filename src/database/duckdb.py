@@ -5,8 +5,9 @@ from database.constants import DUCKDB_PATH
 from models import SQLTableWithHeaders
 
 
-def query_duckdb(sql: str):
-    conn = duckdb.connect(str(DUCKDB_PATH))
+def query_duckdb(sql: str, db_path: str):
+    conn = duckdb.connect(str(db_path))
+    conn.execute("USE relbench.main")
     return conn.execute(sql).fetchall()
 
 
