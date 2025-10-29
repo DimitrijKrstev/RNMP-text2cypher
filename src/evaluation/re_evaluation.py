@@ -3,7 +3,7 @@ import json
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 
-from constants import REMOTE_MODEL_NAME, get_sqlite_db_path, RESULTS_DIR
+from constants import REMOTE_MODEL_NAME, get_sqlite_db_path, RESULTS_DIR, get_duckdb_path
 from database.neo4j import get_neo4j_schema
 from evaluation.scoring import get_task_result
 from models import DatasetName, TaskDifficulty, TaskType, Task, TaskResult
@@ -14,8 +14,9 @@ logger = getLogger(__name__)
 def re_evaluate_sql_results(dataset_name: DatasetName) -> None:
     """Re-evaluate SQL results for a given already_generated dataset"""
 
-    db_path = get_sqlite_db_path(dataset_name)
-    
+    # db_path = get_sqlite_db_path(dataset_name)
+    db_path = get_duckdb_path(dataset_name)
+
     for task_difficulty in TaskDifficulty:
         result_file = RESULTS_DIR / dataset_name / "sql" / "gpt-5-nano" / f"{task_difficulty.value}.json"
         if not result_file.exists():
