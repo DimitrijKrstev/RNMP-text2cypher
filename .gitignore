@@ -15,3 +15,5 @@ neo4j/import/f1/*.csv
 
 .env
 **/*.csv
+
+/plots

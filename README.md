@@ -20,13 +20,7 @@ Measures: syntactic correctness, result accuracy, and exact query matching acros
 ```bash
 # Install dependencies
 uv sync
-source .venv/bin/activate
 
-# Configure environment (required for remote evaluation)
-cp .env.sample .env
-# Edit .env and add:
-# OPENAI_API_KEY=your_key_here  (for remote models)
-# HF_TOKEN=your_token_here       (optional, for some HuggingFace models)
 ```
 
 ## Prepare Data

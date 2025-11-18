@@ -17,6 +17,7 @@ dependencies = [
     "typer==0.19.2",
     "python-dotenv>=1.1.1",
     "matplotlib>=3.10.7",
+    "seaborn>=0.13.2",
 ]
 [tool.mypy]
 ignore_missing_imports = true
