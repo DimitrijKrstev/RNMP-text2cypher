@@ -26,21 +26,21 @@ logger = getLogger(__name__)
 
 
 @app.command()
-def generate_csvs(dataset_name: DatasetName) -> None:
+def generate_csvs(dataset_name: DatasetName, sample_size: float = 1.0) -> None:
     """Generate CSVs for Neo4j import."""
-    get_node_csvs(dataset_name)
+    get_node_csvs(dataset_name, sample_size)
 
 
 @app.command()
 def load_sqlite(dataset_name: DatasetName) -> None:
-    """Create/refresh the SQLite DB."""
+    """Create/refresh the SQLite DB. Not used/replaced by DuckDB."""
     load_dataset_to_sqlite(dataset_name)
 
 
 @app.command()
-def load_duckdb(dataset_name: DatasetName) -> None:
+def load_duckdb(dataset_name: DatasetName, sample_size: float = 1.0) -> None:
     """Create/refresh the DuckDB."""
-    load_dataset_to_duckdb(dataset_name)
+    load_dataset_to_duckdb(dataset_name, sample_size)
 
 
 @app.command()

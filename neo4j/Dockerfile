@@ -15,9 +15,9 @@ RUN echo "dbms.directories.import=/var/lib/neo4j/import" >> /var/lib/neo4j/conf/
     && echo "server.memory.heap.initial_size=6G" >> /var/lib/neo4j/conf/neo4j.conf \
     && echo "server.memory.heap.max_size=6G" >> /var/lib/neo4j/conf/neo4j.conf \
     && echo "server.memory.pagecache.size=2G" >> /var/lib/neo4j/conf/neo4j.conf \
-    && echo "db.memory.transaction.total.max=4G" >> /var/lib/neo4j/conf/neo4j.conf
-
-
+    && echo "db.memory.transaction.total.max=20G" >> /var/lib/neo4j/conf/neo4j.conf \
+    && echo "dbms.tx_state.memory_allocation=ON_HEAP" >> /var/lib/neo4j/conf/neo4j.conf 
+    
 RUN /var/lib/neo4j/scripts/import-nodes.sh
 
 ENV DATASET_NAME=${DATASET_NAME}

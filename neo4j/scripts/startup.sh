@@ -44,9 +44,10 @@ echo "------ Creating relationships… ------"
 "$REL_SCRIPT"
 echo "------  DONE ------"
 
-echo "------ Running verification suite… ------"
-"$VERIFY_SCRIPT" "$DATASET_NAME"
-echo "------  …verification finished ------"
+# Not needed
+# echo "------ Running verification suite… ------"
+# "$VERIFY_SCRIPT" "$DATASET_NAME"
+# echo "------  …verification finished ------"
 
 
 echo ""

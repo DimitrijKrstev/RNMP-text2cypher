@@ -79,7 +79,7 @@ class TaskResult:
 class DatasetName(StrEnum):
     REL_F1 = "rel-f1"
     REL_STACK = "rel-stack"
-
+    REL_TRIAL = "rel-trial"
 
 class TaskDifficulty(StrEnum):
     EASY = "easy"
