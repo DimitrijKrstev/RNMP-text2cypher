@@ -8,13 +8,11 @@ USER=neo4j
 PASSWORD=${NEO4J_PASSWORD:-${NEO4J_AUTH#neo4j/}}
 REL_SCRIPT=/var/lib/neo4j/scripts/relationships/import-relationships-${DATASET_NAME}.sh
 CONSTRAINT_FILE=/var/lib/neo4j/scripts/constraints/create-constraints-${DATASET_NAME}.cypher
-VERIFY_SCRIPT=/var/lib/neo4j/scripts/verify-scripts/run-verification.sh
+MARKER_FILE="/data/.import_complete_${DATASET_NAME}"
 
-DATASET_NAME=${1:-rel-f1}
+
 echo "DEBUG: DATASET_NAME = '$DATASET_NAME'"
 echo "DEBUG: Looking for constraint file: /var/lib/neo4j/scripts/constraints/create-constraints-${DATASET_NAME}.cypher"
-
-CONSTRAINT_FILE=/var/lib/neo4j/scripts/constraints/create-constraints-${DATASET_NAME}.cypher
 echo "DEBUG: CONSTRAINT_FILE = '$CONSTRAINT_FILE'"
 
 
@@ -36,6 +34,19 @@ db_pid=$!
 
 
 wait_for_neo4j
+
+if [ -f "$MARKER_FILE" ]; then
+  echo "------ Dataset '${DATASET_NAME}' loaded ------"
+  echo ""
+  echo "------ ${DATASET_NAME} graph ready! ------"
+  echo "   Open the web interface at \"http://localhost:7474/browser/preview/\""
+  echo "   Login: neo4j / $PASSWORD"
+  echo "-----------------------------"
+  echo ""
+  wait "$db_pid"     
+  exit 0
+fi
+
 echo "------ Applying (idempotent) constraints & indexes… ------"
 cypher-shell -u "$USER" -p "$PASSWORD" -f "$CONSTRAINT_FILE"
 echo "------  DONE ------"
@@ -44,10 +55,7 @@ echo "------ Creating relationships… ------"
 "$REL_SCRIPT"
 echo "------  DONE ------"
 
-# Not needed
-# echo "------ Running verification suite… ------"
-# "$VERIFY_SCRIPT" "$DATASET_NAME"
-# echo "------  …verification finished ------"
+touch "$MARKER_FILE"
 
 
 echo ""
@@ -56,4 +64,4 @@ echo "   Open the web interface at \"http://localhost:7474/browser/preview/\""
 echo "   Login: neo4j / $PASSWORD"
 echo "-----------------------------"
 echo ""
-wait "$db_pid"     # forward logs & signals
+wait "$db_pid"     
