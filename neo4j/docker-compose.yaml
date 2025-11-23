@@ -53,8 +53,8 @@ services:
       - "7474:7474"
       - "7687:7687"
     volumes:
-      - neo4j_trial_data:/data
-      - neo4j_trial_logs:/logs
+      - neo4j_neo4j_trial_data:/data
+      - neo4j_neo4j_trial_logs:/logs
     tty: true
     stdin_open: true
     profiles: ["trial"]
@@ -64,5 +64,7 @@ volumes:
   neo4j_f1_logs:
   neo4j_stack_data:
   neo4j_stack_logs:
-  neo4j_trial_data:
-  neo4j_trial_logs:
+  neo4j_neo4j_trial_data:
+    external: true
+  neo4j_neo4j_trial_logs:
+    external: true
