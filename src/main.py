@@ -11,7 +11,7 @@ from database.neo4j import get_neo4j_schema
 from database.setup import get_node_csvs, load_dataset_to_sqlite, load_dataset_to_duckdb
 from evaluation.local_eval import evaluate_local_model_for_task
 from evaluation.remote_eval import evaluate_remote_model_for_task
-from evaluation.re_evaluation import re_evaluate_sql_results
+from evaluation.re_evaluation import re_evaluate_results
 from models import DatasetName, TaskType
 from utils import get_model_and_tokenizer
 from validate_tasks import validate
@@ -58,16 +58,12 @@ def get_neo4j() -> None:
 
 
 @app.command()
-def re_evaluate_results(
+def re_evaluation(
     dataset_name: DatasetName, 
     task_type: TaskType = TaskType.SQL
 ) -> None:
     """Re-evaluate existing results."""
-    if task_type == TaskType.CYPHER:
-        # TODO implement cypher re-evaluation
-        logger.info("Cypher re-evaluation not yet implemented")
-    else:
-        re_evaluate_sql_results(dataset_name)
+    re_evaluate_results(dataset_name, task_type)
 
 
 @app.command()

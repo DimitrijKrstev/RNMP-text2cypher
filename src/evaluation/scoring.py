@@ -5,10 +5,14 @@ import sqlparse
 from database.neo4j import query_neo4j
 from database.sqlite import query_sqlite
 from database.duckdb import query_duckdb
-from models import Task, TaskResult, TaskType
+from models import Task, TaskResult, TaskType, SQLQueryAnalyzer, CypherQueryAnalyzer
 
 logger = getLogger(__name__)
 
+ANALYZERS = {
+    TaskType.SQL: SQLQueryAnalyzer(),
+    TaskType.CYPHER: CypherQueryAnalyzer()
+}
 
 QUERY_DB_BY_TASK_TYPE = {
     TaskType.SQL: query_duckdb,
@@ -19,6 +23,16 @@ def get_task_result(task: Task, model_response: str, task_type: TaskType, db_pat
     syntaxically_correct = False
     correct_result = False
     exact_match = False
+
+    analyzer = ANALYZERS[task_type]
+    if not analyzer.is_valid(model_response):
+        pass
+
+    tables = analyzer.get_entities(model_response)
+    attributes = analyzer.get_attributes(model_response)
+    relations = analyzer.get_relations(model_response)
+    filters = analyzer.get_filters(model_response)
+    aggregations = analyzer.get_aggregations(model_response)
 
     try:
         result = QUERY_DB_BY_TASK_TYPE[task_type](model_response, db_path)  # type: ignore

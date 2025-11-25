@@ -10,16 +10,16 @@ from utils import save_task_results
 
 logger = getLogger(__name__)
 
-def re_evaluate_sql_results(dataset_name: DatasetName) -> None:
-    """Re-evaluate SQL results for a given already_generated dataset"""
+def re_evaluate_results(dataset_name: DatasetName, task_type: TaskType) -> None:
+    """Re-evaluate SQL or Cypher results for a given already_generated dataset"""
 
-    # db_path = get_sqlite_db_path(dataset_name)
-    # Should be duckdb for now
-    # TODO: Make this dynamic based on sql/db type used
-    db_path = get_duckdb_path(dataset_name)
+    if task_type == TaskType.SQL:
+        db_path = get_duckdb_path(dataset_name)
+    else:  
+        db_path = None
 
     for task_difficulty in TaskDifficulty:
-        result_file = RESULTS_DIR / dataset_name / "sql" / "gpt-5-nano" / f"{task_difficulty.value}.json"
+        result_file = RESULTS_DIR / dataset_name / task_type.value.lower() / "gpt-5-nano" / f"{task_difficulty.value}.json"
         if not result_file.exists():
             logger.warning(f"Result file not found, skipping: {result_file}")
             continue
@@ -31,19 +31,27 @@ def re_evaluate_sql_results(dataset_name: DatasetName) -> None:
         
         for result_data in tqdm(
             existing_results, 
-            desc=f"Re-evaluating SQL Tasks ({dataset_name}, {task_difficulty})"
+            desc=f"Re-evaluating {task_type.value} Tasks ({dataset_name}, {task_difficulty})"
         ):
-            task = Task(
-                question=result_data["question"],
-                sql=result_data["expected_script"],
-                cypher="",
-                cypher_result=None
-            )
+            if task_type == TaskType.SQL:
+                task = Task(
+                    question=result_data["question"],
+                    sql=result_data["expected_script"],
+                    cypher="",
+                    cypher_result=None
+                )
+            else:  
+                task = Task(
+                    question=result_data["question"],
+                    sql="",
+                    cypher=result_data["expected_script"],
+                    cypher_result=None  
+                )
             
             generated_query = result_data["generated_script"]
             
             try:
-                result = get_task_result(task, generated_query, TaskType.SQL, db_path)
+                result = get_task_result(task, generated_query, task_type, db_path)
             except Exception as e:
                 logger.error(f"Error on query: {generated_query[:100]}... Error: {e}")
                 result = TaskResult(
@@ -52,7 +60,7 @@ def re_evaluate_sql_results(dataset_name: DatasetName) -> None:
                     syntaxically_correct=False,
                     correct_result=False,
                     exact_match=False,
-                    task_type=TaskType.SQL
+                    task_type=task_type
                 )
 
             task_results.append(result)
@@ -61,8 +69,8 @@ def re_evaluate_sql_results(dataset_name: DatasetName) -> None:
             task_results, 
             dataset_name, 
             task_difficulty, 
-            TaskType.SQL, 
+            task_type, 
             REMOTE_MODEL_NAME
         )
         
-        logger.info(f"Re-evaluated {len(task_results)} SQL tasks for {task_difficulty}")
+        logger.info(f"Re-evaluated {len(task_results)} {task_type.value} tasks for {task_difficulty}")

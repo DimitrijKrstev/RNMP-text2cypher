@@ -19,6 +19,8 @@ dependencies = [
     "matplotlib>=3.10.7",
     "seaborn>=0.13.2",
     "sqlglot>=28.0.0",
+    "antlr4-python3-runtime>=4.13.2",
+    "antlr4-cypher>=0.1.2",
 ]
 [tool.mypy]
 ignore_missing_imports = true
