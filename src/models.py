@@ -52,9 +52,20 @@ class Task:
 class TaskResult:
     task: Task
     response: str
-    syntaxically_correct: bool
-    correct_result: bool
-    exact_match: bool
+    parse_success: bool
+    execution_success: bool
+    entity_f1: float
+    attribute_f1: float
+    relation_f1: Optional[float]
+    filter_f1: float
+    aggregation_f1: float
+    return_column_f1: float
+    execution_accuracy: bool
+    result_f1: float
+    result_precision: float
+    result_recall: float
+    error_category: str
+    error_flags: List[str]
     task_type: "TaskType"
 
     def to_dict(self) -> dict:
@@ -64,27 +75,39 @@ class TaskResult:
                 self.task.sql if self.task_type == TaskType.SQL else self.task.cypher
             ),
             "generated_script": self.response,
-            "syntaxically_correct": self.syntaxically_correct,
-            "correct_result": self.correct_result,
-            "exact_match": self.exact_match,
+            "syntaxically_correct": self.parse_success,
+            "correct_result": self.execution_success,
+            "entity_f1": self.entity_f1,
+            "attribute_f1": self.attribute_f1,
+            "relation_f1": self.relation_f1,
+            "filter_f1": self.filter_f1,
+            "aggregation_f1": self.aggregation_f1,
+            "return_column_f1": self.return_column_f1,
+            "execution_accuracy": self.execution_accuracy,
+            "result_f1": self.result_f1,
+            "result_precision": self.result_precision,
+            "result_recall": self.result_recall,
+            "error_category": self.error_category,
+            "error_flags": self.error_flags,
         }
 
-    @classmethod
-    def from_dict(cls, data: dict, task_type: "TaskType") -> "TaskResult":
-        task = Task(
-            question=data["question"],
-            sql=data["sql"] if "sql" in data else "",
-            cypher=data["cypher"] if "cypher" in data else "",
-            cypher_result=data.get("cypher_result"),
-        )
-        return cls(
-            task=task,
-            response=data["generated_script"],
-            syntaxically_correct=data["syntaxically_correct"],
-            correct_result=data["correct_result"],
-            exact_match=data["exact_match"],
-            task_type=task_type,
-        )
+    #TODO see what this was
+    # @classmethod
+    # def from_dict(cls, data: dict, task_type: "TaskType") -> "TaskResult":
+    #     task = Task(
+    #         question=data["question"],
+    #         sql=data["sql"] if "sql" in data else "",
+    #         cypher=data["cypher"] if "cypher" in data else "",
+    #         cypher_result=data.get("cypher_result"),
+    #     )
+    #     return cls(
+    #         task=task,
+    #         response=data["generated_script"],
+    #         syntaxically_correct=data["syntaxically_correct"],
+    #         correct_result=data["correct_result"],
+    #         exact_match=data["exact_match"],
+    #         task_type=task_type,
+    #     )
 
 
 class DatasetName(StrEnum):

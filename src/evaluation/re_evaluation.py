@@ -57,9 +57,20 @@ def re_evaluate_results(dataset_name: DatasetName, task_type: TaskType) -> None:
                 result = TaskResult(
                     task=task,
                     response=generated_query,
-                    syntaxically_correct=False,
-                    correct_result=False,
-                    exact_match=False,
+                    parse_success=False,
+                    execution_success=False,
+                    entity_f1=0.0,
+                    attribute_f1=0.0,
+                    relation_f1=None,
+                    filter_f1=0.0,
+                    aggregation_f1=0.0,
+                    return_column_f1=0.0,
+                    execution_accuracy=False,
+                    result_f1=0.0,
+                    result_precision=0.0,
+                    result_recall=0.0,
+                    error_category="Evaluation Error",
+                    error_flags=[],
                     task_type=task_type
                 )
 
