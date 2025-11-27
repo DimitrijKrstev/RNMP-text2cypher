@@ -18,7 +18,7 @@ def re_evaluate_results(dataset_name: DatasetName, task_type: TaskType) -> None:
     else:  
         db_path = None
 
-    for task_difficulty in TaskDifficulty:
+    for task_difficulty in {TaskDifficulty.HARD}:
         result_file = RESULTS_DIR / dataset_name / task_type.value.lower() / "gpt-5-nano" / f"{task_difficulty.value}.json"
         if not result_file.exists():
             logger.warning(f"Result file not found, skipping: {result_file}")

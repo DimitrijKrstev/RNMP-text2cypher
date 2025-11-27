@@ -6,7 +6,7 @@ from database.neo4j import query_neo4j
 from database.sqlite import query_sqlite
 from database.duckdb import query_duckdb
 from models import Task, TaskResult, TaskType, SQLQueryAnalyzer, CypherQueryAnalyzer
-from evaluation.utils import compute_component_f1, compute_result_f1
+from evaluation.utils import compute_component_f1, compute_result_f1, normalize_filters
 
 logger = getLogger(__name__)
 
@@ -32,6 +32,7 @@ def get_task_result(task: Task, model_response: str, task_type: TaskType, db_pat
     attributes = analyzer.get_attributes(model_response)
     relations = analyzer.get_relations(model_response)
     filters = analyzer.get_filters(model_response)
+    filters = normalize_filters(filters) if task_type == TaskType.CYPHER else filters
     aggregations = analyzer.get_aggregations(model_response)
     return_columns = analyzer.get_return_columns(model_response)
     
@@ -39,6 +40,7 @@ def get_task_result(task: Task, model_response: str, task_type: TaskType, db_pat
     expected_attributes = analyzer.get_attributes(expected_query)
     expected_relations = analyzer.get_relations(expected_query)
     expected_filters = analyzer.get_filters(expected_query)
+    expected_filters = normalize_filters(expected_filters) if task_type == TaskType.CYPHER else filters
     expected_aggregations = analyzer.get_aggregations(expected_query)
     expected_return_columns = analyzer.get_return_columns(expected_query)
     
