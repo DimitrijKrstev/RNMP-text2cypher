@@ -8,6 +8,7 @@ from openai import OpenAI
 
 from constants import BASE_MODEL_NAME, REMOTE_MODEL_NAME
 from database.neo4j import get_neo4j_schema
+from database.duckdb import json_schema_generator, minimal_schema
 from database.setup import get_node_csvs, load_dataset_to_sqlite, load_dataset_to_duckdb
 from evaluation.local_eval import evaluate_local_model_for_task
 from evaluation.remote_eval import evaluate_remote_model_for_task
@@ -97,6 +98,22 @@ def plot_evaluation_results(dataset_name: DatasetName) -> None:
     from evaluation.plot import plot_results
 
     plot_results(dataset_name)
+
+@app.command()
+def generate_schema(dataset_name: DatasetName, task_types : list[TaskType]) -> None:
+    """Helpher method used through UI to generate Schemas of databases"""
+    print('---------------------------------------------')     
+    for task_type in task_types:
+        result = (
+        get_neo4j_schema()
+        if task_type == TaskType.CYPHER
+        else minimal_schema(dataset_name)
+    )
+        print(f'------------------{task_type}---------------------')
+        print('---------------------------------------------')
+        print(result)
+        print('---------------------------------------------')     
+
 
 if __name__ == "__main__":
     app()

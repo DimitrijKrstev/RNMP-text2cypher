@@ -2,9 +2,7 @@ import sys
 from pathlib import Path
 import duckdb
 import json
-from constants import DUCKDB_PATH
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+from database.constants import DUCKDB_PATH
 from models import SQLTableWithHeaders
 
 
