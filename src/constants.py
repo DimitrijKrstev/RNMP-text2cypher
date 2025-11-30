@@ -15,7 +15,6 @@ PROJECT_ROOT = SRC_DIR.parent
 
 TASKS_DIR = SRC_DIR / "tasks"
 RESULTS_DIR = SRC_DIR / "results"
-SQLITE_DIR = PROJECT_ROOT / "sqlite"
 
 CSV_OUTPUT_DIR = PROJECT_ROOT / "neo4j" / "import"
 
@@ -23,10 +22,6 @@ CSV_OUTPUT_DIR = PROJECT_ROOT / "neo4j" / "import"
 def get_tasks_directory(dataset_name: DatasetName) -> Path:
     return TASKS_DIR / dataset_name
 
-
-def get_sqlite_db_path(dataset_name: DatasetName) -> Path:
-    print(SQLITE_DIR / dataset_name.value / "relbench.db")
-    return SQLITE_DIR / dataset_name.value / "relbench.db"
 
 def get_duckdb_path(dataset_name: DatasetName) -> Path:
     return PROJECT_ROOT/"duckdb" / dataset_name.value / "relbench.duckdb"

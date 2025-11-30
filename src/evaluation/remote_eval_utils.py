@@ -1,6 +1,6 @@
 from models import Task, TaskType, TaskResult
 from evaluation.scoring import get_task_result
-from evaluation.utils import build_cypher_prompt, build_sql_prompt, build_user_prompt
+from evaluation.utils import build_user_prompt, build_sql_system_prompt, build_cypher_system_prompt
 from litellm import completion
 from logging import getLogger
 from tqdm import tqdm
@@ -11,8 +11,8 @@ logger = getLogger(__name__)
 NO_QUERY = "<no_query>"
 
 prompt_builder = {
-    TaskType.SQL: build_sql_prompt,
-    TaskType.CYPHER: build_cypher_prompt,
+    TaskType.SQL: build_sql_system_prompt,
+    TaskType.CYPHER: build_cypher_system_prompt,
 }
 
 

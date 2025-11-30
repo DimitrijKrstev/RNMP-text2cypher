@@ -3,7 +3,6 @@ from logging import getLogger
 import sqlparse
 
 from database.neo4j import query_neo4j
-from database.sqlite import query_sqlite
 from database.duckdb import query_duckdb
 from models import Task, TaskResult, TaskType, SQLQueryAnalyzer, CypherQueryAnalyzer
 from evaluation.utils import compute_component_f1, compute_result_f1, normalize_filters

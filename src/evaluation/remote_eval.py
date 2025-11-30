@@ -6,7 +6,7 @@ from database.neo4j import get_neo4j_schema
 from database.duckdb import get_duckdb_schema
 from models import DatasetName, TaskDifficulty, TaskType
 from utils import get_tasks_from_json, save_task_results
-from evaluation.llm import process_tasks
+from evaluation.remote_eval_utils import process_tasks
 
 logger = getLogger(__name__)
 
