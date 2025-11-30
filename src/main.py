@@ -4,21 +4,20 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 import typer
-from openai import OpenAI
 
 from constants import BASE_MODEL_NAME, REMOTE_MODEL_NAME
 from database.neo4j import get_neo4j_schema
-from database.duckdb import json_schema_generator, minimal_schema
+from database.duckdb import json_schema_generator, get_duckdb_schema
 from database.setup import get_node_csvs, load_dataset_to_sqlite, load_dataset_to_duckdb
 from evaluation.local_eval import evaluate_local_model_for_task
-from evaluation.remote_eval import evaluate_remote_model_for_task
 from evaluation.re_evaluation import re_evaluate_results
+from evaluation.remote_eval import evaluate_remote_model
 from models import DatasetName, TaskType
 from utils import get_model_and_tokenizer
 from validate_tasks import validate
 
 load_dotenv()  
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 app = typer.Typer()
 
@@ -82,14 +81,12 @@ def evaluate_local(dataset_name: DatasetName, task_types: list[TaskType]) -> Non
 @app.command()
 def evaluate_remote(dataset_name: DatasetName, task_types: list[TaskType]) -> None:
     """Evaluate the remote LLM model."""
-    if not OPENAI_API_KEY:
-        raise typer.Abort("OPENAI_API_KEY environment variable not set")
-
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    if not ANTHROPIC_API_KEY:
+        raise typer.Abort("API key environment variable not set!")
 
     for task_type in task_types:
-        evaluate_remote_model_for_task(
-            REMOTE_MODEL_NAME, dataset_name, task_type, client
+        evaluate_remote_model(
+            REMOTE_MODEL_NAME, dataset_name, task_type, ANTHROPIC_API_KEY
         )
 
 @app.command()
@@ -107,7 +104,7 @@ def generate_schema(dataset_name: DatasetName, task_types : list[TaskType]) -> N
         result = (
         get_neo4j_schema()
         if task_type == TaskType.CYPHER
-        else minimal_schema(dataset_name)
+        else get_duckdb_schema(dataset_name)
     )
         print(f'------------------{task_type}---------------------')
         print('---------------------------------------------')

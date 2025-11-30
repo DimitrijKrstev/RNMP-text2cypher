@@ -164,10 +164,4 @@ def build_local_prompt(task_type: TaskType, question: str, schema: str) -> str:
     )
 
 
-def build_remote_prompt(task_type: TaskType, question: str, schema: str) -> str:
-    return (
-        "Here is my database schema:\n"
-        f"{schema}\n"
-        "Dates are in format 'YYYY-MM-DD HH:MM:SS'\n\n"
-        f"Your task is to create a {task_type} query that will: {question}\n\n"
-    )
+

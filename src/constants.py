@@ -4,7 +4,7 @@ from models import DatasetName
 
 PRETRAINED_SQL_MODEL_NAME = "defog/sqlcoder-7b-2"
 BASE_MODEL_NAME = "meta-llama/Llama-3.1-8B"
-REMOTE_MODEL_NAME = "gpt-5-nano"
+REMOTE_MODEL_NAME = "claude-sonnet-4-20250514"
 
 BASE_DIR = Path(__file__).parent
 TASKS_DIRECTORY = BASE_DIR / "tasks"

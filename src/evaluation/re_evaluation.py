@@ -2,8 +2,9 @@ from logging import getLogger
 import json
 from tqdm import tqdm
 
-from constants import REMOTE_MODEL_NAME, get_sqlite_db_path, RESULTS_DIR, get_duckdb_path
+from constants import REMOTE_MODEL_NAME, RESULTS_DIR, get_duckdb_path
 from database.neo4j import get_neo4j_schema
+from database.duckdb import get_duckdb_schema
 from evaluation.scoring import get_task_result
 from models import DatasetName, TaskDifficulty, TaskType, Task, TaskResult
 from utils import save_task_results

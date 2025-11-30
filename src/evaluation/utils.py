@@ -1,5 +1,9 @@
 import re
 from typing import Set
+from logging import getLogger
+from models import Task, TaskType, TaskResult
+
+logger = getLogger(__name__)
 
 def compute_component_f1(expected_set, generated_set):
     """
@@ -94,3 +98,32 @@ def normalize_filters(filters: Set[str]) -> Set[str]:
                 atomic_predicates.add(normalized)
     
     return atomic_predicates
+
+
+def build_user_prompt(question: str) -> str:
+    return f"Write a query to: {question}"
+
+
+def build_sql_system_prompt(schema: str) -> str:
+    return (
+        "You are a Text-to-SQL expert. Return ONLY valid SQL.\n"
+        "No explanations, no markdown, no code fences.\n\n"
+        "FORMAT RULES:\n"
+        "• NO table aliases: SELECT results.name FROM results (NOT FROM results r)\n"
+        "• NO AS keyword: SELECT COUNT(*) (NOT SELECT COUNT(*) AS total)\n"
+        "• Dates: 'YYYY-MM-DD HH:MM:SS'\n\n"
+        f"Schema:\n{schema}"
+    )
+
+
+def build_cypher_system_prompt(schema: str) -> str:
+    return (
+        "You are a Text-to-Cypher expert. Return ONLY valid Cypher.\n"
+        "No explanations, no markdown, no code fences.\n\n"
+        "FORMAT RULES:\n"
+        "• NO node aliases: MATCH (Study) (NOT MATCH (s:Study))\n"
+        "• NO AS keyword: RETURN COUNT(*) (NOT AS total)\n"
+        "• Use full relationship patterns\n"
+        "• Dates: datetime('YYYY-MM-DDTHH:MM:SS')\n\n"
+        f"Schema:\n{schema}"
+    )
