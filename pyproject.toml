@@ -22,6 +22,7 @@ dependencies = [
     "antlr4-python3-runtime>=4.13.2",
     "antlr4-cypher>=0.1.2",
     "litellm>=1.80.7",
+    "graphlib>=0.9.5",
 ]
 [tool.mypy]
 ignore_missing_imports = true

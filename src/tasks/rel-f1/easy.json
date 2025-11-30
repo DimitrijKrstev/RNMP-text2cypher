@@ -1,502 +1,502 @@
 [
   {
-    "question": "What are all the circuits located in Italy?",
-    "sql": "SELECT * FROM circuits WHERE country = 'Italy'",
-    "cypher": "MATCH (c:circuits) WHERE c.country = 'Italy' RETURN c"
+    "question": "What are the names of all British drivers?",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'British'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'British' RETURN driver.forename, driver.surname"
   },
   {
-    "question": "Find circuits with an altitude greater than 500 meters",
-    "sql": "SELECT * FROM circuits WHERE alt > 500",
-    "cypher": "MATCH (c:circuits) WHERE c.alt > 500 RETURN c"
+    "question": "List all races from 2020 ordered by round",
+    "sql": "SELECT races.name, races.round FROM races WHERE races.year = 2020 ORDER BY races.round",
+    "cypher": "MATCH (race:races) WHERE race.year = '2020' RETURN race.name, race.round ORDER BY race.round"
   },
   {
-    "question": "Show me the circuit named Monaco",
-    "sql": "SELECT * FROM circuits WHERE name LIKE '%Monaco%'",
-    "cypher": "MATCH (c:circuits) WHERE c.name CONTAINS 'Monaco' RETURN c"
+    "question": "Show all circuits located in Italy",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'Italy'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'Italy' RETURN circuit.name, circuit.location"
   },
   {
-    "question": "List all circuits in the United Kingdom",
-    "sql": "SELECT * FROM circuits WHERE country = 'UK'",
-    "cypher": "MATCH (c:circuits) WHERE c.country = 'UK' RETURN c"
+    "question": "Find all German constructors",
+    "sql": "SELECT constructors.name FROM constructors WHERE constructors.nationality = 'German'",
+    "cypher": "MATCH (constructor:constructors) WHERE constructor.nationality = 'German' RETURN constructor.name"
   },
   {
-    "question": "What circuits have a latitude above 50?",
-    "sql": "SELECT name, location, lat FROM circuits WHERE lat > 50",
-    "cypher": "MATCH (c:circuits) WHERE c.lat > 50 RETURN c.name, c.location, c.lat"
+    "question": "List all drivers with the code 'HAM'",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.code = 'HAM'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.code = 'HAM' RETURN driver.forename, driver.surname"
   },
   {
-    "question": "Find the circuit with circuitRef 'silverstone'",
-    "sql": "SELECT * FROM circuits WHERE circuitRef = 'silverstone'",
-    "cypher": "MATCH (c:circuits) WHERE c.circuitRef = 'silverstone' RETURN c"
+    "question": "What are all the race names from the year 2019?",
+    "sql": "SELECT races.name FROM races WHERE races.year = 2019",
+    "cypher": "MATCH (race:races) WHERE race.year = '2019' RETURN race.name"
   },
   {
-    "question": "Show circuits located in Spa",
-    "sql": "SELECT * FROM circuits WHERE location = 'Spa'",
-    "cypher": "MATCH (c:circuits) WHERE c.location = 'Spa' RETURN c"
+    "question": "Show circuits with altitude greater than 1000 meters",
+    "sql": "SELECT circuits.name, circuits.alt FROM circuits WHERE circuits.alt > 1000",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.alt > 1000 RETURN circuit.name, circuit.alt"
   },
   {
-    "question": "What are the first 10 circuits ordered by name?",
-    "sql": "SELECT * FROM circuits ORDER BY name LIMIT 10",
-    "cypher": "MATCH (c:circuits) RETURN c ORDER BY c.name LIMIT 10"
+    "question": "Find all drivers born after January 1, 1990",
+    "sql": "SELECT drivers.forename, drivers.surname, drivers.dob FROM drivers WHERE drivers.dob > '1990-01-01 00:00:00'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.dob > date('1990-01-01') RETURN driver.forename, driver.surname, driver.dob"
   },
   {
-    "question": "Find circuits with longitude less than 0",
-    "sql": "SELECT name, country, lng FROM circuits WHERE lng < 0",
-    "cypher": "MATCH (c:circuits) WHERE c.lng < 0 RETURN c.name, c.country, c.lng"
+    "question": "List all Japanese constructors",
+    "sql": "SELECT constructors.name, constructors.constructorRef FROM constructors WHERE constructors.nationality = 'Japanese'",
+    "cypher": "MATCH (constructor:constructors) WHERE constructor.nationality = 'Japanese' RETURN constructor.name, constructor.constructorRef"
   },
   {
-    "question": "List circuits in Spain with altitude above 600",
-    "sql": "SELECT * FROM circuits WHERE country = 'Spain' AND alt > 600",
-    "cypher": "MATCH (c:circuits) WHERE c.country = 'Spain' AND c.alt > 600 RETURN c"
+    "question": "Show all circuits in the United Kingdom",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'UK'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'UK' RETURN circuit.name, circuit.location"
   },
   {
-    "question": "Show all circuit names and their countries",
-    "sql": "SELECT name, country FROM circuits",
-    "cypher": "MATCH (c:circuits) RETURN c.name, c.country"
-  },
-  {
-    "question": "Find circuits at sea level (altitude equals 0)",
-    "sql": "SELECT * FROM circuits WHERE alt = 0",
-    "cypher": "MATCH (c:circuits) WHERE c.alt = 0 RETURN c"
-  },
-  {
-    "question": "What circuits are in Australia?",
-    "sql": "SELECT name, location FROM circuits WHERE country = 'Australia'",
-    "cypher": "MATCH (c:circuits) WHERE c.country = 'Australia' RETURN c.name, c.location"
-  },
-  {
-    "question": "Show the 5 circuits with the highest altitude",
-    "sql": "SELECT * FROM circuits ORDER BY alt DESC LIMIT 5",
-    "cypher": "MATCH (c:circuits) RETURN c ORDER BY c.alt DESC LIMIT 5"
-  },
-  {
-    "question": "Find circuits whose name starts with 'Circuit'",
-    "sql": "SELECT * FROM circuits WHERE name LIKE 'Circuit%'",
-    "cypher": "MATCH (c:circuits) WHERE c.name STARTS WITH 'Circuit' RETURN c"
-  },
-  {
-    "question": "List all British constructors",
-    "sql": "SELECT * FROM constructors WHERE nationality = 'British'",
-    "cypher": "MATCH (c:constructors) WHERE c.nationality = 'British' RETURN c"
-  },
-  {
-    "question": "Find the constructor with the reference 'ferrari'",
-    "sql": "SELECT * FROM constructors WHERE constructorRef = 'ferrari'",
-    "cypher": "MATCH (c:constructors) WHERE c.constructorRef = 'ferrari' RETURN c"
-  },
-  {
-    "question": "Show all German constructors",
-    "sql": "SELECT name, nationality FROM constructors WHERE nationality = 'German'",
-    "cypher": "MATCH (c:constructors) WHERE c.nationality = 'German' RETURN c.name, c.nationality"
-  },
-  {
-    "question": "What is the name of constructor with ID 1?",
-    "sql": "SELECT name FROM constructors WHERE constructorId = 1",
-    "cypher": "MATCH (c:constructors) WHERE c.constructorId = 1 RETURN c.name"
-  },
-  {
-    "question": "List all Italian constructors",
-    "sql": "SELECT * FROM constructors WHERE nationality = 'Italian'",
-    "cypher": "MATCH (c:constructors) WHERE c.nationality = 'Italian' RETURN c"
-  },
-  {
-    "question": "Find constructors whose name contains 'Racing'",
-    "sql": "SELECT * FROM constructors WHERE name LIKE '%Racing%'",
-    "cypher": "MATCH (c:constructors) WHERE c.name CONTAINS 'Racing' RETURN c"
-  },
-  {
-    "question": "Show the first 10 constructors ordered alphabetically",
-    "sql": "SELECT * FROM constructors ORDER BY name LIMIT 10",
-    "cypher": "MATCH (c:constructors) RETURN c ORDER BY c.name LIMIT 10"
-  },
-  {
-    "question": "Find constructors from France",
-    "sql": "SELECT name FROM constructors WHERE nationality = 'French'",
-    "cypher": "MATCH (c:constructors) WHERE c.nationality = 'French' RETURN c.name"
-  },
-  {
-    "question": "What constructor has the reference 'mclaren'?",
-    "sql": "SELECT * FROM constructors WHERE constructorRef = 'mclaren'",
-    "cypher": "MATCH (c:constructors) WHERE c.constructorRef = 'mclaren' RETURN c"
-  },
-  {
-    "question": "List all constructors with 'Mercedes' in their name",
-    "sql": "SELECT * FROM constructors WHERE name LIKE '%Mercedes%'",
-    "cypher": "MATCH (c:constructors) WHERE c.name CONTAINS 'Mercedes' RETURN c"
-  },
-  {
-    "question": "Show Japanese constructors",
-    "sql": "SELECT * FROM constructors WHERE nationality = 'Japanese'",
-    "cypher": "MATCH (c:constructors) WHERE c.nationality = 'Japanese' RETURN c"
-  },
-  {
-    "question": "Find constructors with ID less than 10",
-    "sql": "SELECT * FROM constructors WHERE constructorId < 10",
-    "cypher": "MATCH (c:constructors) WHERE c.constructorId < 10 RETURN c"
-  },
-  {
-    "question": "What American constructors exist in the database?",
-    "sql": "SELECT name, constructorRef FROM constructors WHERE nationality = 'American'",
-    "cypher": "MATCH (c:constructors) WHERE c.nationality = 'American' RETURN c.name, c.constructorRef"
-  },
-  {
-    "question": "List all constructor names and nationalities",
-    "sql": "SELECT name, nationality FROM constructors",
-    "cypher": "MATCH (c:constructors) RETURN c.name, c.nationality"
-  },
-  {
-    "question": "Find the constructor named 'Red Bull'",
-    "sql": "SELECT * FROM constructors WHERE name = 'Red Bull'",
-    "cypher": "MATCH (c:constructors) WHERE c.name = 'Red Bull' RETURN c"
-  },
-  {
-    "question": "Find all British drivers",
-    "sql": "SELECT * FROM drivers WHERE nationality = 'British'",
-    "cypher": "MATCH (d:drivers) WHERE d.nationality = 'British' RETURN d"
-  },
-  {
-    "question": "Who is the driver with code 'HAM'?",
-    "sql": "SELECT * FROM drivers WHERE code = 'HAM'",
-    "cypher": "MATCH (d:drivers) WHERE d.code = 'HAM' RETURN d"
-  },
-  {
-    "question": "List all German drivers",
-    "sql": "SELECT forename, surname FROM drivers WHERE nationality = 'German'",
-    "cypher": "MATCH (d:drivers) WHERE d.nationality = 'German' RETURN d.forename, d.surname"
-  },
-  {
-    "question": "Find drivers born after January 1, 1990",
-    "sql": "SELECT * FROM drivers WHERE dob > '1990-01-01'",
-    "cypher": "MATCH (d:drivers) WHERE d.dob > datetime('1990-01-01') RETURN d"
-  },
-  {
-    "question": "What is the full name of driver with reference 'vettel'?",
-    "sql": "SELECT forename, surname FROM drivers WHERE driverRef = 'vettel'",
-    "cypher": "MATCH (d:drivers) WHERE d.driverRef = 'vettel' RETURN d.forename, d.surname"
-  },
-  {
-    "question": "Show all Brazilian drivers",
-    "sql": "SELECT * FROM drivers WHERE nationality = 'Brazilian'",
-    "cypher": "MATCH (d:drivers) WHERE d.nationality = 'Brazilian' RETURN d"
-  },
-  {
-    "question": "Find drivers with surname starting with 'Sch'",
-    "sql": "SELECT * FROM drivers WHERE surname LIKE 'Sch%'",
-    "cypher": "MATCH (d:drivers) WHERE d.surname STARTS WITH 'Sch' RETURN d"
-  },
-  {
-    "question": "List drivers with forename 'Michael'",
-    "sql": "SELECT * FROM drivers WHERE forename = 'Michael'",
-    "cypher": "MATCH (d:drivers) WHERE d.forename = 'Michael' RETURN d"
-  },
-  {
-    "question": "Show the first 20 drivers ordered by surname",
-    "sql": "SELECT * FROM drivers ORDER BY surname LIMIT 20",
-    "cypher": "MATCH (d:drivers) RETURN d ORDER BY d.surname LIMIT 20"
-  },
-  {
-    "question": "Find Finnish drivers",
-    "sql": "SELECT forename, surname, dob FROM drivers WHERE nationality = 'Finnish'",
-    "cypher": "MATCH (d:drivers) WHERE d.nationality = 'Finnish' RETURN d.forename, d.surname, d.dob"
-  },
-  {
-    "question": "What driver has the code 'VET'?",
-    "sql": "SELECT * FROM drivers WHERE code = 'VET'",
-    "cypher": "MATCH (d:drivers) WHERE d.code = 'VET' RETURN d"
-  },
-  {
-    "question": "List all Spanish drivers",
-    "sql": "SELECT * FROM drivers WHERE nationality = 'Spanish'",
-    "cypher": "MATCH (d:drivers) WHERE d.nationality = 'Spanish' RETURN d"
-  },
-  {
-    "question": "Find drivers born before 1980",
-    "sql": "SELECT * FROM drivers WHERE dob < '1980-01-01'",
-    "cypher": "MATCH (d:drivers) WHERE d.dob < datetime('1980-01-01') RETURN d"
-  },
-  {
-    "question": "Show drivers with the surname 'Hamilton'",
-    "sql": "SELECT * FROM drivers WHERE surname = 'Hamilton'",
-    "cypher": "MATCH (d:drivers) WHERE d.surname = 'Hamilton' RETURN d"
-  },
-  {
-    "question": "Find all Dutch drivers",
-    "sql": "SELECT * FROM drivers WHERE nationality = 'Dutch'",
-    "cypher": "MATCH (d:drivers) WHERE d.nationality = 'Dutch' RETURN d"
-  },
-  {
-    "question": "What Australian drivers are in the database?",
-    "sql": "SELECT forename, surname FROM drivers WHERE nationality = 'Australian'",
-    "cypher": "MATCH (d:drivers) WHERE d.nationality = 'Australian' RETURN d.forename, d.surname"
-  },
-  {
-    "question": "Find the driver with ID 1",
-    "sql": "SELECT * FROM drivers WHERE driverId = 1",
-    "cypher": "MATCH (d:drivers) WHERE d.driverId = 1 RETURN d"
-  },
-  {
-    "question": "List French drivers ordered by date of birth",
-    "sql": "SELECT * FROM drivers WHERE nationality = 'French' ORDER BY dob",
-    "cypher": "MATCH (d:drivers) WHERE d.nationality = 'French' RETURN d ORDER BY d.dob"
-  },
-  {
-    "question": "Show drivers whose reference contains 'max'",
-    "sql": "SELECT * FROM drivers WHERE driverRef LIKE '%max%'",
-    "cypher": "MATCH (d:drivers) WHERE d.driverRef CONTAINS 'max' RETURN d"
-  },
-  {
-    "question": "Find drivers with forename 'Lewis'",
-    "sql": "SELECT * FROM drivers WHERE forename = 'Lewis'",
-    "cypher": "MATCH (d:drivers) WHERE d.forename = 'Lewis' RETURN d"
-  },
-  {
-    "question": "List all races from the year 2020",
-    "sql": "SELECT * FROM races WHERE year = 2020",
-    "cypher": "MATCH (r:races) WHERE r.year = 2020 RETURN r"
+    "question": "Find all results where points scored were greater than 20",
+    "sql": "SELECT results.resultId, results.points FROM results WHERE results.points > 20",
+    "cypher": "MATCH (result:results) WHERE result.points > 20 RETURN result.resultId, result.points"
   },
   {
     "question": "What races were held in round 1?",
-    "sql": "SELECT * FROM races WHERE round = 1",
-    "cypher": "MATCH (r:races) WHERE r.round = 1 RETURN r"
+    "sql": "SELECT races.name, races.year FROM races WHERE races.round = 1",
+    "cypher": "MATCH (race:races) WHERE race.round = '1' RETURN race.name, race.year"
   },
   {
-    "question": "Find races with 'Grand Prix' in the name",
-    "sql": "SELECT * FROM races WHERE name LIKE '%Grand Prix%'",
-    "cypher": "MATCH (r:races) WHERE r.name CONTAINS 'Grand Prix' RETURN r"
+    "question": "List all French drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'French'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'French' RETURN driver.forename, driver.surname"
   },
   {
-    "question": "Show all races from 2021 ordered by round",
-    "sql": "SELECT * FROM races WHERE year = 2021 ORDER BY round",
-    "cypher": "MATCH (r:races) WHERE r.year = 2021 RETURN r ORDER BY r.round"
+    "question": "Show constructors with the name containing 'Racing'",
+    "sql": "SELECT constructors.name FROM constructors WHERE constructors.name LIKE '%Racing%'",
+    "cypher": "MATCH (constructor:constructors) WHERE constructor.name CONTAINS 'Racing' RETURN constructor.name"
   },
   {
-    "question": "List races named 'British Grand Prix'",
-    "sql": "SELECT * FROM races WHERE name = 'British Grand Prix'",
-    "cypher": "MATCH (r:races) WHERE r.name = 'British Grand Prix' RETURN r"
+    "question": "Find circuits with latitude greater than 50",
+    "sql": "SELECT circuits.name, circuits.lat FROM circuits WHERE circuits.lat > 50",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.lat > 50 RETURN circuit.name, circuit.lat"
   },
   {
-    "question": "Find races held after 2015",
-    "sql": "SELECT * FROM races WHERE year > 2015",
-    "cypher": "MATCH (r:races) WHERE r.year > 2015 RETURN r"
+    "question": "List all races from the year 2021",
+    "sql": "SELECT races.name, races.date FROM races WHERE races.year = 2021",
+    "cypher": "MATCH (race:races) WHERE race.year = '2021' RETURN race.name, race.date"
   },
   {
-    "question": "What races were held in year 2010, round 5?",
-    "sql": "SELECT * FROM races WHERE year = 2010 AND round = 5",
-    "cypher": "MATCH (r:races) WHERE r.year = 2010 AND r.round = 5 RETURN r"
+    "question": "What are the names of all American constructors?",
+    "sql": "SELECT constructors.name FROM constructors WHERE constructors.nationality = 'American'",
+    "cypher": "MATCH (constructor:constructors) WHERE constructor.nationality = 'American' RETURN constructor.name"
   },
   {
-    "question": "Show the first 10 races of 2019",
-    "sql": "SELECT * FROM races WHERE year = 2019 ORDER BY round LIMIT 10",
-    "cypher": "MATCH (r:races) WHERE r.year = 2019 RETURN r ORDER BY r.round LIMIT 10"
+    "question": "Show all drivers whose surname starts with 'S'",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.surname LIKE 'S%'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.surname STARTS WITH 'S' RETURN driver.forename, driver.surname"
   },
   {
-    "question": "Find races at circuit ID 1",
-    "sql": "SELECT * FROM races WHERE circuitId = 1",
-    "cypher": "MATCH (r:races) WHERE r.circuitId = 1 RETURN r"
+    "question": "Find all circuits in Spain",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'Spain'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'Spain' RETURN circuit.name, circuit.location"
   },
   {
-    "question": "List races from the 1990s",
-    "sql": "SELECT * FROM races WHERE year >= 1990 AND year < 2000",
-    "cypher": "MATCH (r:races) WHERE r.year >= 1990 AND r.year < 2000 RETURN r"
+    "question": "List results where the grid position was 1",
+    "sql": "SELECT results.resultId, results.driverId FROM results WHERE results.grid = 1",
+    "cypher": "MATCH (result:results) WHERE result.grid = 1 RETURN result.resultId, result.driverId"
   },
   {
-    "question": "What was the name of race ID 100?",
-    "sql": "SELECT name FROM races WHERE raceId = 100",
-    "cypher": "MATCH (r:races) WHERE r.raceId = 100 RETURN r.name"
+    "question": "Show all Finnish drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Finnish'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Finnish' RETURN driver.forename, driver.surname"
   },
   {
-    "question": "Show all Monaco Grand Prix races",
-    "sql": "SELECT * FROM races WHERE name = 'Monaco Grand Prix'",
-    "cypher": "MATCH (r:races) WHERE r.name = 'Monaco Grand Prix' RETURN r"
+    "question": "Find races with names containing 'Grand Prix'",
+    "sql": "SELECT races.name, races.year FROM races WHERE races.name LIKE '%Grand Prix%'",
+    "cypher": "MATCH (race:races) WHERE race.name CONTAINS 'Grand Prix' RETURN race.name, race.year"
   },
   {
-    "question": "Find races before the year 1980",
-    "sql": "SELECT * FROM races WHERE year < 1980",
-    "cypher": "MATCH (r:races) WHERE r.year < 1980 RETURN r"
+    "question": "What are all the circuits in Australia?",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'Australia'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'Australia' RETURN circuit.name, circuit.location"
   },
   {
-    "question": "List the last 5 races by date",
-    "sql": "SELECT * FROM races ORDER BY date DESC LIMIT 5",
-    "cypher": "MATCH (r:races) RETURN r ORDER BY r.date DESC LIMIT 5"
+    "question": "List all Italian constructors",
+    "sql": "SELECT constructors.name, constructors.constructorRef FROM constructors WHERE constructors.nationality = 'Italian'",
+    "cypher": "MATCH (constructor:constructors) WHERE constructor.nationality = 'Italian' RETURN constructor.name, constructor.constructorRef"
   },
   {
-    "question": "Find races in 2022 at circuit ID 9",
-    "sql": "SELECT * FROM races WHERE year = 2022 AND circuitId = 9",
-    "cypher": "MATCH (r:races) WHERE r.year = 2022 AND r.circuitId = 9 RETURN r"
+    "question": "Show results where laps completed were greater than 50",
+    "sql": "SELECT results.resultId, results.laps FROM results WHERE results.laps > 50",
+    "cypher": "MATCH (result:results) WHERE result.laps > 50 RETURN result.resultId, result.laps"
   },
   {
-    "question": "Find results where the driver finished in position 1",
-    "sql": "SELECT * FROM results WHERE position = 1",
-    "cypher": "MATCH (r:results) WHERE r.position = 1 RETURN r"
+    "question": "Find all Brazilian drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Brazilian'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Brazilian' RETURN driver.forename, driver.surname"
   },
   {
-    "question": "Show results with more than 20 points",
-    "sql": "SELECT * FROM results WHERE points > 20",
-    "cypher": "MATCH (r:results) WHERE r.points > 20 RETURN r"
+    "question": "List circuits with longitude less than 0",
+    "sql": "SELECT circuits.name, circuits.lng FROM circuits WHERE circuits.lng < 0",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.lng < 0 RETURN circuit.name, circuit.lng"
   },
   {
-    "question": "Find results for race ID 1",
-    "sql": "SELECT * FROM results WHERE raceId = 1",
-    "cypher": "MATCH (r:results) WHERE r.raceId = 1 RETURN r"
+    "question": "Show all races from round 5",
+    "sql": "SELECT races.name, races.year FROM races WHERE races.round = 5",
+    "cypher": "MATCH (race:races) WHERE race.round = '5' RETURN race.name, race.year"
   },
   {
-    "question": "List results where the driver started from grid position 1",
-    "sql": "SELECT * FROM results WHERE grid = 1",
-    "cypher": "MATCH (r:results) WHERE r.grid = 1 RETURN r"
+    "question": "Find all Austrian constructors",
+    "sql": "SELECT constructors.name FROM constructors WHERE constructors.nationality = 'Austrian'",
+    "cypher": "MATCH (constructor:constructors) WHERE constructor.nationality = 'Austrian' RETURN constructor.name"
   },
   {
-    "question": "Show results for driver ID 1",
-    "sql": "SELECT * FROM results WHERE driverId = 1",
-    "cypher": "MATCH (r:results) WHERE r.driverId = 1 RETURN r"
+    "question": "What are the names of drivers with code 'VET'?",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.code = 'VET'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.code = 'VET' RETURN driver.forename, driver.surname"
   },
   {
-    "question": "Find results with more than 50 laps completed",
-    "sql": "SELECT * FROM results WHERE laps > 50",
-    "cypher": "MATCH (r:results) WHERE r.laps > 50 RETURN r"
+    "question": "List all circuits in Germany",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'Germany'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'Germany' RETURN circuit.name, circuit.location"
   },
   {
-    "question": "List results where the fastest lap rank is 1",
-    "sql": "SELECT * FROM results WHERE rank = 1",
-    "cypher": "MATCH (r:results) WHERE r.rank = 1 RETURN r"
+    "question": "Show results where the final position was 1",
+    "sql": "SELECT results.resultId, results.driverId, results.points FROM results WHERE results.position = 1",
+    "cypher": "MATCH (result:results) WHERE result.position = 1 RETURN result.resultId, result.driverId, result.points"
   },
   {
-    "question": "Show results for constructor ID 6",
-    "sql": "SELECT * FROM results WHERE constructorId = 6",
-    "cypher": "MATCH (r:results) WHERE r.constructorId = 6 RETURN r"
+    "question": "Find all Spanish drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Spanish'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Spanish' RETURN driver.forename, driver.surname"
   },
   {
-    "question": "Find results where position is 2 and points are greater than 15",
-    "sql": "SELECT * FROM results WHERE position = 2 AND points > 15",
-    "cypher": "MATCH (r:results) WHERE r.position = 2 AND r.points > 15 RETURN r"
+    "question": "List races from 2018 ordered by date",
+    "sql": "SELECT races.name, races.date FROM races WHERE races.year = 2018 ORDER BY races.date",
+    "cypher": "MATCH (race:races) WHERE race.year = '2018' RETURN race.name, race.date ORDER BY race.date"
   },
   {
-    "question": "List the first 10 results for race ID 50",
-    "sql": "SELECT * FROM results WHERE raceId = 50 ORDER BY positionOrder LIMIT 10",
-    "cypher": "MATCH (r:results) WHERE r.raceId = 50 RETURN r ORDER BY r.positionOrder LIMIT 10"
+    "question": "Show all circuits in France",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'France'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'France' RETURN circuit.name, circuit.location"
   },
   {
-    "question": "Find results with 0 points",
-    "sql": "SELECT * FROM results WHERE points = 0",
-    "cypher": "MATCH (r:results) WHERE r.points = 0 RETURN r"
+    "question": "Find constructors whose name starts with 'Mc'",
+    "sql": "SELECT constructors.name FROM constructors WHERE constructors.name LIKE 'Mc%'",
+    "cypher": "MATCH (constructor:constructors) WHERE constructor.name STARTS WITH 'Mc' RETURN constructor.name"
   },
   {
-    "question": "Show results where the grid position was worse than 10",
-    "sql": "SELECT * FROM results WHERE grid > 10",
-    "cypher": "MATCH (r:results) WHERE r.grid > 10 RETURN r"
+    "question": "What are all the Australian drivers?",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Australian'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Australian' RETURN driver.forename, driver.surname"
   },
   {
-    "question": "Find results with status ID 1",
-    "sql": "SELECT * FROM results WHERE statusId = 1",
-    "cypher": "MATCH (r:results) WHERE r.statusId = 1 RETURN r"
+    "question": "List results with points equal to 25",
+    "sql": "SELECT results.resultId, results.driverId FROM results WHERE results.points = 25",
+    "cypher": "MATCH (result:results) WHERE result.points = 25 RETURN result.resultId, result.driverId"
   },
   {
-    "question": "List results where driver finished in top 3",
-    "sql": "SELECT * FROM results WHERE position <= 3",
-    "cypher": "MATCH (r:results) WHERE r.position <= 3 RETURN r"
+    "question": "Show all circuits in the USA",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'USA'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'USA' RETURN circuit.name, circuit.location"
   },
   {
-    "question": "Show results with race time under 6000000 milliseconds",
-    "sql": "SELECT * FROM results WHERE milliseconds < 6000000",
-    "cypher": "MATCH (r:results) WHERE r.milliseconds < 6000000 RETURN r"
+    "question": "Find all Dutch drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Dutch'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Dutch' RETURN driver.forename, driver.surname"
   },
   {
-    "question": "Find driver standings where position is 1",
-    "sql": "SELECT * FROM standings WHERE position = 1",
-    "cypher": "MATCH (s:standings) WHERE s.position = 1 RETURN s"
+    "question": "List all races from round 10",
+    "sql": "SELECT races.name, races.year FROM races WHERE races.round = 10",
+    "cypher": "MATCH (race:races) WHERE race.round = '10' RETURN race.name, race.year"
   },
   {
-    "question": "Show standings with more than 200 points",
-    "sql": "SELECT * FROM standings WHERE points > 200",
-    "cypher": "MATCH (s:standings) WHERE s.points > 200 RETURN s"
+    "question": "Show constructors with nationality 'Swiss'",
+    "sql": "SELECT constructors.name FROM constructors WHERE constructors.nationality = 'Swiss'",
+    "cypher": "MATCH (constructor:constructors) WHERE constructor.nationality = 'Swiss' RETURN constructor.name"
   },
   {
-    "question": "List standings for driver ID 1",
-    "sql": "SELECT * FROM standings WHERE driverId = 1",
-    "cypher": "MATCH (s:standings) WHERE s.driverId = 1 RETURN s"
+    "question": "Find circuits with altitude equal to 0",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.alt = 0",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.alt = 0 RETURN circuit.name, circuit.location"
   },
   {
-    "question": "Find standings with at least 5 wins",
-    "sql": "SELECT * FROM standings WHERE wins >= 5",
-    "cypher": "MATCH (s:standings) WHERE s.wins >= 5 RETURN s"
+    "question": "What are all the Mexican drivers?",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Mexican'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Mexican' RETURN driver.forename, driver.surname"
   },
   {
-    "question": "Show standings for race ID 500",
-    "sql": "SELECT * FROM standings WHERE raceId = 500",
-    "cypher": "MATCH (s:standings) WHERE s.raceId = 500 RETURN s"
+    "question": "List races from 2022",
+    "sql": "SELECT races.name, races.round FROM races WHERE races.year = 2022",
+    "cypher": "MATCH (race:races) WHERE race.year = '2022' RETURN race.name, race.round"
   },
   {
-    "question": "Find qualifying results for race ID 1",
-    "sql": "SELECT * FROM qualifying WHERE raceId = 1",
-    "cypher": "MATCH (q:qualifying) WHERE q.raceId = 1 RETURN q"
+    "question": "Show all circuits in Belgium",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'Belgium'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'Belgium' RETURN circuit.name, circuit.location"
   },
   {
-    "question": "Show qualifying where driver got pole position",
-    "sql": "SELECT * FROM qualifying WHERE position = 1",
-    "cypher": "MATCH (q:qualifying) WHERE q.position = 1 RETURN q"
+    "question": "Find results where grid position was greater than 15",
+    "sql": "SELECT results.resultId, results.grid FROM results WHERE results.grid > 15",
+    "cypher": "MATCH (result:results) WHERE result.grid > 15 RETURN result.resultId, result.grid"
   },
   {
-    "question": "List qualifying results for driver ID 20",
-    "sql": "SELECT * FROM qualifying WHERE driverId = 20",
-    "cypher": "MATCH (q:qualifying) WHERE q.driverId = 20 RETURN q"
+    "question": "List all Canadian drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Canadian'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Canadian' RETURN driver.forename, driver.surname"
   },
   {
-    "question": "Find qualifying results for constructor ID 1",
-    "sql": "SELECT * FROM qualifying WHERE constructorId = 1",
-    "cypher": "MATCH (q:qualifying) WHERE q.constructorId = 1 RETURN q"
+    "question": "Show races whose name contains 'Monaco'",
+    "sql": "SELECT races.name, races.year FROM races WHERE races.name LIKE '%Monaco%'",
+    "cypher": "MATCH (race:races) WHERE race.name CONTAINS 'Monaco' RETURN race.name, race.year"
   },
   {
-    "question": "Show qualifying results where position is in top 5",
-    "sql": "SELECT * FROM qualifying WHERE position <= 5",
-    "cypher": "MATCH (q:qualifying) WHERE q.position <= 5 RETURN q"
+    "question": "Find all circuits in Japan",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'Japan'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'Japan' RETURN circuit.name, circuit.location"
   },
   {
-    "question": "Find constructor results for race ID 100",
-    "sql": "SELECT * FROM constructor_results WHERE raceId = 100",
-    "cypher": "MATCH (cr:constructor_results) WHERE cr.raceId = 100 RETURN cr"
+    "question": "List all Polish drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Polish'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Polish' RETURN driver.forename, driver.surname"
   },
   {
-    "question": "Show constructor results with points greater than 30",
-    "sql": "SELECT * FROM constructor_results WHERE points > 30",
-    "cypher": "MATCH (cr:constructor_results) WHERE cr.points > 30 RETURN cr"
+    "question": "Show constructor standings with more than 100 points",
+    "sql": "SELECT constructor_standings.constructorId, constructor_standings.points FROM constructor_standings WHERE constructor_standings.points > 100",
+    "cypher": "MATCH (cs:constructor_standings) WHERE cs.points > 100 RETURN cs.constructorId, cs.points"
   },
   {
-    "question": "List constructor results for constructor ID 1",
-    "sql": "SELECT * FROM constructor_results WHERE constructorId = 1",
-    "cypher": "MATCH (cr:constructor_results) WHERE cr.constructorId = 1 RETURN cr"
+    "question": "Find circuits in Monaco",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'Monaco'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'Monaco' RETURN circuit.name, circuit.location"
   },
   {
-    "question": "Find constructor standings in first position",
-    "sql": "SELECT * FROM constructor_standings WHERE position = 1",
-    "cypher": "MATCH (cs:constructor_standings) WHERE cs.position = 1 RETURN cs"
+    "question": "What are the names of all Indian drivers?",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Indian'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Indian' RETURN driver.forename, driver.surname"
   },
   {
-    "question": "Show constructor standings with more than 10 wins",
-    "sql": "SELECT * FROM constructor_standings WHERE wins > 10",
-    "cypher": "MATCH (cs:constructor_standings) WHERE cs.wins > 10 RETURN cs"
+    "question": "List races from round 15 or later",
+    "sql": "SELECT races.name, races.round, races.year FROM races WHERE races.round >= 15",
+    "cypher": "MATCH (race:races) WHERE toInteger(race.round) >= 15 RETURN race.name, race.round, race.year"
   },
   {
-    "question": "List constructor standings for constructor ID 6",
-    "sql": "SELECT * FROM constructor_standings WHERE constructorId = 6",
-    "cypher": "MATCH (cs:constructor_standings) WHERE cs.constructorId = 6 RETURN cs"
+    "question": "Show all circuits in Brazil",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'Brazil'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'Brazil' RETURN circuit.name, circuit.location"
   },
   {
-    "question": "Find constructor standings with over 500 points",
-    "sql": "SELECT * FROM constructor_standings WHERE points > 500",
-    "cypher": "MATCH (cs:constructor_standings) WHERE cs.points > 500 RETURN cs"
+    "question": "Find all British constructors",
+    "sql": "SELECT constructors.name FROM constructors WHERE constructors.nationality = 'British'",
+    "cypher": "MATCH (constructor:constructors) WHERE constructor.nationality = 'British' RETURN constructor.name"
   },
   {
-    "question": "Show standings where the driver has 0 wins",
-    "sql": "SELECT * FROM standings WHERE wins = 0",
-    "cypher": "MATCH (s:standings) WHERE s.wins = 0 RETURN s"
+    "question": "List results with position order equal to 2",
+    "sql": "SELECT results.resultId, results.driverId FROM results WHERE results.positionOrder = 2",
+    "cypher": "MATCH (result:results) WHERE result.positionOrder = '2' RETURN result.resultId, result.driverId"
   },
   {
-    "question": "Find races at circuits with ID 6",
-    "sql": "SELECT * FROM races WHERE circuitId = 6",
-    "cypher": "MATCH (r:races) WHERE r.circuitId = 6 RETURN r"
+    "question": "Show all circuits with latitude between 40 and 50",
+    "sql": "SELECT circuits.name, circuits.lat FROM circuits WHERE circuits.lat > 40 AND circuits.lat < 50",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.lat > 40 AND circuit.lat < 50 RETURN circuit.name, circuit.lat"
   },
   {
-    "question": "List the 5 most recent races",
-    "sql": "SELECT * FROM races ORDER BY date DESC LIMIT 5",
-    "cypher": "MATCH (r:races) RETURN r ORDER BY r.date DESC LIMIT 5"
+    "question": "Find all Argentine drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Argentine'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Argentine' RETURN driver.forename, driver.surname"
+  },
+  {
+    "question": "List all races from the year 2015",
+    "sql": "SELECT races.name, races.date FROM races WHERE races.year = 2015",
+    "cypher": "MATCH (race:races) WHERE race.year = '2015' RETURN race.name, race.date"
+  },
+  {
+    "question": "Show drivers whose forename is 'Lewis'",
+    "sql": "SELECT drivers.forename, drivers.surname, drivers.nationality FROM drivers WHERE drivers.forename = 'Lewis'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.forename = 'Lewis' RETURN driver.forename, driver.surname, driver.nationality"
+  },
+  {
+    "question": "Find all circuits in China",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'China'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'China' RETURN circuit.name, circuit.location"
+  },
+  {
+    "question": "List constructor results with points greater than 30",
+    "sql": "SELECT constructor_results.constructorId, constructor_results.points FROM constructor_results WHERE constructor_results.points > 30",
+    "cypher": "MATCH (cr:constructor_results) WHERE cr.points > 30 RETURN cr.constructorId, cr.points"
+  },
+  {
+    "question": "Show all Thai drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Thai'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Thai' RETURN driver.forename, driver.surname"
+  },
+  {
+    "question": "Find races with names containing 'British'",
+    "sql": "SELECT races.name, races.year FROM races WHERE races.name LIKE '%British%'",
+    "cypher": "MATCH (race:races) WHERE race.name CONTAINS 'British' RETURN race.name, race.year"
+  },
+  {
+    "question": "List all circuits in Austria",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'Austria'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'Austria' RETURN circuit.name, circuit.location"
+  },
+  {
+    "question": "Show all Danish drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Danish'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Danish' RETURN driver.forename, driver.surname"
+  },
+  {
+    "question": "Find standings with position equal to 1",
+    "sql": "SELECT standings.driverId, standings.points FROM standings WHERE standings.position = 1",
+    "cypher": "MATCH (standing:standings) WHERE standing.position = 1 RETURN standing.driverId, standing.points"
+  },
+  {
+    "question": "List constructors whose name contains 'Ferrari'",
+    "sql": "SELECT constructors.name, constructors.nationality FROM constructors WHERE constructors.name LIKE '%Ferrari%'",
+    "cypher": "MATCH (constructor:constructors) WHERE constructor.name CONTAINS 'Ferrari' RETURN constructor.name, constructor.nationality"
+  },
+  {
+    "question": "Show all circuits in Portugal",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'Portugal'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'Portugal' RETURN circuit.name, circuit.location"
+  },
+  {
+    "question": "Find all New Zealand drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'New Zealander'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'New Zealander' RETURN driver.forename, driver.surname"
+  },
+  {
+    "question": "List races from 2017 ordered by round",
+    "sql": "SELECT races.name, races.round FROM races WHERE races.year = 2017 ORDER BY races.round",
+    "cypher": "MATCH (race:races) WHERE race.year = '2017' RETURN race.name, race.round ORDER BY race.round"
+  },
+  {
+    "question": "Show circuits with circuitRef containing 'spa'",
+    "sql": "SELECT circuits.name, circuits.circuitRef FROM circuits WHERE circuits.circuitRef LIKE '%spa%'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.circuitRef CONTAINS 'spa' RETURN circuit.name, circuit.circuitRef"
+  },
+  {
+    "question": "Find all Russian drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Russian'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Russian' RETURN driver.forename, driver.surname"
+  },
+  {
+    "question": "List results where points were 0",
+    "sql": "SELECT results.resultId, results.driverId FROM results WHERE results.points = 0",
+    "cypher": "MATCH (result:results) WHERE result.points = 0 RETURN result.resultId, result.driverId"
+  },
+  {
+    "question": "Show all circuits in Hungary",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'Hungary'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'Hungary' RETURN circuit.name, circuit.location"
+  },
+  {
+    "question": "Find constructors with constructorRef 'red_bull'",
+    "sql": "SELECT constructors.name, constructors.nationality FROM constructors WHERE constructors.constructorRef = 'red_bull'",
+    "cypher": "MATCH (constructor:constructors) WHERE constructor.constructorRef = 'red_bull' RETURN constructor.name, constructor.nationality"
+  },
+  {
+    "question": "List all Colombian drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Colombian'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Colombian' RETURN driver.forename, driver.surname"
+  },
+  {
+    "question": "Show races from 2010",
+    "sql": "SELECT races.name, races.round FROM races WHERE races.year = 2010",
+    "cypher": "MATCH (race:races) WHERE race.year = '2010' RETURN race.name, race.round"
+  },
+  {
+    "question": "Find circuits in Malaysia",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'Malaysia'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'Malaysia' RETURN circuit.name, circuit.location"
+  },
+  {
+    "question": "List all Swedish drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Swedish'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Swedish' RETURN driver.forename, driver.surname"
+  },
+  {
+    "question": "Show qualifying results with position 1",
+    "sql": "SELECT qualifying.driverId, qualifying.raceId FROM qualifying WHERE qualifying.position = 1",
+    "cypher": "MATCH (qualifying:qualifying) WHERE qualifying.position = 1 RETURN qualifying.driverId, qualifying.raceId"
+  },
+  {
+    "question": "Find all circuits in Singapore",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'Singapore'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'Singapore' RETURN circuit.name, circuit.location"
+  },
+  {
+    "question": "List all Venezuelan drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Venezuelan'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Venezuelan' RETURN driver.forename, driver.surname"
+  },
+  {
+    "question": "Show constructor standings with position 1",
+    "sql": "SELECT constructor_standings.constructorId, constructor_standings.points FROM constructor_standings WHERE constructor_standings.position = 1",
+    "cypher": "MATCH (cs:constructor_standings) WHERE cs.position = 1 RETURN cs.constructorId, cs.points"
+  },
+  {
+    "question": "Find all circuits in the Netherlands",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'Netherlands'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'Netherlands' RETURN circuit.name, circuit.location"
+  },
+  {
+    "question": "List drivers with forename starting with 'M'",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.forename LIKE 'M%'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.forename STARTS WITH 'M' RETURN driver.forename, driver.surname"
+  },
+  {
+    "question": "Show all races containing 'Italian' in their name",
+    "sql": "SELECT races.name, races.year FROM races WHERE races.name LIKE '%Italian%'",
+    "cypher": "MATCH (race:races) WHERE race.name CONTAINS 'Italian' RETURN race.name, race.year"
+  },
+  {
+    "question": "Find all Belgian drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Belgian'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Belgian' RETURN driver.forename, driver.surname"
+  },
+  {
+    "question": "List standings with wins greater than 5",
+    "sql": "SELECT standings.driverId, standings.wins FROM standings WHERE standings.wins > 5",
+    "cypher": "MATCH (standing:standings) WHERE standing.wins > 5 RETURN standing.driverId, standing.wins"
+  },
+  {
+    "question": "Show circuits in South Africa",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'South Africa'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'South Africa' RETURN circuit.name, circuit.location"
+  },
+  {
+    "question": "Find all constructors with French nationality",
+    "sql": "SELECT constructors.name FROM constructors WHERE constructors.nationality = 'French'",
+    "cypher": "MATCH (constructor:constructors) WHERE constructor.nationality = 'French' RETURN constructor.name"
+  },
+  {
+    "question": "List drivers born before 1980",
+    "sql": "SELECT drivers.forename, drivers.surname, drivers.dob FROM drivers WHERE drivers.dob < '1980-01-01 00:00:00'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.dob < date('1980-01-01') RETURN driver.forename, driver.surname, driver.dob"
+  },
+  {
+    "question": "Show races from round 3",
+    "sql": "SELECT races.name, races.year FROM races WHERE races.round = 3",
+    "cypher": "MATCH (race:races) WHERE race.round = '3' RETURN race.name, race.year"
+  },
+  {
+    "question": "Find circuits in Mexico",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'Mexico'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'Mexico' RETURN circuit.name, circuit.location"
+  },
+  {
+    "question": "List all South African drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'South African'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'South African' RETURN driver.forename, driver.surname"
+  },
+  {
+    "question": "Show results with laps less than 10",
+    "sql": "SELECT results.resultId, results.laps FROM results WHERE results.laps < 10",
+    "cypher": "MATCH (result:results) WHERE result.laps < 10 RETURN result.resultId, result.laps"
+  },
+  {
+    "question": "Find circuits in Canada",
+    "sql": "SELECT circuits.name, circuits.location FROM circuits WHERE circuits.country = 'Canada'",
+    "cypher": "MATCH (circuit:circuits) WHERE circuit.country = 'Canada' RETURN circuit.name, circuit.location"
+  },
+  {
+    "question": "List all Irish drivers",
+    "sql": "SELECT drivers.forename, drivers.surname FROM drivers WHERE drivers.nationality = 'Irish'",
+    "cypher": "MATCH (driver:drivers) WHERE driver.nationality = 'Irish' RETURN driver.forename, driver.surname"
   }
 ]

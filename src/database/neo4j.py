@@ -22,11 +22,15 @@ def get_neo4j_schema() -> str:
         nodes = []
         for label in labels:
             properties = [
-                key
+                (record["key"], record["type"])
                 for record in session.run(
-                    f"MATCH (n:`{label}`) UNWIND keys(n) AS key RETURN DISTINCT key"
+                    f"""
+                    MATCH (n:`{label}`) 
+                    UNWIND keys(n) AS key 
+                    WITH key, n[key] AS val 
+                    RETURN DISTINCT key, valueType(val) AS type
+                    """
                 )
-                for key in record.values()
             ]
             nodes.append({"label": label, "properties": properties})
 
@@ -57,7 +61,7 @@ def get_neo4j_schema() -> str:
             )
 
         nodes = reduce(
-            lambda acc, node: f"{acc}\nNode: {node['label']}({', '.join(node['properties'])})",
+            lambda acc, node: f"{acc}\nNode: {node['label']}({', '.join(f'{k}: {t}' for k, t in node['properties'])})",
             nodes,
             "",
         )

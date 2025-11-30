@@ -7,7 +7,7 @@ import typer
 
 from constants import REMOTE_MODEL_NAME
 from database.neo4j import get_neo4j_schema
-from database.duckdb import json_schema_generator, get_duckdb_schema
+from database.duckdb import get_duckdb_schema
 from database.setup import get_node_csvs, load_dataset_to_duckdb
 from evaluation.re_evaluation import re_evaluate_results
 from evaluation.remote_eval import evaluate_remote_model
@@ -84,7 +84,7 @@ def generate_schema(dataset_name: DatasetName, task_types : list[TaskType]) -> N
         result = (
         get_neo4j_schema()
         if task_type == TaskType.CYPHER
-        else get_duckdb_schema(dataset_name)
+        else get_duckdb_schema(dataset_name, format=True)
     )
         print(f'------------------{task_type}---------------------')
         print('---------------------------------------------')

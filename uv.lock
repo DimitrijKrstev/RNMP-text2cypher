@@ -517,6 +517,12 @@ wheels = [
 ]
 
 [[package]]
+name = "graphlib"
+version = "0.9.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/68/06/85df946b33098888da6f727bf278716ed33b826eaac94f3d9ed66dabb872/graphlib-0.9.5.tar.gz", hash = "sha256:6b74e169ef0fb92bab15e617f9eb4c60a2d9ad4187cc5e4e4fb24d9601f2437f", size = 8039, upload-time = "2014-06-12T18:11:33.608Z" }
+
+[[package]]
 name = "grpcio"
 version = "1.67.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1951,6 +1957,7 @@ dependencies = [
     { name = "antlr4-python3-runtime" },
     { name = "bitsandbytes", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "duckdb" },
+    { name = "graphlib" },
     { name = "litellm" },
     { name = "matplotlib" },
     { name = "neo4j" },
@@ -1980,6 +1987,7 @@ requires-dist = [
     { name = "antlr4-python3-runtime", specifier = ">=4.13.2" },
     { name = "bitsandbytes", marker = "sys_platform == 'linux' or sys_platform == 'win32'", specifier = ">=0.47.0" },
     { name = "duckdb", specifier = ">=1.3.2" },
+    { name = "graphlib", specifier = ">=0.9.5" },
     { name = "litellm", specifier = ">=1.80.7" },
     { name = "matplotlib", specifier = ">=3.10.7" },
     { name = "neo4j", specifier = ">=5.28.2" },
