@@ -1,563 +1,473 @@
 [
   {
-    "question": "How many points did each British driver score in total?",
-    "sql": "SELECT drivers.forename, drivers.surname, SUM(results.points) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'British' GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'British' RETURN driver.forename, driver.surname, sum(result.points)"
+    "question": "How many points did each driver score in 2005?",
+    "sql": "SELECT drivers.forename, drivers.surname, SUM(results.points) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2005 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2005' RETURN driver.forename, driver.surname, sum(result.points)"
   },
   {
-    "question": "Which races were held at circuits in Italy after 2010?",
-    "sql": "SELECT races.name, races.year, circuits.name FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE circuits.country = 'Italy' AND races.year > 2010",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.country = 'Italy' AND toInteger(race.year) > 2010 RETURN race.name, race.year, circuit.name"
+    "question": "Which British drivers scored points in races held in Italy?",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE drivers.nationality = 'British' AND circuits.country = 'Italy' AND results.points > 0",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE driver.nationality = 'British' AND circuit.country = 'Italy' AND result.points > 0 RETURN DISTINCT driver.forename, driver.surname"
   },
   {
-    "question": "How many race wins does each German driver have?",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'German' AND results.position = 1 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'German' AND result.position = 1 RETURN driver.forename, driver.surname, count(*)"
+    "question": "How many races did each circuit host between 1990 and 2000?",
+    "sql": "SELECT circuits.name, circuits.country, COUNT(races.raceId) FROM circuits JOIN races ON circuits.circuitId = races.circuitId WHERE races.year >= 1990 AND races.year <= 2000 GROUP BY circuits.circuitId, circuits.name, circuits.country",
+    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year >= '1990' AND race.year <= '2000' RETURN circuit.name, circuit.country, count(race)"
   },
   {
-    "question": "List all races and their circuits from the 2019 season ordered by round",
-    "sql": "SELECT races.name, races.round, circuits.name, circuits.country FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE races.year = 2019 ORDER BY races.round",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year = '2019' RETURN race.name, race.round, circuit.name, circuit.country ORDER BY race.round"
+    "question": "List drivers who finished on the podium in races from 2007 or 2008",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE results.position <= 3 AND (races.year = 2007 OR races.year = 2008)",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.position <= 3 AND (race.year = '2007' OR race.year = '2008') RETURN DISTINCT driver.forename, driver.surname"
   },
   {
-    "question": "What is the average points scored per race by each constructor in 2020?",
-    "sql": "SELECT constructors.name, AVG(constructor_results.points) FROM constructors JOIN constructor_results ON constructors.constructorId = constructor_results.constructorId JOIN races ON constructor_results.raceId = races.raceId WHERE races.year = 2020 GROUP BY constructors.constructorId, constructors.name",
-    "cypher": "MATCH (constructor:constructors)-[:RESULTED_IN]->(cr:constructor_results), (race:races)-[:RESULTED_IN]->(cr) WHERE race.year = '2020' RETURN constructor.name, avg(cr.points)"
+    "question": "What is the average grid position for each constructor in 2009?",
+    "sql": "SELECT constructors.name, AVG(results.grid) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE races.year = 2009 GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2009' RETURN constructor.name, avg(result.grid)"
   },
   {
-    "question": "Which drivers qualified in pole position at circuits in the UK?",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN qualifying ON drivers.driverId = qualifying.driverId JOIN races ON qualifying.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE qualifying.position = 1 AND circuits.country = 'UK'",
-    "cypher": "MATCH (driver:drivers)-[:QUALIFIED_IN]->(q:qualifying)-[:FOR_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE q.position = 1 AND circuit.country = 'UK' RETURN DISTINCT driver.forename, driver.surname"
+    "question": "Which German drivers participated in races at circuits in Germany?",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE drivers.nationality = 'German' AND circuits.country = 'Germany'",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE driver.nationality = 'German' AND circuit.country = 'Germany' RETURN DISTINCT driver.forename, driver.surname"
   },
   {
-    "question": "How many podium finishes does each Finnish driver have?",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'Finnish' AND results.position <= 3 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'Finnish' AND result.position <= 3 RETURN driver.forename, driver.surname, count(*)"
+    "question": "How many wins does each driver have in standings after 2000?",
+    "sql": "SELECT drivers.forename, drivers.surname, MAX(standings.wins) FROM drivers JOIN standings ON drivers.driverId = standings.driverId JOIN races ON standings.raceId = races.raceId WHERE races.year > 2000 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED_STANDING]->(standing:standings)<-[:IN_STANDING]-(race:races) WHERE race.year > '2000' RETURN driver.forename, driver.surname, max(standing.wins)"
   },
   {
-    "question": "List races held at circuits with altitude above 500 meters in 2018",
-    "sql": "SELECT races.name, circuits.name, circuits.alt FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE circuits.alt > 500 AND races.year = 2018",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.alt > 500 AND race.year = '2018' RETURN race.name, circuit.name, circuit.alt"
+    "question": "List all races held at circuits with altitude above 200 meters in 2005",
+    "sql": "SELECT races.name, races.round, circuits.name FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE circuits.alt > 200 AND races.year = 2005 ORDER BY races.round",
+    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.alt > 200 AND race.year = '2005' RETURN race.name, race.round, circuit.name ORDER BY race.round"
   },
   {
-    "question": "What is the total number of laps completed by each British constructor?",
-    "sql": "SELECT constructors.name, SUM(results.laps) FROM constructors JOIN results ON constructors.constructorId = results.constructorId WHERE constructors.nationality = 'British' GROUP BY constructors.constructorId, constructors.name",
-    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results) WHERE constructor.nationality = 'British' RETURN constructor.name, sum(result.laps)"
+    "question": "What is the total points scored by Italian constructors in 2008?",
+    "sql": "SELECT constructors.name, SUM(results.points) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE constructors.nationality = 'Italian' AND races.year = 2008 GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE constructor.nationality = 'Italian' AND race.year = '2008' RETURN constructor.name, sum(result.points)"
   },
   {
-    "question": "Which drivers started from grid position 1 and won the race in 2021?",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE results.grid = 1 AND results.position = 1 AND races.year = 2021",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.grid = 1 AND result.position = 1 AND race.year = '2021' RETURN DISTINCT driver.forename, driver.surname"
+    "question": "Which drivers qualified in pole position more than twice in 2006?",
+    "sql": "SELECT drivers.forename, drivers.surname, COUNT(qualifying.qualifyId) FROM drivers JOIN qualifying ON drivers.driverId = qualifying.driverId JOIN races ON qualifying.raceId = races.raceId WHERE qualifying.position = 1 AND races.year = 2006 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:QUALIFIED_IN]->(qualifying:qualifying)-[:FOR_RACE]->(race:races) WHERE qualifying.position = 1 AND race.year = '2006' RETURN driver.forename, driver.surname, count(qualifying)"
   },
   {
-    "question": "How many races did each circuit host between 2015 and 2020?",
-    "sql": "SELECT circuits.name, circuits.country, COUNT(*) FROM circuits JOIN races ON circuits.circuitId = races.circuitId WHERE races.year >= 2015 AND races.year <= 2020 GROUP BY circuits.circuitId, circuits.name, circuits.country",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE toInteger(race.year) >= 2015 AND toInteger(race.year) <= 2020 RETURN circuit.name, circuit.country, count(*)"
+    "question": "List the top 10 drivers by total points in 2007",
+    "sql": "SELECT drivers.forename, drivers.surname, SUM(results.points) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2007 GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY SUM(results.points) DESC LIMIT 10",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2007' RETURN driver.forename, driver.surname, sum(result.points) ORDER BY sum(result.points) DESC LIMIT 10"
   },
   {
-    "question": "List all Spanish drivers and their total career points",
-    "sql": "SELECT drivers.forename, drivers.surname, SUM(results.points) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'Spanish' GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'Spanish' RETURN driver.forename, driver.surname, sum(result.points)"
+    "question": "How many races were held in each country after 1980?",
+    "sql": "SELECT circuits.country, COUNT(races.raceId) FROM circuits JOIN races ON circuits.circuitId = races.circuitId WHERE races.year > 1980 GROUP BY circuits.country ORDER BY COUNT(races.raceId) DESC",
+    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year > '1980' RETURN circuit.country, count(race) ORDER BY count(race) DESC"
   },
   {
-    "question": "Which constructors scored points in races held in Japan?",
-    "sql": "SELECT DISTINCT constructors.name FROM constructors JOIN constructor_results ON constructors.constructorId = constructor_results.constructorId JOIN races ON constructor_results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE circuits.country = 'Japan' AND constructor_results.points > 0",
-    "cypher": "MATCH (constructor:constructors)-[:RESULTED_IN]->(cr:constructor_results), (race:races)-[:RESULTED_IN]->(cr), (race)-[:HELD_AT]->(circuit:circuits) WHERE circuit.country = 'Japan' AND cr.points > 0 RETURN DISTINCT constructor.name"
+    "question": "Which constructors had drivers finish in the top 5 at Monaco?",
+    "sql": "SELECT DISTINCT constructors.name FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE races.name LIKE '%Monaco%' AND results.position <= 5",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.name CONTAINS 'Monaco' AND result.position <= 5 RETURN DISTINCT constructor.name"
   },
   {
-    "question": "What is the maximum points scored in a single race by each driver in 2019?",
-    "sql": "SELECT drivers.forename, drivers.surname, MAX(results.points) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2019 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2019' RETURN driver.forename, driver.surname, max(result.points)"
+    "question": "What is the minimum and maximum laps completed by drivers in 2009 races?",
+    "sql": "SELECT drivers.forename, drivers.surname, MIN(results.laps), MAX(results.laps) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2009 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2009' RETURN driver.forename, driver.surname, min(result.laps), max(result.laps)"
   },
   {
-    "question": "List the top 10 drivers by total points scored in 2020",
-    "sql": "SELECT drivers.forename, drivers.surname, SUM(results.points) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2020 GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY SUM(results.points) DESC LIMIT 10",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2020' RETURN driver.forename, driver.surname, sum(result.points) ORDER BY sum(result.points) DESC LIMIT 10"
+    "question": "List Finnish drivers who scored more than 0 points in British races",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE drivers.nationality = 'Finnish' AND circuits.country = 'UK' AND results.points > 0",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE driver.nationality = 'Finnish' AND circuit.country = 'UK' AND result.points > 0 RETURN DISTINCT driver.forename, driver.surname"
   },
   {
-    "question": "How many qualifying sessions did each Italian constructor participate in?",
-    "sql": "SELECT constructors.name, COUNT(*) FROM constructors JOIN qualifying ON constructors.constructorId = qualifying.constructorId WHERE constructors.nationality = 'Italian' GROUP BY constructors.constructorId, constructors.name",
-    "cypher": "MATCH (constructor:constructors)-[:QUALIFIED_IN]->(q:qualifying) WHERE constructor.nationality = 'Italian' RETURN constructor.name, count(*)"
+    "question": "How many pole positions did each constructor achieve in 2005?",
+    "sql": "SELECT constructors.name, COUNT(qualifying.qualifyId) FROM constructors JOIN qualifying ON constructors.constructorId = qualifying.constructorId JOIN races ON qualifying.raceId = races.raceId WHERE qualifying.position = 1 AND races.year = 2005 GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:QUALIFIED_IN]->(qualifying:qualifying)-[:FOR_RACE]->(race:races) WHERE qualifying.position = 1 AND race.year = '2005' RETURN constructor.name, count(qualifying)"
   },
   {
-    "question": "Which races in 2018 were held at circuits with latitude greater than 45?",
-    "sql": "SELECT races.name, circuits.name, circuits.lat FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE races.year = 2018 AND circuits.lat > 45",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year = '2018' AND circuit.lat > 45 RETURN race.name, circuit.name, circuit.lat"
+    "question": "Which races in 2003 were held at circuits in Europe?",
+    "sql": "SELECT races.name, races.round, circuits.country FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE races.year = 2003 AND circuits.country IN ('UK', 'Italy', 'Spain', 'Monaco', 'Belgium', 'Germany', 'France', 'Hungary') ORDER BY races.round",
+    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year = '2003' AND circuit.country IN ['UK', 'Italy', 'Spain', 'Monaco', 'Belgium', 'Germany', 'France', 'Hungary'] RETURN race.name, race.round, circuit.country ORDER BY race.round"
   },
   {
-    "question": "What is the average grid position for each German driver?",
-    "sql": "SELECT drivers.forename, drivers.surname, AVG(results.grid) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'German' GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'German' RETURN driver.forename, driver.surname, avg(result.grid)"
+    "question": "What is the average finishing position for Brazilian drivers after 1995?",
+    "sql": "SELECT drivers.forename, drivers.surname, AVG(results.position) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE drivers.nationality = 'Brazilian' AND races.year > 1995 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE driver.nationality = 'Brazilian' AND race.year > '1995' RETURN driver.forename, driver.surname, avg(result.position)"
   },
   {
-    "question": "List all drivers who finished on the podium at Monaco Grand Prix",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.name LIKE '%Monaco%' AND results.position <= 3",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.name CONTAINS 'Monaco' AND result.position <= 3 RETURN DISTINCT driver.forename, driver.surname"
+    "question": "List all drivers who started from pole and won in 2008",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE results.grid = 1 AND results.position = 1 AND races.year = 2008",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.grid = 1 AND result.position = 1 AND race.year = '2008' RETURN DISTINCT driver.forename, driver.surname"
   },
   {
-    "question": "How many constructor championship wins does each team have?",
-    "sql": "SELECT constructors.name, COUNT(*) FROM constructors JOIN constructor_standings ON constructors.constructorId = constructor_standings.constructorId WHERE constructor_standings.position = 1 GROUP BY constructors.constructorId, constructors.name",
-    "cypher": "MATCH (constructor:constructors)-[:HAS_STANDING]->(cs:constructor_standings) WHERE cs.position = 1 RETURN constructor.name, count(*)"
+    "question": "How many races did each driver complete more than 50 laps in 2007?",
+    "sql": "SELECT drivers.forename, drivers.surname, COUNT(results.resultId) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE results.laps > 50 AND races.year = 2007 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.laps > 50 AND race.year = '2007' RETURN driver.forename, driver.surname, count(result)"
   },
   {
-    "question": "Which drivers scored more than 100 points in the 2019 season?",
-    "sql": "SELECT drivers.forename, drivers.surname, SUM(results.points) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2019 GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY SUM(results.points) DESC",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2019' RETURN driver.forename, driver.surname, sum(result.points) ORDER BY sum(result.points) DESC"
+    "question": "Which circuits hosted more than 10 races between 1970 and 1990?",
+    "sql": "SELECT circuits.name, circuits.country, COUNT(races.raceId) FROM circuits JOIN races ON circuits.circuitId = races.circuitId WHERE races.year >= 1970 AND races.year <= 1990 GROUP BY circuits.circuitId, circuits.name, circuits.country ORDER BY COUNT(races.raceId) DESC",
+    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year >= '1970' AND race.year <= '1990' RETURN circuit.name, circuit.country, count(race) ORDER BY count(race) DESC"
   },
   {
-    "question": "List all races and circuits from the 2017 season in Europe",
-    "sql": "SELECT races.name, circuits.name, circuits.country FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE races.year = 2017 AND circuits.country IN ('UK', 'Italy', 'Spain', 'Monaco', 'Belgium', 'Germany', 'Hungary', 'Austria')",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year = '2017' AND circuit.country IN ['UK', 'Italy', 'Spain', 'Monaco', 'Belgium', 'Germany', 'Hungary', 'Austria'] RETURN race.name, circuit.name, circuit.country"
+    "question": "What was the best finishing position for each constructor in 2006?",
+    "sql": "SELECT constructors.name, MIN(results.position) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE races.year = 2006 GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2006' RETURN constructor.name, min(result.position)"
   },
   {
-    "question": "What is the total number of race starts for each French driver?",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'French' GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'French' RETURN driver.forename, driver.surname, count(*)"
+    "question": "List British constructors that scored points in Japanese races",
+    "sql": "SELECT DISTINCT constructors.name FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE constructors.nationality = 'British' AND circuits.country = 'Japan' AND results.points > 0",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE constructor.nationality = 'British' AND circuit.country = 'Japan' AND result.points > 0 RETURN DISTINCT constructor.name"
   },
   {
-    "question": "Which constructors have won races at Silverstone?",
-    "sql": "SELECT DISTINCT constructors.name FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE circuits.name LIKE '%Silverstone%' AND results.position = 1",
-    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.name CONTAINS 'Silverstone' AND result.position = 1 RETURN DISTINCT constructor.name"
+    "question": "How many qualifying sessions did drivers from Spain participate in after 2000?",
+    "sql": "SELECT drivers.forename, drivers.surname, COUNT(qualifying.qualifyId) FROM drivers JOIN qualifying ON drivers.driverId = qualifying.driverId JOIN races ON qualifying.raceId = races.raceId WHERE drivers.nationality = 'Spanish' AND races.year > 2000 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:QUALIFIED_IN]->(qualifying:qualifying)-[:FOR_RACE]->(race:races) WHERE driver.nationality = 'Spanish' AND race.year > '2000' RETURN driver.forename, driver.surname, count(qualifying)"
   },
   {
-    "question": "How many pole positions does each driver have in total?",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN qualifying ON drivers.driverId = qualifying.driverId WHERE qualifying.position = 1 GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY COUNT(*) DESC",
-    "cypher": "MATCH (driver:drivers)-[:QUALIFIED_IN]->(q:qualifying) WHERE q.position = 1 RETURN driver.forename, driver.surname, count(*) ORDER BY count(*) DESC"
+    "question": "Which races in 2009 had drivers scoring more than 8 points?",
+    "sql": "SELECT DISTINCT races.name, races.round FROM races JOIN results ON races.raceId = results.raceId WHERE races.year = 2009 AND results.points > 8 ORDER BY races.round",
+    "cypher": "MATCH (result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2009' AND result.points > 8 RETURN DISTINCT race.name, race.round ORDER BY race.round"
   },
   {
-    "question": "List all Brazilian drivers and their race wins",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'Brazilian' AND results.position = 1 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'Brazilian' AND result.position = 1 RETURN driver.forename, driver.surname, count(*)"
+    "question": "What is the total number of race entries for each driver in 2004?",
+    "sql": "SELECT drivers.forename, drivers.surname, COUNT(results.resultId) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2004 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2004' RETURN driver.forename, driver.surname, count(result)"
   },
   {
-    "question": "What is the minimum lap time for each driver in 2020 races?",
-    "sql": "SELECT drivers.forename, drivers.surname, MIN(results.milliseconds) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2020 AND results.milliseconds > 0 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2020' AND result.milliseconds <> '' RETURN driver.forename, driver.surname, min(result.milliseconds)"
+    "question": "List drivers who won races at circuits in Italy or Spain",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE results.position = 1 AND (circuits.country = 'Italy' OR circuits.country = 'Spain')",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE result.position = 1 AND (circuit.country = 'Italy' OR circuit.country = 'Spain') RETURN DISTINCT driver.forename, driver.surname"
   },
   {
-    "question": "Which circuits hosted races in both 2018 and 2019?",
-    "sql": "SELECT DISTINCT circuits.name, circuits.country FROM circuits JOIN races ON circuits.circuitId = races.circuitId WHERE races.year = 2018 OR races.year = 2019",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year = '2018' OR race.year = '2019' RETURN DISTINCT circuit.name, circuit.country"
+    "question": "How many podium finishes did each constructor have in 2003?",
+    "sql": "SELECT constructors.name, COUNT(results.resultId) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE results.position <= 3 AND races.year = 2003 GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.position <= 3 AND race.year = '2003' RETURN constructor.name, count(result)"
   },
   {
-    "question": "How many second-place finishes does each driver have?",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE results.position = 2 GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY COUNT(*) DESC LIMIT 15",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE result.position = 2 RETURN driver.forename, driver.surname, count(*) ORDER BY count(*) DESC LIMIT 15"
+    "question": "Which drivers qualified in the top 3 at Monaco in 2007 or 2008?",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN qualifying ON drivers.driverId = qualifying.driverId JOIN races ON qualifying.raceId = races.raceId WHERE qualifying.position <= 3 AND races.name LIKE '%Monaco%' AND (races.year = 2007 OR races.year = 2008)",
+    "cypher": "MATCH (driver:drivers)-[:QUALIFIED_IN]->(qualifying:qualifying)-[:FOR_RACE]->(race:races) WHERE qualifying.position <= 3 AND race.name CONTAINS 'Monaco' AND (race.year = '2007' OR race.year = '2008') RETURN DISTINCT driver.forename, driver.surname"
   },
   {
-    "question": "List races from 2021 at circuits below sea level",
-    "sql": "SELECT races.name, circuits.name, circuits.alt FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE races.year = 2021 AND circuits.alt < 0",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year = '2021' AND circuit.alt < 0 RETURN race.name, circuit.name, circuit.alt"
+    "question": "What is the average points per race for Australian drivers after 1990?",
+    "sql": "SELECT drivers.forename, drivers.surname, AVG(results.points) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE drivers.nationality = 'Australian' AND races.year > 1990 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE driver.nationality = 'Australian' AND race.year > '1990' RETURN driver.forename, driver.surname, avg(result.points)"
   },
   {
-    "question": "What is the average finishing position for each Japanese constructor?",
-    "sql": "SELECT constructors.name, AVG(results.position) FROM constructors JOIN results ON constructors.constructorId = results.constructorId WHERE constructors.nationality = 'Japanese' AND results.position > 0 GROUP BY constructors.constructorId, constructors.name",
-    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results) WHERE constructor.nationality = 'Japanese' AND result.position > 0 RETURN constructor.name, avg(result.position)"
+    "question": "List all races at circuits with latitude above 45 in 2005",
+    "sql": "SELECT races.name, circuits.name, circuits.lat FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE circuits.lat > 45 AND races.year = 2005 ORDER BY races.round",
+    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.lat > 45 AND race.year = '2005' RETURN race.name, circuit.name, circuit.lat ORDER BY race.round"
   },
   {
-    "question": "Which drivers won races in their home country?",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname, circuits.country FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE results.position = 1 AND drivers.nationality = 'British' AND circuits.country = 'UK'",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE result.position = 1 AND driver.nationality = 'British' AND circuit.country = 'UK' RETURN DISTINCT driver.forename, driver.surname, circuit.country"
+    "question": "How many times did each driver start from the front row in 2008?",
+    "sql": "SELECT drivers.forename, drivers.surname, COUNT(results.resultId) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE results.grid <= 2 AND races.year = 2008 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.grid <= 2 AND race.year = '2008' RETURN driver.forename, driver.surname, count(result)"
   },
   {
-    "question": "How many fastest laps has each driver achieved?",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE results.rank = 1 GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY COUNT(*) DESC LIMIT 10",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE result.rank = 1 RETURN driver.forename, driver.surname, count(*) ORDER BY count(*) DESC LIMIT 10"
+    "question": "Which constructors had multiple drivers finish in the points in 2006?",
+    "sql": "SELECT constructors.name, COUNT(results.resultId) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE results.points > 0 AND races.year = 2006 GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.points > 0 AND race.year = '2006' RETURN constructor.name, count(result)"
   },
   {
-    "question": "List all Australian drivers and their total races",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'Australian' GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'Australian' RETURN driver.forename, driver.surname, count(*)"
+    "question": "List the drivers who raced in all rounds of the 2007 season",
+    "sql": "SELECT drivers.forename, drivers.surname, COUNT(results.resultId) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2007 GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY COUNT(results.resultId) DESC",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2007' RETURN driver.forename, driver.surname, count(result) ORDER BY count(result) DESC"
   },
   {
-    "question": "Which races had drivers start from grid position 20 or lower in 2020?",
-    "sql": "SELECT DISTINCT races.name, races.round FROM races JOIN results ON races.raceId = results.raceId WHERE races.year = 2020 AND results.grid >= 20",
-    "cypher": "MATCH (result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2020' AND result.grid >= 20 RETURN DISTINCT race.name, race.round"
+    "question": "What is the total laps completed by each constructor in 2009?",
+    "sql": "SELECT constructors.name, SUM(results.laps) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE races.year = 2009 GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2009' RETURN constructor.name, sum(result.laps)"
   },
   {
-    "question": "What is the total points for each constructor in 2021?",
-    "sql": "SELECT constructors.name, SUM(constructor_results.points) FROM constructors JOIN constructor_results ON constructors.constructorId = constructor_results.constructorId JOIN races ON constructor_results.raceId = races.raceId WHERE races.year = 2021 GROUP BY constructors.constructorId, constructors.name ORDER BY SUM(constructor_results.points) DESC",
-    "cypher": "MATCH (constructor:constructors)-[:RESULTED_IN]->(cr:constructor_results), (race:races)-[:RESULTED_IN]->(cr) WHERE race.year = '2021' RETURN constructor.name, sum(cr.points) ORDER BY sum(cr.points) DESC"
+    "question": "Which drivers from Canada or USA won races after 1985?",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname, drivers.nationality FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE results.position = 1 AND (drivers.nationality = 'Canadian' OR drivers.nationality = 'American') AND races.year > 1985",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.position = 1 AND (driver.nationality = 'Canadian' OR driver.nationality = 'American') AND race.year > '1985' RETURN DISTINCT driver.forename, driver.surname, driver.nationality"
   },
   {
-    "question": "Which drivers finished ahead of their grid position most often in 2019?",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2019 AND results.position < results.grid AND results.position > 0 GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY COUNT(*) DESC LIMIT 10",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2019' AND result.position < result.grid AND result.position > 0 RETURN driver.forename, driver.surname, count(*) ORDER BY count(*) DESC LIMIT 10"
+    "question": "How many different circuits did races occur at in each decade?",
+    "sql": "SELECT circuits.name, circuits.country, COUNT(races.raceId) FROM circuits JOIN races ON circuits.circuitId = races.circuitId WHERE races.year >= 1990 AND races.year < 2000 GROUP BY circuits.circuitId, circuits.name, circuits.country",
+    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year >= '1990' AND race.year < '2000' RETURN circuit.name, circuit.country, count(race)"
   },
   {
-    "question": "List all Dutch drivers and their podium finishes",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'Dutch' AND results.position <= 3 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'Dutch' AND result.position <= 3 RETURN driver.forename, driver.surname, count(*)"
+    "question": "List drivers who scored points in their first 5 grid positions in 2005",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE results.grid <= 5 AND results.points > 0 AND races.year = 2005",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.grid <= 5 AND result.points > 0 AND race.year = '2005' RETURN DISTINCT driver.forename, driver.surname"
   },
   {
-    "question": "How many races did each circuit in Asia host?",
-    "sql": "SELECT circuits.name, circuits.country, COUNT(*) FROM circuits JOIN races ON circuits.circuitId = races.circuitId WHERE circuits.country IN ('Japan', 'China', 'Malaysia', 'Singapore', 'Bahrain', 'UAE') GROUP BY circuits.circuitId, circuits.name, circuits.country",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.country IN ['Japan', 'China', 'Malaysia', 'Singapore', 'Bahrain', 'UAE'] RETURN circuit.name, circuit.country, count(*)"
+    "question": "What was the highest points scored in a single race by each driver in 2008?",
+    "sql": "SELECT drivers.forename, drivers.surname, MAX(results.points) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2008 GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY MAX(results.points) DESC",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2008' RETURN driver.forename, driver.surname, max(result.points) ORDER BY max(result.points) DESC"
   },
   {
-    "question": "What is the average points per race for each Mercedes driver?",
-    "sql": "SELECT drivers.forename, drivers.surname, AVG(results.points) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN constructors ON results.constructorId = constructors.constructorId WHERE constructors.name LIKE '%Mercedes%' GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)<-[:ACHIEVED]-(constructor:constructors) WHERE constructor.name CONTAINS 'Mercedes' RETURN driver.forename, driver.surname, avg(result.points)"
+    "question": "Which races in 2004 were held at circuits in Asia?",
+    "sql": "SELECT races.name, races.round, circuits.country FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE races.year = 2004 AND circuits.country IN ('Japan', 'Malaysia', 'China', 'Bahrain') ORDER BY races.round",
+    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year = '2004' AND circuit.country IN ['Japan', 'Malaysia', 'China', 'Bahrain'] RETURN race.name, race.round, circuit.country ORDER BY race.round"
   },
   {
-    "question": "Which constructors had drivers qualify in top 3 in 2020?",
-    "sql": "SELECT DISTINCT constructors.name FROM constructors JOIN qualifying ON constructors.constructorId = qualifying.constructorId JOIN races ON qualifying.raceId = races.raceId WHERE qualifying.position <= 3 AND races.year = 2020",
-    "cypher": "MATCH (constructor:constructors)-[:QUALIFIED_IN]->(q:qualifying)-[:FOR_RACE]->(race:races) WHERE q.position <= 3 AND race.year = '2020' RETURN DISTINCT constructor.name"
+    "question": "How many races did French constructors participate in during 2007?",
+    "sql": "SELECT constructors.name, COUNT(DISTINCT results.raceId) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE constructors.nationality = 'French' AND races.year = 2007 GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE constructor.nationality = 'French' AND race.year = '2007' RETURN constructor.name, count(DISTINCT race)"
   },
   {
-    "question": "How many races has each Mexican driver competed in?",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'Mexican' GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'Mexican' RETURN driver.forename, driver.surname, count(*)"
+    "question": "List the top 5 drivers by average qualifying position in 2006",
+    "sql": "SELECT drivers.forename, drivers.surname, AVG(qualifying.position) FROM drivers JOIN qualifying ON drivers.driverId = qualifying.driverId JOIN races ON qualifying.raceId = races.raceId WHERE races.year = 2006 GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY AVG(qualifying.position) LIMIT 5",
+    "cypher": "MATCH (driver:drivers)-[:QUALIFIED_IN]->(qualifying:qualifying)-[:FOR_RACE]->(race:races) WHERE race.year = '2006' RETURN driver.forename, driver.surname, avg(qualifying.position) ORDER BY avg(qualifying.position) LIMIT 5"
   },
   {
-    "question": "List races where drivers completed more than 60 laps in 2021",
-    "sql": "SELECT DISTINCT races.name, races.round FROM races JOIN results ON races.raceId = results.raceId WHERE races.year = 2021 AND results.laps > 60",
-    "cypher": "MATCH (result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2021' AND result.laps > 60 RETURN DISTINCT race.name, race.round"
+    "question": "Which circuits in Europe hosted races in both 2000 and 2005?",
+    "sql": "SELECT DISTINCT circuits.name, circuits.country FROM circuits JOIN races ON circuits.circuitId = races.circuitId WHERE circuits.country IN ('UK', 'Italy', 'Spain', 'Monaco', 'Belgium', 'Germany', 'France') AND (races.year = 2000 OR races.year = 2005)",
+    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.country IN ['UK', 'Italy', 'Spain', 'Monaco', 'Belgium', 'Germany', 'France'] AND (race.year = '2000' OR race.year = '2005') RETURN DISTINCT circuit.name, circuit.country"
   },
   {
-    "question": "What is the total number of wins for each Austrian constructor?",
-    "sql": "SELECT constructors.name, COUNT(*) FROM constructors JOIN results ON constructors.constructorId = results.constructorId WHERE constructors.nationality = 'Austrian' AND results.position = 1 GROUP BY constructors.constructorId, constructors.name",
-    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results) WHERE constructor.nationality = 'Austrian' AND result.position = 1 RETURN constructor.name, count(*)"
+    "question": "What is the average grid position for each driver in races at Monaco?",
+    "sql": "SELECT drivers.forename, drivers.surname, AVG(results.grid) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.name LIKE '%Monaco%' GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.name CONTAINS 'Monaco' RETURN driver.forename, driver.surname, avg(result.grid)"
   },
   {
-    "question": "Which drivers had their best qualifying position at Monza?",
-    "sql": "SELECT drivers.forename, drivers.surname, MIN(qualifying.position) FROM drivers JOIN qualifying ON drivers.driverId = qualifying.driverId JOIN races ON qualifying.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE circuits.name LIKE '%Monza%' GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY MIN(qualifying.position) LIMIT 10",
-    "cypher": "MATCH (driver:drivers)-[:QUALIFIED_IN]->(q:qualifying)-[:FOR_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.name CONTAINS 'Monza' RETURN driver.forename, driver.surname, min(q.position) ORDER BY min(q.position) LIMIT 10"
+    "question": "How many wins did each constructor achieve in races held in Germany?",
+    "sql": "SELECT constructors.name, COUNT(results.resultId) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE results.position = 1 AND circuits.country = 'Germany' GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE result.position = 1 AND circuit.country = 'Germany' RETURN constructor.name, count(result)"
   },
   {
-    "question": "How many points did each constructor score in the 2018 season?",
-    "sql": "SELECT constructors.name, SUM(constructor_results.points) FROM constructors JOIN constructor_results ON constructors.constructorId = constructor_results.constructorId JOIN races ON constructor_results.raceId = races.raceId WHERE races.year = 2018 GROUP BY constructors.constructorId, constructors.name ORDER BY SUM(constructor_results.points) DESC",
-    "cypher": "MATCH (constructor:constructors)-[:RESULTED_IN]->(cr:constructor_results), (race:races)-[:RESULTED_IN]->(cr) WHERE race.year = '2018' RETURN constructor.name, sum(cr.points) ORDER BY sum(cr.points) DESC"
+    "question": "List all Japanese drivers who competed in races after 1985",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE drivers.nationality = 'Japanese' AND races.year > 1985",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE driver.nationality = 'Japanese' AND race.year > '1985' RETURN DISTINCT driver.forename, driver.surname"
   },
   {
-    "question": "List all Canadian drivers with their total career wins",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'Canadian' AND results.position = 1 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'Canadian' AND result.position = 1 RETURN driver.forename, driver.surname, count(*)"
+    "question": "What is the total points for each constructor in rounds 1 through 5 of 2009?",
+    "sql": "SELECT constructors.name, SUM(results.points) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE races.year = 2009 AND races.round <= 5 GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2009' AND race.round <= '5' RETURN constructor.name, sum(result.points)"
   },
   {
-    "question": "Which circuits have hosted more than 30 races?",
-    "sql": "SELECT circuits.name, circuits.country, COUNT(*) FROM circuits JOIN races ON circuits.circuitId = races.circuitId GROUP BY circuits.circuitId, circuits.name, circuits.country ORDER BY COUNT(*) DESC",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) RETURN circuit.name, circuit.country, count(*) ORDER BY count(*) DESC"
+    "question": "Which drivers finished every race they started in 2003?",
+    "sql": "SELECT drivers.forename, drivers.surname, COUNT(results.resultId) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2003 AND results.laps > 0 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2003' AND result.laps > 0 RETURN driver.forename, driver.surname, count(result)"
   },
   {
-    "question": "What is the average number of laps completed per race by British drivers?",
-    "sql": "SELECT drivers.forename, drivers.surname, AVG(results.laps) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'British' GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'British' RETURN driver.forename, driver.surname, avg(result.laps)"
+    "question": "List constructors that had drivers qualify in top 5 in 2008",
+    "sql": "SELECT DISTINCT constructors.name FROM constructors JOIN qualifying ON constructors.constructorId = qualifying.constructorId JOIN races ON qualifying.raceId = races.raceId WHERE qualifying.position <= 5 AND races.year = 2008",
+    "cypher": "MATCH (constructor:constructors)-[:QUALIFIED_IN]->(qualifying:qualifying)-[:FOR_RACE]->(race:races) WHERE qualifying.position <= 5 AND race.year = '2008' RETURN DISTINCT constructor.name"
   },
   {
-    "question": "Which drivers scored points in races at Spa-Francorchamps?",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE circuits.name LIKE '%Spa%' AND results.points > 0",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.name CONTAINS 'Spa' AND result.points > 0 RETURN DISTINCT driver.forename, driver.surname"
+    "question": "How many second place finishes did each driver have in 2007?",
+    "sql": "SELECT drivers.forename, drivers.surname, COUNT(results.resultId) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE results.position = 2 AND races.year = 2007 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.position = 2 AND race.year = '2007' RETURN driver.forename, driver.surname, count(result)"
   },
   {
-    "question": "How many retirements did each constructor have in 2019?",
-    "sql": "SELECT constructors.name, COUNT(*) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE races.year = 2019 AND results.position = 0 GROUP BY constructors.constructorId, constructors.name",
-    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2019' AND result.position = 0 RETURN constructor.name, count(*)"
+  "question": "Which three races were held at the lowest-altitude circuits?",
+  "sql": "SELECT races.name, circuits.name FROM races JOIN circuits ON races.circuitId = circuits.circuitId ORDER BY circuits.alt ASC LIMIT 3",
+  "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) RETURN race.name, circuit.name ORDER BY circuit.alt ASC LIMIT 3"
   },
   {
-    "question": "List races from 2020 held at circuits in the Americas",
-    "sql": "SELECT races.name, circuits.name, circuits.country FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE races.year = 2020 AND circuits.country IN ('USA', 'Brazil', 'Mexico', 'Canada')",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year = '2020' AND circuit.country IN ['USA', 'Brazil', 'Mexico', 'Canada'] RETURN race.name, circuit.name, circuit.country"
+    "question": "Which drivers scored points in more than 10 races in 2005?",
+    "sql": "SELECT drivers.forename, drivers.surname, COUNT(results.resultId) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE results.points > 0 AND races.year = 2005 GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY COUNT(results.resultId) DESC",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.points > 0 AND race.year = '2005' RETURN driver.forename, driver.surname, count(result) ORDER BY count(result) DESC"
   },
   {
-    "question": "What is the total number of third-place finishes for each driver?",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE results.position = 3 GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY COUNT(*) DESC LIMIT 15",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE result.position = 3 RETURN driver.forename, driver.surname, count(*) ORDER BY count(*) DESC LIMIT 15"
+    "question": "List all races where Italian constructors had a driver on the podium",
+    "sql": "SELECT DISTINCT races.name, races.year FROM races JOIN results ON races.raceId = results.raceId JOIN constructors ON results.constructorId = constructors.constructorId WHERE constructors.nationality = 'Italian' AND results.position <= 3 ORDER BY races.year",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE constructor.nationality = 'Italian' AND result.position <= 3 RETURN DISTINCT race.name, race.year ORDER BY race.year"
   },
   {
-    "question": "Which Italian constructors have won races?",
-    "sql": "SELECT DISTINCT constructors.name FROM constructors JOIN results ON constructors.constructorId = results.constructorId WHERE constructors.nationality = 'Italian' AND results.position = 1",
-    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results) WHERE constructor.nationality = 'Italian' AND result.position = 1 RETURN DISTINCT constructor.name"
+    "question": "What is the average laps completed per race for each constructor in 2006?",
+    "sql": "SELECT constructors.name, AVG(results.laps) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE races.year = 2006 GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2006' RETURN constructor.name, avg(result.laps)"
   },
   {
-    "question": "How many races did each driver complete without scoring points in 2021?",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2021 AND results.points = 0 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2021' AND result.points = 0 RETURN driver.forename, driver.surname, count(*)"
+    "question": "Which drivers from South America competed in races after 2000?",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname, drivers.nationality FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE drivers.nationality IN ('Brazilian', 'Argentine', 'Colombian', 'Venezuelan') AND races.year > 2000",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE driver.nationality IN ['Brazilian', 'Argentine', 'Colombian', 'Venezuelan'] AND race.year > '2000' RETURN DISTINCT driver.forename, driver.surname, driver.nationality"
   },
   {
-    "question": "List all races held at circuits with longitude between -10 and 30",
-    "sql": "SELECT races.name, races.year, circuits.name FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE circuits.lng >= -10 AND circuits.lng <= 30",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.lng >= -10 AND circuit.lng <= 30 RETURN race.name, race.year, circuit.name"
+    "question": "How many times did each driver start from grid position 1 but not win?",
+    "sql": "SELECT drivers.forename, drivers.surname, COUNT(results.resultId) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE results.grid = 1 AND results.position > 1 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.grid = 1 AND result.position > 1 RETURN driver.forename, driver.surname, count(result)"
   },
   {
-    "question": "What is the maximum number of wins in a season for each driver?",
-    "sql": "SELECT drivers.forename, drivers.surname, MAX(standings.wins) FROM drivers JOIN standings ON drivers.driverId = standings.driverId GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY MAX(standings.wins) DESC LIMIT 10",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED_STANDING]->(standing:standings) RETURN driver.forename, driver.surname, max(standing.wins) ORDER BY max(standing.wins) DESC LIMIT 10"
+    "question": "List the races in 2009 ordered by round with circuit information",
+    "sql": "SELECT races.name, races.round, circuits.name, circuits.country FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE races.year = 2009 ORDER BY races.round",
+    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year = '2009' RETURN race.name, race.round, circuit.name, circuit.country ORDER BY race.round"
   },
   {
-    "question": "Which drivers have competed for both Ferrari and McLaren?",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN constructors ON results.constructorId = constructors.constructorId WHERE constructors.name = 'Ferrari' OR constructors.name = 'McLaren'",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)<-[:ACHIEVED]-(constructor:constructors) WHERE constructor.name = 'Ferrari' OR constructor.name = 'McLaren' RETURN DISTINCT driver.forename, driver.surname"
+    "question": "What is the maximum points scored by each constructor in a single race in 2008?",
+    "sql": "SELECT constructors.name, MAX(results.points) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE races.year = 2008 GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2008' RETURN constructor.name, max(result.points)"
   },
   {
-    "question": "How many poles has each constructor achieved in 2020?",
-    "sql": "SELECT constructors.name, COUNT(*) FROM constructors JOIN qualifying ON constructors.constructorId = qualifying.constructorId JOIN races ON qualifying.raceId = races.raceId WHERE qualifying.position = 1 AND races.year = 2020 GROUP BY constructors.constructorId, constructors.name",
-    "cypher": "MATCH (constructor:constructors)-[:QUALIFIED_IN]->(q:qualifying)-[:FOR_RACE]->(race:races) WHERE q.position = 1 AND race.year = '2020' RETURN constructor.name, count(*)"
+    "question": "Which drivers qualified in the top 10 at circuits in the USA?",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN qualifying ON drivers.driverId = qualifying.driverId JOIN races ON qualifying.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE qualifying.position <= 10 AND circuits.country = 'USA'",
+    "cypher": "MATCH (driver:drivers)-[:QUALIFIED_IN]->(qualifying:qualifying)-[:FOR_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE qualifying.position <= 10 AND circuit.country = 'USA' RETURN DISTINCT driver.forename, driver.surname"
   },
   {
-    "question": "List the top 5 circuits by total races hosted",
-    "sql": "SELECT circuits.name, circuits.country, COUNT(*) FROM circuits JOIN races ON circuits.circuitId = races.circuitId GROUP BY circuits.circuitId, circuits.name, circuits.country ORDER BY COUNT(*) DESC LIMIT 5",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) RETURN circuit.name, circuit.country, count(*) ORDER BY count(*) DESC LIMIT 5"
+    "question": "How many races did each circuit host in the 2000s?",
+    "sql": "SELECT circuits.name, circuits.country, COUNT(races.raceId) FROM circuits JOIN races ON circuits.circuitId = races.circuitId WHERE races.year >= 2000 AND races.year <= 2009 GROUP BY circuits.circuitId, circuits.name, circuits.country ORDER BY COUNT(races.raceId) DESC",
+    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year >= '2000' AND race.year <= '2009' RETURN circuit.name, circuit.country, count(race) ORDER BY count(race) DESC"
   },
   {
-    "question": "What is the total points scored by each Belgian driver?",
-    "sql": "SELECT drivers.forename, drivers.surname, SUM(results.points) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'Belgian' GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'Belgian' RETURN driver.forename, driver.surname, sum(result.points)"
+    "question": "List drivers who finished races with more than 60 laps in 2007",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE results.laps > 60 AND races.year = 2007",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.laps > 60 AND race.year = '2007' RETURN DISTINCT driver.forename, driver.surname"
   },
   {
-    "question": "Which constructors scored more than 200 points in 2019?",
-    "sql": "SELECT constructors.name, SUM(constructor_results.points) FROM constructors JOIN constructor_results ON constructors.constructorId = constructor_results.constructorId JOIN races ON constructor_results.raceId = races.raceId WHERE races.year = 2019 GROUP BY constructors.constructorId, constructors.name ORDER BY SUM(constructor_results.points) DESC",
-    "cypher": "MATCH (constructor:constructors)-[:RESULTED_IN]->(cr:constructor_results), (race:races)-[:RESULTED_IN]->(cr) WHERE race.year = '2019' RETURN constructor.name, sum(cr.points) ORDER BY sum(cr.points) DESC"
+    "question": "What is the average finishing position for German constructors after 1995?",
+    "sql": "SELECT constructors.name, AVG(results.position) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE constructors.nationality = 'German' AND races.year > 1995 GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE constructor.nationality = 'German' AND race.year > '1995' RETURN constructor.name, avg(result.position)"
   },
   {
-    "question": "How many front row starts does each driver have?",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE results.grid <= 2 GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY COUNT(*) DESC LIMIT 15",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE result.grid <= 2 RETURN driver.forename, driver.surname, count(*) ORDER BY count(*) DESC LIMIT 15"
+    "question": "Which races in 2006 or 2007 were held at street circuits?",
+    "sql": "SELECT races.name, races.year, circuits.name FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE (races.year = 2006 OR races.year = 2007) AND circuits.name LIKE '%Street%' OR circuits.name LIKE '%Monaco%'",
+    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE (race.year = '2006' OR race.year = '2007') AND (circuit.name CONTAINS 'Street' OR circuit.name CONTAINS 'Monaco') RETURN race.name, race.year, circuit.name"
   },
   {
-    "question": "List all races from 2022 at circuits in the Middle East",
-    "sql": "SELECT races.name, circuits.name, circuits.country FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE races.year = 2022 AND circuits.country IN ('Bahrain', 'UAE', 'Saudi Arabia', 'Qatar')",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year = '2022' AND circuit.country IN ['Bahrain', 'UAE', 'Saudi Arabia', 'Qatar'] RETURN race.name, circuit.name, circuit.country"
+    "question": "How many drivers from each nationality competed in 2008?",
+    "sql": "SELECT drivers.nationality, COUNT(DISTINCT drivers.driverId) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2008 GROUP BY drivers.nationality ORDER BY COUNT(DISTINCT drivers.driverId) DESC",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2008' RETURN driver.nationality, count(DISTINCT driver) ORDER BY count(DISTINCT driver) DESC"
   },
   {
-    "question": "What is the average finishing position for each Swiss constructor?",
-    "sql": "SELECT constructors.name, AVG(results.position) FROM constructors JOIN results ON constructors.constructorId = results.constructorId WHERE constructors.nationality = 'Swiss' AND results.position > 0 GROUP BY constructors.constructorId, constructors.name",
-    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results) WHERE constructor.nationality = 'Swiss' AND result.position > 0 RETURN constructor.name, avg(result.position)"
+    "question": "List constructors that won races at circuits in Italy after 1980",
+    "sql": "SELECT DISTINCT constructors.name FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE results.position = 1 AND circuits.country = 'Italy' AND races.year > 1980",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE result.position = 1 AND circuit.country = 'Italy' AND race.year > '1980' RETURN DISTINCT constructor.name"
   },
   {
-    "question": "Which drivers started last and finished in the points?",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE results.grid >= 20 AND results.points > 0",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE result.grid >= 20 AND result.points > 0 RETURN DISTINCT driver.forename, driver.surname"
+    "question": "What is the sum of points for drivers who started from the top 3 grid positions in 2009?",
+    "sql": "SELECT drivers.forename, drivers.surname, SUM(results.points) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE results.grid <= 3 AND races.year = 2009 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.grid <= 3 AND race.year = '2009' RETURN driver.forename, driver.surname, sum(result.points)"
   },
   {
-    "question": "How many races were held at each circuit in 2021?",
-    "sql": "SELECT circuits.name, COUNT(*) FROM circuits JOIN races ON circuits.circuitId = races.circuitId WHERE races.year = 2021 GROUP BY circuits.circuitId, circuits.name",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year = '2021' RETURN circuit.name, count(*)"
+    "question": "Which drivers competed for British constructors in 2005?",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN constructors ON results.constructorId = constructors.constructorId JOIN races ON results.raceId = races.raceId WHERE constructors.nationality = 'British' AND races.year = 2005",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races), (constructor:constructors)-[:ACHIEVED]->(result) WHERE constructor.nationality = 'British' AND race.year = '2005' RETURN DISTINCT driver.forename, driver.surname"
   },
   {
-    "question": "What is the total number of laps led by each driver in 2020?",
-    "sql": "SELECT drivers.forename, drivers.surname, SUM(results.laps) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2020 AND results.position = 1 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2020' AND result.position = 1 RETURN driver.forename, driver.surname, sum(result.laps)"
+    "question": "How many different drivers won races for each constructor?",
+    "sql": "SELECT constructors.name, COUNT(DISTINCT results.driverId) FROM constructors JOIN results ON constructors.constructorId = results.constructorId WHERE results.position = 1 GROUP BY constructors.constructorId, constructors.name ORDER BY COUNT(DISTINCT results.driverId) DESC",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results) WHERE result.position = 1 RETURN constructor.name, count(DISTINCT result.driverId) ORDER BY count(DISTINCT result.driverId) DESC"
   },
   {
-    "question": "Which drivers competed in races at circuits in Germany?",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE circuits.country = 'Germany'",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.country = 'Germany' RETURN DISTINCT driver.forename, driver.surname"
+    "question": "List all races from 2008 with the circuit location and country",
+    "sql": "SELECT races.name, races.round, circuits.location, circuits.country FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE races.year = 2008 ORDER BY races.round",
+    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year = '2008' RETURN race.name, race.round, circuit.location, circuit.country ORDER BY race.round"
   },
   {
-    "question": "How many qualifying top 10 positions does each driver have?",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN qualifying ON drivers.driverId = qualifying.driverId WHERE qualifying.position <= 10 GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY COUNT(*) DESC LIMIT 20",
-    "cypher": "MATCH (driver:drivers)-[:QUALIFIED_IN]->(q:qualifying) WHERE q.position <= 10 RETURN driver.forename, driver.surname, count(*) ORDER BY count(*) DESC LIMIT 20"
+    "question": "What is the total number of fastest laps for each driver in 2006?",
+    "sql": "SELECT drivers.forename, drivers.surname, COUNT(results.resultId) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE results.rank = 1 AND races.year = 2006 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.rank = 1 AND race.year = '2006' RETURN driver.forename, driver.surname, count(result)"
   },
   {
-    "question": "List the total wins for each constructor in 2021",
-    "sql": "SELECT constructors.name, COUNT(*) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE results.position = 1 AND races.year = 2021 GROUP BY constructors.constructorId, constructors.name",
-    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.position = 1 AND race.year = '2021' RETURN constructor.name, count(*)"
+    "question": "Which circuits in countries with longitude less than 0 hosted races after 1990?",
+    "sql": "SELECT DISTINCT circuits.name, circuits.country, circuits.lng FROM circuits JOIN races ON circuits.circuitId = races.circuitId WHERE circuits.lng < 0 AND races.year > 1990",
+    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.lng < 0 AND race.year > '1990' RETURN DISTINCT circuit.name, circuit.country, circuit.lng"
   },
   {
-    "question": "What is the average grid position for races at Monaco?",
-    "sql": "SELECT drivers.forename, drivers.surname, AVG(results.grid) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.name LIKE '%Monaco%' GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY AVG(results.grid) LIMIT 10",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.name CONTAINS 'Monaco' RETURN driver.forename, driver.surname, avg(result.grid) ORDER BY avg(result.grid) LIMIT 10"
+    "question": "How many podiums did each driver achieve at circuits in Japan?",
+    "sql": "SELECT drivers.forename, drivers.surname, COUNT(results.resultId) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE results.position <= 3 AND circuits.country = 'Japan' GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE result.position <= 3 AND circuit.country = 'Japan' RETURN driver.forename, driver.surname, count(result)"
   },
   {
-    "question": "Which Danish drivers have scored podium finishes?",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'Danish' AND results.position <= 3",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'Danish' AND result.position <= 3 RETURN DISTINCT driver.forename, driver.surname"
+    "question": "List the races in 2007 where a driver scored 10 points",
+    "sql": "SELECT DISTINCT races.name, races.round FROM races JOIN results ON races.raceId = results.raceId WHERE races.year = 2007 AND results.points = 10 ORDER BY races.round",
+    "cypher": "MATCH (result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2007' AND result.points = 10 RETURN DISTINCT race.name, race.round ORDER BY race.round"
   },
   {
-    "question": "How many races were held at circuits above 2000 meters altitude?",
-    "sql": "SELECT circuits.name, COUNT(*) FROM circuits JOIN races ON circuits.circuitId = races.circuitId WHERE circuits.alt > 2000 GROUP BY circuits.circuitId, circuits.name",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.alt > 2000 RETURN circuit.name, count(*)"
+    "question": "What is the minimum grid position achieved by each constructor in 2008?",
+    "sql": "SELECT constructors.name, MIN(results.grid) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE races.year = 2008 GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2008' RETURN constructor.name, min(result.grid)"
   },
   {
-    "question": "What is the total points for each driver in the 2017 season?",
-    "sql": "SELECT drivers.forename, drivers.surname, SUM(results.points) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2017 GROUP BY drivers.driverId, drivers.forename, drivers.surname ORDER BY SUM(results.points) DESC",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2017' RETURN driver.forename, driver.surname, sum(result.points) ORDER BY sum(result.points) DESC"
+    "question": "Which drivers competed in races at circuits with altitude over 1000 meters?",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE circuits.alt > 1000",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.alt > 1000 RETURN DISTINCT driver.forename, driver.surname"
   },
   {
-    "question": "Which constructors have had drivers finish on the podium in 2022?",
-    "sql": "SELECT DISTINCT constructors.name FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE results.position <= 3 AND races.year = 2022",
-    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.position <= 3 AND race.year = '2022' RETURN DISTINCT constructor.name"
+    "question": "How many races did each constructor enter in 2004?",
+    "sql": "SELECT constructors.name, COUNT(DISTINCT results.raceId) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE races.year = 2004 GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2004' RETURN constructor.name, count(DISTINCT race)"
   },
   {
-    "question": "How many races has each circuit in Europe hosted since 2010?",
-    "sql": "SELECT circuits.name, circuits.country, COUNT(*) FROM circuits JOIN races ON circuits.circuitId = races.circuitId WHERE circuits.country IN ('UK', 'Italy', 'Spain', 'Monaco', 'Belgium', 'Germany', 'Hungary', 'Austria', 'France', 'Netherlands', 'Portugal') AND races.year >= 2010 GROUP BY circuits.circuitId, circuits.name, circuits.country",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.country IN ['UK', 'Italy', 'Spain', 'Monaco', 'Belgium', 'Germany', 'Hungary', 'Austria', 'France', 'Netherlands', 'Portugal'] AND toInteger(race.year) >= 2010 RETURN circuit.name, circuit.country, count(*)"
+    "question": "List drivers who scored more than 5 points at Belgian races",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE results.points > 5 AND circuits.country = 'Belgium'",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE result.points > 5 AND circuit.country = 'Belgium' RETURN DISTINCT driver.forename, driver.surname"
   },
   {
-    "question": "List drivers who have never won a race but scored podiums",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE results.position = 2 OR results.position = 3",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE result.position = 2 OR result.position = 3 RETURN DISTINCT driver.forename, driver.surname"
+    "question": "What is the average qualifying position for British drivers in 2006?",
+    "sql": "SELECT drivers.forename, drivers.surname, AVG(qualifying.position) FROM drivers JOIN qualifying ON drivers.driverId = qualifying.driverId JOIN races ON qualifying.raceId = races.raceId WHERE drivers.nationality = 'British' AND races.year = 2006 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:QUALIFIED_IN]->(qualifying:qualifying)-[:FOR_RACE]->(race:races) WHERE driver.nationality = 'British' AND race.year = '2006' RETURN driver.forename, driver.surname, avg(qualifying.position)"
   },
   {
-    "question": "What is the minimum grid position each driver started from in 2018?",
-    "sql": "SELECT drivers.forename, drivers.surname, MIN(results.grid) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2018 AND results.grid > 0 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2018' AND result.grid > 0 RETURN driver.forename, driver.surname, min(result.grid)"
+    "question": "Which constructors scored points in races at Monaco after 1995?",
+    "sql": "SELECT DISTINCT constructors.name FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE results.points > 0 AND races.name LIKE '%Monaco%' AND races.year > 1995",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.points > 0 AND race.name CONTAINS 'Monaco' AND race.year > '1995' RETURN DISTINCT constructor.name"
   },
   {
-    "question": "Which races were won by drivers starting from grid position 3 or lower?",
-    "sql": "SELECT DISTINCT races.name, races.year FROM races JOIN results ON races.raceId = results.raceId WHERE results.grid >= 3 AND results.position = 1",
-    "cypher": "MATCH (result:results)-[:IN_RACE]->(race:races) WHERE result.grid >= 3 AND result.position = 1 RETURN DISTINCT race.name, race.year"
+    "question": "How many wins did each driver achieve in races from rounds 1 to 10?",
+    "sql": "SELECT drivers.forename, drivers.surname, COUNT(results.resultId) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE results.position = 1 AND races.round >= 1 AND races.round <= 10 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.position = 1 AND race.round >= '1' AND race.round <= '10' RETURN driver.forename, driver.surname, count(result)"
   },
   {
-    "question": "How many points did constructors score in round 1 races?",
-    "sql": "SELECT constructors.name, SUM(constructor_results.points) FROM constructors JOIN constructor_results ON constructors.constructorId = constructor_results.constructorId JOIN races ON constructor_results.raceId = races.raceId WHERE races.round = 1 GROUP BY constructors.constructorId, constructors.name ORDER BY SUM(constructor_results.points) DESC",
-    "cypher": "MATCH (constructor:constructors)-[:RESULTED_IN]->(cr:constructor_results), (race:races)-[:RESULTED_IN]->(cr) WHERE race.round = '1' RETURN constructor.name, sum(cr.points) ORDER BY sum(cr.points) DESC"
+    "question": "List the top 10 constructors by total points in 2009",
+    "sql": "SELECT constructors.name, SUM(results.points) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE races.year = 2009 GROUP BY constructors.constructorId, constructors.name ORDER BY SUM(results.points) DESC LIMIT 10",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2009' RETURN constructor.name, sum(result.points) ORDER BY sum(result.points) DESC LIMIT 10"
   },
   {
-    "question": "List all drivers who competed in races at circuits in Australia",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE circuits.country = 'Australia'",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.country = 'Australia' RETURN DISTINCT driver.forename, driver.surname"
+    "question": "Which races in 2005 had qualifying sessions where a driver qualified in position 1?",
+    "sql": "SELECT DISTINCT races.name, races.round FROM races JOIN qualifying ON races.raceId = qualifying.raceId WHERE races.year = 2005 AND qualifying.position = 1 ORDER BY races.round",
+    "cypher": "MATCH (qualifying:qualifying)-[:FOR_RACE]->(race:races) WHERE race.year = '2005' AND qualifying.position = 1 RETURN DISTINCT race.name, race.round ORDER BY race.round"
   },
   {
-    "question": "What is the average points per race for each German constructor?",
-    "sql": "SELECT constructors.name, AVG(constructor_results.points) FROM constructors JOIN constructor_results ON constructors.constructorId = constructor_results.constructorId WHERE constructors.nationality = 'German' GROUP BY constructors.constructorId, constructors.name",
-    "cypher": "MATCH (constructor:constructors)-[:RESULTED_IN]->(cr:constructor_results) WHERE constructor.nationality = 'German' RETURN constructor.name, avg(cr.points)"
+    "question": "What is the sum of laps completed by drivers from Finland in 2007?",
+    "sql": "SELECT drivers.forename, drivers.surname, SUM(results.laps) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE drivers.nationality = 'Finnish' AND races.year = 2007 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE driver.nationality = 'Finnish' AND race.year = '2007' RETURN driver.forename, driver.surname, sum(result.laps)"
   },
   {
-    "question": "Which circuits hosted races in consecutive years from 2019 to 2021?",
-    "sql": "SELECT DISTINCT circuits.name, circuits.country FROM circuits JOIN races ON circuits.circuitId = races.circuitId WHERE races.year >= 2019 AND races.year <= 2021",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE toInteger(race.year) >= 2019 AND toInteger(race.year) <= 2021 RETURN DISTINCT circuit.name, circuit.country"
+    "question": "Which circuits hosted races in round 1 of any season?",
+    "sql": "SELECT DISTINCT circuits.name, circuits.country FROM circuits JOIN races ON circuits.circuitId = races.circuitId WHERE races.round = 1",
+    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.round = '1' RETURN DISTINCT circuit.name, circuit.country"
   },
   {
-    "question": "How many top 5 finishes does each Russian driver have?",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'Russian' AND results.position <= 5 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'Russian' AND result.position <= 5 RETURN driver.forename, driver.surname, count(*)"
+    "question": "How many different nationalities competed for each constructor in 2008?",
+    "sql": "SELECT constructors.name, COUNT(DISTINCT drivers.nationality) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN drivers ON results.driverId = drivers.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2008 GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races), (driver:drivers)-[:ACHIEVED]->(result) WHERE race.year = '2008' RETURN constructor.name, count(DISTINCT driver.nationality)"
   },
   {
-    "question": "List races from 2016 where any driver scored 25 points",
-    "sql": "SELECT DISTINCT races.name, races.round FROM races JOIN results ON races.raceId = results.raceId WHERE races.year = 2016 AND results.points = 25",
-    "cypher": "MATCH (result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2016' AND result.points = 25 RETURN DISTINCT race.name, race.round"
+    "question": "List races at circuits in Australia where drivers scored more than 6 points",
+    "sql": "SELECT DISTINCT races.name, races.year FROM races JOIN circuits ON races.circuitId = circuits.circuitId JOIN results ON races.raceId = results.raceId WHERE circuits.country = 'Australia' AND results.points > 6 ORDER BY races.year",
+    "cypher": "MATCH (result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.country = 'Australia' AND result.points > 6 RETURN DISTINCT race.name, race.year ORDER BY race.year"
   },
   {
-    "question": "What is the total wins for each constructor across all seasons?",
-    "sql": "SELECT constructors.name, COUNT(*) FROM constructors JOIN results ON constructors.constructorId = results.constructorId WHERE results.position = 1 GROUP BY constructors.constructorId, constructors.name ORDER BY COUNT(*) DESC LIMIT 15",
-    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results) WHERE result.position = 1 RETURN constructor.name, count(*) ORDER BY count(*) DESC LIMIT 15"
+    "question": "What is the best qualifying position for each driver in 2009?",
+    "sql": "SELECT drivers.forename, drivers.surname, MIN(qualifying.position) FROM drivers JOIN qualifying ON drivers.driverId = qualifying.driverId JOIN races ON qualifying.raceId = races.raceId WHERE races.year = 2009 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
+    "cypher": "MATCH (driver:drivers)-[:QUALIFIED_IN]->(qualifying:qualifying)-[:FOR_RACE]->(race:races) WHERE race.year = '2009' RETURN driver.forename, driver.surname, min(qualifying.position)"
   },
   {
-    "question": "Which drivers have qualified in the top 5 at circuits in Belgium?",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN qualifying ON drivers.driverId = qualifying.driverId JOIN races ON qualifying.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE qualifying.position <= 5 AND circuits.country = 'Belgium'",
-    "cypher": "MATCH (driver:drivers)-[:QUALIFIED_IN]->(q:qualifying)-[:FOR_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE q.position <= 5 AND circuit.country = 'Belgium' RETURN DISTINCT driver.forename, driver.surname"
+    "question": "Which constructors had drivers finish in position 1 or 2 in 2006?",
+    "sql": "SELECT DISTINCT constructors.name FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE (results.position = 1 OR results.position = 2) AND races.year = 2006",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE (result.position = 1 OR result.position = 2) AND race.year = '2006' RETURN DISTINCT constructor.name"
   },
   {
-    "question": "How many retirements has each Finnish driver had?",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'Finnish' AND results.position = 0 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'Finnish' AND result.position = 0 RETURN driver.forename, driver.surname, count(*)"
+    "question": "How many races did Austrian constructors score points in after 1995?",
+    "sql": "SELECT constructors.name, COUNT(DISTINCT results.raceId) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE constructors.nationality = 'Austrian' AND results.points > 0 AND races.year > 1995 GROUP BY constructors.constructorId, constructors.name",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE constructor.nationality = 'Austrian' AND result.points > 0 AND race.year > '1995' RETURN constructor.name, count(DISTINCT race)"
   },
   {
-    "question": "List all races held in Europe in 2015",
-    "sql": "SELECT races.name, circuits.name, circuits.country FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE races.year = 2015 AND circuits.country IN ('UK', 'Italy', 'Spain', 'Monaco', 'Belgium', 'Germany', 'Hungary', 'Austria')",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year = '2015' AND circuit.country IN ['UK', 'Italy', 'Spain', 'Monaco', 'Belgium', 'Germany', 'Hungary', 'Austria'] RETURN race.name, circuit.name, circuit.country"
+    "question": "List drivers who improved from their grid position in races at circuits in Spain",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE results.position < results.grid AND circuits.country = 'Spain'",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE result.position < result.grid AND circuit.country = 'Spain' RETURN DISTINCT driver.forename, driver.surname"
   },
   {
-    "question": "What is the maximum points scored by each constructor in a single race?",
-    "sql": "SELECT constructors.name, MAX(constructor_results.points) FROM constructors JOIN constructor_results ON constructors.constructorId = constructor_results.constructorId GROUP BY constructors.constructorId, constructors.name ORDER BY MAX(constructor_results.points) DESC LIMIT 10",
-    "cypher": "MATCH (constructor:constructors)-[:RESULTED_IN]->(cr:constructor_results) RETURN constructor.name, max(cr.points) ORDER BY max(cr.points) DESC LIMIT 10"
+    "question": "What is the average points per race for each constructor in 2005?",
+    "sql": "SELECT constructors.name, AVG(results.points) FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE races.year = 2005 GROUP BY constructors.constructorId, constructors.name ORDER BY AVG(results.points) DESC",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2005' RETURN constructor.name, avg(result.points) ORDER BY avg(result.points) DESC"
   },
   {
-    "question": "Which drivers scored points in their first race in 2020?",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2020 AND races.round = 1 AND results.points > 0",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2020' AND race.round = '1' AND result.points > 0 RETURN DISTINCT driver.forename, driver.surname"
+    "question": "Which drivers raced for Italian constructors in 2003 or 2004?",
+    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN constructors ON results.constructorId = constructors.constructorId JOIN races ON results.raceId = races.raceId WHERE constructors.nationality = 'Italian' AND (races.year = 2003 OR races.year = 2004)",
+    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races), (constructor:constructors)-[:ACHIEVED]->(result) WHERE constructor.nationality = 'Italian' AND (race.year = '2003' OR race.year = '2004') RETURN DISTINCT driver.forename, driver.surname"
   },
   {
-    "question": "How many championship points did each South African driver score?",
-    "sql": "SELECT drivers.forename, drivers.surname, SUM(results.points) FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE drivers.nationality = 'South African' GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE driver.nationality = 'South African' RETURN driver.forename, driver.surname, sum(result.points)"
+    "question": "How many circuits in each country hosted races between 2000 and 2009?",
+    "sql": "SELECT circuits.country, COUNT(DISTINCT circuits.circuitId) FROM circuits JOIN races ON circuits.circuitId = races.circuitId WHERE races.year >= 2000 AND races.year <= 2009 GROUP BY circuits.country",
+    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE race.year >= '2000' AND race.year <= '2009' RETURN circuit.country, count(DISTINCT circuit)"
   },
   {
-    "question": "List races where the pole sitter won the race in 2021",
-    "sql": "SELECT DISTINCT races.name, races.round FROM races JOIN results ON races.raceId = results.raceId WHERE races.year = 2021 AND results.grid = 1 AND results.position = 1",
-    "cypher": "MATCH (result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2021' AND result.grid = 1 AND result.position = 1 RETURN DISTINCT race.name, race.round"
-  },
-  {
-    "question": "What is the average number of laps completed at each circuit?",
-    "sql": "SELECT circuits.name, AVG(results.laps) FROM circuits JOIN races ON circuits.circuitId = races.circuitId JOIN results ON races.raceId = results.raceId GROUP BY circuits.circuitId, circuits.name",
-    "cypher": "MATCH (result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) RETURN circuit.name, avg(result.laps)"
-  },
-  {
-    "question": "Which constructors had both drivers finish in the top 10 in any race?",
-    "sql": "SELECT DISTINCT constructors.name FROM constructors JOIN results ON constructors.constructorId = results.constructorId WHERE results.position <= 10 AND results.position > 0",
-    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results) WHERE result.position <= 10 AND result.position > 0 RETURN DISTINCT constructor.name"
-  },
-  {
-    "question": "How many victories does each circuit have recorded?",
-    "sql": "SELECT circuits.name, COUNT(*) FROM circuits JOIN races ON circuits.circuitId = races.circuitId JOIN results ON races.raceId = results.raceId WHERE results.position = 1 GROUP BY circuits.circuitId, circuits.name ORDER BY COUNT(*) DESC",
-    "cypher": "MATCH (result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE result.position = 1 RETURN circuit.name, count(*) ORDER BY count(*) DESC"
-  },
-  {
-    "question": "List drivers who have won at Silverstone",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE circuits.name LIKE '%Silverstone%' AND results.position = 1",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.name CONTAINS 'Silverstone' AND result.position = 1 RETURN DISTINCT driver.forename, driver.surname"
-  },
-  {
-    "question": "What is the total number of races each constructor participated in?",
-    "sql": "SELECT constructors.name, COUNT(*) FROM constructors JOIN results ON constructors.constructorId = results.constructorId GROUP BY constructors.constructorId, constructors.name ORDER BY COUNT(*) DESC LIMIT 20",
-    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results) RETURN constructor.name, count(*) ORDER BY count(*) DESC LIMIT 20"
-  },
-  {
-    "question": "Which drivers scored points at Monaco Grand Prix in 2019?",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname, results.points FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.name LIKE '%Monaco%' AND races.year = 2019 AND results.points > 0",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.name CONTAINS 'Monaco' AND race.year = '2019' AND result.points > 0 RETURN DISTINCT driver.forename, driver.surname, result.points"
-  },
-  {
-    "question": "How many podiums has each Italian constructor achieved?",
-    "sql": "SELECT constructors.name, COUNT(*) FROM constructors JOIN results ON constructors.constructorId = results.constructorId WHERE constructors.nationality = 'Italian' AND results.position <= 3 GROUP BY constructors.constructorId, constructors.name",
-    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results) WHERE constructor.nationality = 'Italian' AND result.position <= 3 RETURN constructor.name, count(*)"
-  },
-  {
-    "question": "List all races from circuits located at sea level",
-    "sql": "SELECT races.name, races.year, circuits.name FROM races JOIN circuits ON races.circuitId = circuits.circuitId WHERE circuits.alt = 0 ORDER BY races.year DESC LIMIT 20",
-    "cypher": "MATCH (race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.alt = 0 RETURN race.name, race.year, circuit.name ORDER BY race.year DESC LIMIT 20"
-  },
-  {
-    "question": "What is the average qualifying position for each Argentine driver?",
-    "sql": "SELECT drivers.forename, drivers.surname, AVG(qualifying.position) FROM drivers JOIN qualifying ON drivers.driverId = qualifying.driverId WHERE drivers.nationality = 'Argentine' GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:QUALIFIED_IN]->(q:qualifying) WHERE driver.nationality = 'Argentine' RETURN driver.forename, driver.surname, avg(q.position)"
-  },
-  {
-    "question": "Which races in 2020 had more than 15 classified finishers?",
-    "sql": "SELECT races.name, COUNT(*) FROM races JOIN results ON races.raceId = results.raceId WHERE races.year = 2020 AND results.position > 0 GROUP BY races.raceId, races.name ORDER BY COUNT(*) DESC",
-    "cypher": "MATCH (result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2020' AND result.position > 0 RETURN race.name, count(*) ORDER BY count(*) DESC"
-  },
-  {
-    "question": "How many front row lockouts has each constructor achieved?",
-    "sql": "SELECT constructors.name, COUNT(*) FROM constructors JOIN qualifying ON constructors.constructorId = qualifying.constructorId WHERE qualifying.position <= 2 GROUP BY constructors.constructorId, constructors.name ORDER BY COUNT(*) DESC LIMIT 10",
-    "cypher": "MATCH (constructor:constructors)-[:QUALIFIED_IN]->(q:qualifying) WHERE q.position <= 2 RETURN constructor.name, count(*) ORDER BY count(*) DESC LIMIT 10"
-  },
-  {
-    "question": "List drivers who completed all laps in races at circuits with more than 100 laps",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId WHERE results.laps > 100",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results) WHERE result.laps > 100 RETURN DISTINCT driver.forename, driver.surname"
-  },
-  {
-    "question": "What is the total points for constructors in races held at street circuits?",
-    "sql": "SELECT constructors.name, SUM(constructor_results.points) FROM constructors JOIN constructor_results ON constructors.constructorId = constructor_results.constructorId JOIN races ON constructor_results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE circuits.name LIKE '%Street%' OR circuits.name LIKE '%Monaco%' GROUP BY constructors.constructorId, constructors.name",
-    "cypher": "MATCH (constructor:constructors)-[:RESULTED_IN]->(cr:constructor_results), (race:races)-[:RESULTED_IN]->(cr), (race)-[:HELD_AT]->(circuit:circuits) WHERE circuit.name CONTAINS 'Street' OR circuit.name CONTAINS 'Monaco' RETURN constructor.name, sum(cr.points)"
-  },
-  {
-    "question": "Which drivers have achieved the fastest lap in races at Monza?",
-    "sql": "SELECT DISTINCT drivers.forename, drivers.surname FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId JOIN circuits ON races.circuitId = circuits.circuitId WHERE circuits.name LIKE '%Monza%' AND results.rank = 1",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE circuit.name CONTAINS 'Monza' AND result.rank = 1 RETURN DISTINCT driver.forename, driver.surname"
-  },
-  {
-    "question": "How many races did each driver finish outside the points in 2018?",
-    "sql": "SELECT drivers.forename, drivers.surname, COUNT(*) FROM drivers JOIN results ON drivers.driverId = results.driverId JOIN races ON results.raceId = races.raceId WHERE races.year = 2018 AND results.points = 0 AND results.position > 0 GROUP BY drivers.driverId, drivers.forename, drivers.surname",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE race.year = '2018' AND result.points = 0 AND result.position > 0 RETURN driver.forename, driver.surname, count(*)"
-  },
-  {
-    "question": "List all races where British drivers finished on the podium",
-    "sql": "SELECT DISTINCT races.name, races.year FROM races JOIN results ON races.raceId = results.raceId JOIN drivers ON results.driverId = drivers.driverId WHERE drivers.nationality = 'British' AND results.position <= 3",
-    "cypher": "MATCH (driver:drivers)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE driver.nationality = 'British' AND result.position <= 3 RETURN DISTINCT race.name, race.year"
-  },
-  {
-    "question": "What is the average race duration for each circuit?",
-    "sql": "SELECT circuits.name, AVG(results.milliseconds) FROM circuits JOIN races ON circuits.circuitId = races.circuitId JOIN results ON races.raceId = results.raceId WHERE results.milliseconds > 0 GROUP BY circuits.circuitId, circuits.name",
-    "cypher": "MATCH (result:results)-[:IN_RACE]->(race:races)-[:HELD_AT]->(circuit:circuits) WHERE result.milliseconds <> '' RETURN circuit.name, avg(toFloat(result.milliseconds))"
-  },
-  {
-    "question": "Which constructors have won at least one race in 2019?",
-    "sql": "SELECT DISTINCT constructors.name FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE results.position = 1 AND races.year = 2019",
-    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.position = 1 AND race.year = '2019' RETURN DISTINCT constructor.name"
+    "question": "Which constructors have won at least one race in 2009?",
+    "sql": "SELECT DISTINCT constructors.name FROM constructors JOIN results ON constructors.constructorId = results.constructorId JOIN races ON results.raceId = races.raceId WHERE results.position = 1 AND races.year = 2009",
+    "cypher": "MATCH (constructor:constructors)-[:ACHIEVED]->(result:results)-[:IN_RACE]->(race:races) WHERE result.position = 1 AND race.year = '2009' RETURN DISTINCT constructor.name"
   },
   {
     "question": "How many drivers from each nationality have competed?",

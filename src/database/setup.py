@@ -69,6 +69,7 @@ def get_insertion_order(database) -> list[str]:
     graph = {}
     for table_name, tbl in database.table_dict.items():
         fk_deps = getattr(tbl, 'fkey_col_to_pkey_table', {})
+        fk_deps = {col: pk for col, pk in fk_deps.items() if pk != table_name}
         graph[table_name] = set(fk_deps.values())
     
     sorter = TopologicalSorter(graph)
