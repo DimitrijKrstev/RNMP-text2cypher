@@ -4,6 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 import typer
+from typing import Optional
 
 from constants import REMOTE_MODEL_NAME
 from database.neo4j import get_neo4j_schema
@@ -36,10 +37,13 @@ def load_duckdb(dataset_name: DatasetName, sample_size: float = 1.0) -> None:
 
 
 @app.command()
-def validate_tasks(dataset_name: DatasetName) -> None:
-    """Validate all tasks."""
+def validate_tasks(
+    dataset_name: DatasetName,
+    task_types: list[TaskType],
+) -> None:
+    types_to_validate = task_types if task_types else None
     for path in Path(f"src/tasks/{dataset_name}").glob("*.json"):
-        validate(path, dataset_name)
+        validate(path, dataset_name, types_to_validate)
 
 
 @app.command()
