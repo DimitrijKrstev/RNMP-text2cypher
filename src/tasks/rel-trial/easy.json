@@ -1,0 +1,492 @@
+[
+  {
+    "question": "What are the titles of all clinical studies?",
+    "sql": "SELECT brief_title FROM studies",
+    "cypher": "MATCH (studies) RETURN studies.brief_title"
+  },
+  {
+    "question": "List all condition names in the database.",
+    "sql": "SELECT mesh_term FROM conditions",
+    "cypher": "MATCH (conditions) RETURN conditions.mesh_term"
+  },
+  {
+    "question": "Show all intervention types available.",
+    "sql": "SELECT mesh_term FROM interventions",
+    "cypher": "MATCH (interventions) RETURN interventions.mesh_term"
+  },
+  {
+    "question": "What are the names of all sponsors?",
+    "sql": "SELECT name FROM sponsors",
+    "cypher": "MATCH (sponsors) RETURN sponsors.name"
+  },
+  {
+    "question": "List all facility names.",
+    "sql": "SELECT name FROM facilities",
+    "cypher": "MATCH (facilities) RETURN facilities.name"
+  },
+  {
+    "question": "What are the study types available?",
+    "sql": "SELECT study_type FROM studies",
+    "cypher": "MATCH (studies) RETURN studies.study_type"
+  },
+  {
+    "question": "Show all studies in Phase 3.",
+    "sql": "SELECT brief_title FROM studies WHERE phase = 'Phase 3'",
+    "cypher": "MATCH (studies) WHERE studies.phase = 'Phase 3' RETURN studies.brief_title"
+  },
+  {
+    "question": "List facilities located in California.",
+    "sql": "SELECT name FROM facilities WHERE state = 'California'",
+    "cypher": "MATCH (facilities) WHERE facilities.state = 'California' RETURN facilities.name"
+  },
+  {
+    "question": "What facilities are in New York city?",
+    "sql": "SELECT name FROM facilities WHERE city = 'New York'",
+    "cypher": "MATCH (facilities) WHERE facilities.city = 'New York' RETURN facilities.name"
+  },
+  {
+    "question": "Show sponsors that are industry type.",
+    "sql": "SELECT name FROM sponsors WHERE agency_class = 'INDUSTRY'",
+    "cypher": "MATCH (sponsors) WHERE sponsors.agency_class = 'INDUSTRY' RETURN sponsors.name"
+  },
+  {
+    "question": "List all interventional studies.",
+    "sql": "SELECT brief_title FROM studies WHERE study_type = 'Interventional'",
+    "cypher": "MATCH (studies) WHERE studies.study_type = 'Interventional' RETURN studies.brief_title"
+  },
+  {
+    "question": "What are the official titles of studies?",
+    "sql": "SELECT official_title FROM studies",
+    "cypher": "MATCH (studies) RETURN studies.official_title"
+  },
+  {
+    "question": "Show all outcomes with type Primary.",
+    "sql": "SELECT title FROM outcomes WHERE outcome_type = 'Primary'",
+    "cypher": "MATCH (outcomes) WHERE outcomes.outcome_type = 'Primary' RETURN outcomes.title"
+  },
+  {
+    "question": "List facilities in the United States.",
+    "sql": "SELECT name FROM facilities WHERE country = 'United States'",
+    "cypher": "MATCH (facilities) WHERE facilities.country = 'United States' RETURN facilities.name"
+  },
+  {
+    "question": "What studies allow healthy volunteers?",
+    "sql": "SELECT studies.brief_title FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.healthy_volunteers = 'Accepts Healthy Volunteers'",
+    "cypher": "MATCH (studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE eligibilities.healthy_volunteers = 'Accepts Healthy Volunteers' RETURN studies.brief_title"
+  },
+  {
+    "question": "Show all Phase 2 studies.",
+    "sql": "SELECT brief_title FROM studies WHERE phase = 'Phase 2'",
+    "cypher": "MATCH (studies) WHERE studies.phase = 'Phase 2' RETURN studies.brief_title"
+  },
+  {
+    "question": "List all observational studies.",
+    "sql": "SELECT brief_title FROM studies WHERE study_type = 'Observational'",
+    "cypher": "MATCH (studies) WHERE studies.study_type = 'Observational' RETURN studies.brief_title"
+  },
+  {
+    "question": "What are the primary purposes in study designs?",
+    "sql": "SELECT primary_purpose FROM designs",
+    "cypher": "MATCH (designs) RETURN designs.primary_purpose"
+  },
+  {
+    "question": "Show facilities in Boston.",
+    "sql": "SELECT name FROM facilities WHERE city = 'Boston'",
+    "cypher": "MATCH (facilities) WHERE facilities.city = 'Boston' RETURN facilities.name"
+  },
+  {
+    "question": "List all studies with more than 100 enrolled participants.",
+    "sql": "SELECT brief_title FROM studies WHERE enrollment > 100",
+    "cypher": "MATCH (studies) WHERE studies.enrollment > 100 RETURN studies.brief_title"
+  },
+  {
+    "question": "What studies are FDA regulated drugs?",
+    "sql": "SELECT brief_title FROM studies WHERE is_fda_regulated_drug = 'true'",
+    "cypher": "MATCH (studies) WHERE studies.is_fda_regulated_drug = 'true' RETURN studies.brief_title"
+  },
+  {
+    "question": "Show all sponsors of NIH class.",
+    "sql": "SELECT name FROM sponsors WHERE agency_class = 'NIH'",
+    "cypher": "MATCH (sponsors) WHERE sponsors.agency_class = 'NIH' RETURN sponsors.name"
+  },
+  {
+    "question": "List studies that accept both genders.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.gender = 'All'",
+    "cypher": "MATCH (studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE eligibilities.gender = 'All' RETURN studies.brief_title"
+  },
+  {
+    "question": "What are the allocation methods used in designs?",
+    "sql": "SELECT allocation FROM designs",
+    "cypher": "MATCH (designs) RETURN designs.allocation"
+  },
+  {
+    "question": "Show all facilities in Texas.",
+    "sql": "SELECT name FROM facilities WHERE state = 'Texas'",
+    "cypher": "MATCH (facilities) WHERE facilities.state = 'Texas' RETURN facilities.name"
+  },
+  {
+    "question": "List all Phase 1 studies.",
+    "sql": "SELECT brief_title FROM studies WHERE phase = 'Phase 1'",
+    "cypher": "MATCH (studies) WHERE studies.phase = 'Phase 1' RETURN studies.brief_title"
+  },
+  {
+    "question": "What studies have a data monitoring committee?",
+    "sql": "SELECT brief_title FROM studies WHERE has_dmc = 'true'",
+    "cypher": "MATCH (studies) WHERE studies.has_dmc = 'true' RETURN studies.brief_title"
+  },
+  {
+    "question": "Show facilities in Chicago.",
+    "sql": "SELECT name FROM facilities WHERE city = 'Chicago'",
+    "cypher": "MATCH (facilities) WHERE facilities.city = 'Chicago' RETURN facilities.name"
+  },
+  {
+    "question": "List all studies with enrollment less than 50.",
+    "sql": "SELECT brief_title FROM studies WHERE enrollment < 50",
+    "cypher": "MATCH (studies) WHERE studies.enrollment < 50 RETURN studies.brief_title"
+  },
+  {
+    "question": "What intervention models are used in study designs?",
+    "sql": "SELECT intervention_model FROM designs",
+    "cypher": "MATCH (designs) RETURN designs.intervention_model"
+  },
+  {
+    "question": "Show all studies that are FDA regulated devices.",
+    "sql": "SELECT brief_title FROM studies WHERE is_fda_regulated_device = 'true'",
+    "cypher": "MATCH (studies) WHERE studies.is_fda_regulated_device = 'true' RETURN studies.brief_title"
+  },
+  {
+    "question": "List facilities in Florida.",
+    "sql": "SELECT name FROM facilities WHERE state = 'Florida'",
+    "cypher": "MATCH (facilities) WHERE facilities.state = 'Florida' RETURN facilities.name"
+  },
+  {
+    "question": "What are the time perspectives in study designs?",
+    "sql": "SELECT time_perspective FROM designs",
+    "cypher": "MATCH (designs) RETURN designs.time_perspective"
+  },
+  {
+    "question": "Show all Phase 4 studies.",
+    "sql": "SELECT brief_title FROM studies WHERE phase = 'Phase 4'",
+    "cypher": "MATCH (studies) WHERE studies.phase = 'Phase 4' RETURN studies.brief_title"
+  },
+  {
+    "question": "List sponsors classified as OTHER.",
+    "sql": "SELECT name FROM sponsors WHERE agency_class = 'OTHER'",
+    "cypher": "MATCH (sponsors) WHERE sponsors.agency_class = 'OTHER' RETURN sponsors.name"
+  },
+  {
+    "question": "What studies include only female participants?",
+    "sql": "SELECT studies.brief_title FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.gender = 'Female'",
+    "cypher": "MATCH (studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE eligibilities.gender = 'Female' RETURN studies.brief_title"
+  },
+  {
+    "question": "Show facilities in Los Angeles.",
+    "sql": "SELECT name FROM facilities WHERE city = 'Los Angeles'",
+    "cypher": "MATCH (facilities) WHERE facilities.city = 'Los Angeles' RETURN facilities.name"
+  },
+  {
+    "question": "List all withdrawal reasons.",
+    "sql": "SELECT reason FROM drop_withdrawals",
+    "cypher": "MATCH (drop_withdrawals) RETURN drop_withdrawals.reason"
+  },
+  {
+    "question": "What studies are classified as expanded access?",
+    "sql": "SELECT brief_title FROM studies WHERE study_type = 'Expanded Access'",
+    "cypher": "MATCH (studies) WHERE studies.study_type = 'Expanded Access' RETURN studies.brief_title"
+  },
+  {
+    "question": "Show all masking types used in designs.",
+    "sql": "SELECT masking FROM designs",
+    "cypher": "MATCH (designs) RETURN designs.masking"
+  },
+  {
+    "question": "List facilities in Pennsylvania.",
+    "sql": "SELECT name FROM facilities WHERE state = 'Pennsylvania'",
+    "cypher": "MATCH (facilities) WHERE facilities.state = 'Pennsylvania' RETURN facilities.name"
+  },
+  {
+    "question": "What are the event types in reported events?",
+    "sql": "SELECT event_type FROM reported_event_totals",
+    "cypher": "MATCH (reported_event_totals) RETURN reported_event_totals.event_type"
+  },
+  {
+    "question": "Show studies with 2 arms.",
+    "sql": "SELECT brief_title FROM studies WHERE number_of_arms = 2",
+    "cypher": "MATCH (studies) WHERE studies.number_of_arms = 2 RETURN studies.brief_title"
+  },
+  {
+    "question": "List all studies that include children.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.child = 'true'",
+    "cypher": "MATCH (studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE eligibilities.child = 'true' RETURN studies.brief_title"
+  },
+  {
+    "question": "What facilities are located in Massachusetts?",
+    "sql": "SELECT name FROM facilities WHERE state = 'Massachusetts'",
+    "cypher": "MATCH (facilities) WHERE facilities.state = 'Massachusetts' RETURN facilities.name"
+  },
+  {
+    "question": "Show all secondary outcomes.",
+    "sql": "SELECT title FROM outcomes WHERE outcome_type = 'Secondary'",
+    "cypher": "MATCH (outcomes) WHERE outcomes.outcome_type = 'Secondary' RETURN outcomes.title"
+  },
+  {
+    "question": "List studies that include older adults.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.older_adult = 'true'",
+    "cypher": "MATCH (studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE eligibilities.older_adult = 'true' RETURN studies.brief_title"
+  },
+  {
+    "question": "What are the observational models in study designs?",
+    "sql": "SELECT observational_model FROM designs",
+    "cypher": "MATCH (designs) RETURN designs.observational_model"
+  },
+  {
+    "question": "Show facilities in Washington.",
+    "sql": "SELECT name FROM facilities WHERE state = 'Washington'",
+    "cypher": "MATCH (facilities) WHERE facilities.state = 'Washington' RETURN facilities.name"
+  },
+  {
+    "question": "List all studies that plan to share IPD.",
+    "sql": "SELECT brief_title FROM studies WHERE plan_to_share_ipd = 'Yes'",
+    "cypher": "MATCH (studies) WHERE studies.plan_to_share_ipd = 'Yes' RETURN studies.brief_title"
+  },
+  {
+    "question": "What studies include only male participants?",
+    "sql": "SELECT studies.brief_title FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.gender = 'Male'",
+    "cypher": "MATCH (studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE eligibilities.gender = 'Male' RETURN studies.brief_title"
+  },
+  {
+    "question": "Show all facilities in San Francisco.",
+    "sql": "SELECT name FROM facilities WHERE city = 'San Francisco'",
+    "cypher": "MATCH (facilities) WHERE facilities.city = 'San Francisco' RETURN facilities.name"
+  },
+  {
+    "question": "List studies with 3 arms.",
+    "sql": "SELECT brief_title FROM studies WHERE number_of_arms = 3",
+    "cypher": "MATCH (studies) WHERE studies.number_of_arms = 3 RETURN studies.brief_title"
+  },
+  {
+    "question": "What are the classifications in reported events?",
+    "sql": "SELECT classification FROM reported_event_totals",
+    "cypher": "MATCH (reported_event_totals) RETURN reported_event_totals.classification"
+  },
+  {
+    "question": "Show facilities in Ohio.",
+    "sql": "SELECT name FROM facilities WHERE state = 'Ohio'",
+    "cypher": "MATCH (facilities) WHERE facilities.state = 'Ohio' RETURN facilities.name"
+  },
+  {
+    "question": "List all studies with actual enrollment type.",
+    "sql": "SELECT brief_title FROM studies WHERE enrollment_type = 'Actual'",
+    "cypher": "MATCH (studies) WHERE studies.enrollment_type = 'Actual' RETURN studies.brief_title"
+  },
+  {
+    "question": "What studies started in 2020?",
+    "sql": "SELECT brief_title FROM studies WHERE start_date >= '2020-01-01' AND start_date < '2021-01-01'",
+    "cypher": "MATCH (studies) WHERE studies.start_date >= datetime('2020-01-01T00:00:00') AND studies.start_date < datetime('2021-01-01T00:00:00') RETURN studies.brief_title"
+  },
+  {
+    "question": "Show all facilities in Illinois.",
+    "sql": "SELECT name FROM facilities WHERE state = 'Illinois'",
+    "cypher": "MATCH (facilities) WHERE facilities.state = 'Illinois' RETURN facilities.name"
+  },
+  {
+    "question": "List sponsors that are federal agencies.",
+    "sql": "SELECT name FROM sponsors WHERE agency_class = 'FED'",
+    "cypher": "MATCH (sponsors) WHERE sponsors.agency_class = 'FED' RETURN sponsors.name"
+  },
+  {
+    "question": "What studies have more than 500 enrolled participants?",
+    "sql": "SELECT brief_title FROM studies WHERE enrollment > 500",
+    "cypher": "MATCH (studies) WHERE studies.enrollment > 500 RETURN studies.brief_title"
+  },
+  {
+    "question": "Show facilities in Seattle.",
+    "sql": "SELECT name FROM facilities WHERE city = 'Seattle'",
+    "cypher": "MATCH (facilities) WHERE facilities.city = 'Seattle' RETURN facilities.name"
+  },
+  {
+    "question": "List all studies that include adults.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.adult = 'true'",
+    "cypher": "MATCH (studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE eligibilities.adult = 'true' RETURN studies.brief_title"
+  },
+  {
+    "question": "What are the sampling methods used in eligibility?",
+    "sql": "SELECT sampling_method FROM eligibilities",
+    "cypher": "MATCH (eligibilities) RETURN eligibilities.sampling_method"
+  },
+  {
+    "question": "Show facilities in Georgia.",
+    "sql": "SELECT name FROM facilities WHERE state = 'Georgia'",
+    "cypher": "MATCH (facilities) WHERE facilities.state = 'Georgia' RETURN facilities.name"
+  },
+  {
+    "question": "List all studies that are US exports.",
+    "sql": "SELECT brief_title FROM studies WHERE is_us_export = 'true'",
+    "cypher": "MATCH (studies) WHERE studies.is_us_export = 'true' RETURN studies.brief_title"
+  },
+  {
+    "question": "What facilities are in Houston?",
+    "sql": "SELECT name FROM facilities WHERE city = 'Houston'",
+    "cypher": "MATCH (facilities) WHERE facilities.city = 'Houston' RETURN facilities.name"
+  },
+  {
+    "question": "Show all studies with anticipated enrollment.",
+    "sql": "SELECT brief_title FROM studies WHERE enrollment_type = 'Anticipated'",
+    "cypher": "MATCH (studies) WHERE studies.enrollment_type = 'Anticipated' RETURN studies.brief_title"
+  },
+  {
+    "question": "List facilities in North Carolina.",
+    "sql": "SELECT name FROM facilities WHERE state = 'North Carolina'",
+    "cypher": "MATCH (facilities) WHERE facilities.state = 'North Carolina' RETURN facilities.name"
+  },
+  {
+    "question": "What studies have 1 arm?",
+    "sql": "SELECT brief_title FROM studies WHERE number_of_arms = 1",
+    "cypher": "MATCH (studies) WHERE studies.number_of_arms = 1 RETURN studies.brief_title"
+  },
+  {
+    "question": "Show facilities in Philadelphia.",
+    "sql": "SELECT name FROM facilities WHERE city = 'Philadelphia'",
+    "cypher": "MATCH (facilities) WHERE facilities.city = 'Philadelphia' RETURN facilities.name"
+  },
+  {
+    "question": "List all studies with enrollment between 50 and 100.",
+    "sql": "SELECT brief_title FROM studies WHERE enrollment >= 50 AND enrollment <= 100",
+    "cypher": "MATCH (studies) WHERE studies.enrollment >= 50 AND studies.enrollment <= 100 RETURN studies.brief_title"
+  },
+  {
+    "question": "What are the parameter types in outcome analyses?",
+    "sql": "SELECT param_type FROM outcome_analyses",
+    "cypher": "MATCH (outcome_analyses) RETURN outcome_analyses.param_type"
+  },
+  {
+    "question": "Show facilities in Arizona.",
+    "sql": "SELECT name FROM facilities WHERE state = 'Arizona'",
+    "cypher": "MATCH (facilities) WHERE facilities.state = 'Arizona' RETURN facilities.name"
+  },
+  {
+    "question": "List all studies that are unapproved devices.",
+    "sql": "SELECT brief_title FROM studies WHERE is_unapproved_device = 'true'",
+    "cypher": "MATCH (studies) WHERE studies.is_unapproved_device = 'true' RETURN studies.brief_title"
+  },
+  {
+    "question": "What facilities are in Baltimore?",
+    "sql": "SELECT name FROM facilities WHERE city = 'Baltimore'",
+    "cypher": "MATCH (facilities) WHERE facilities.city = 'Baltimore' RETURN facilities.name"
+  },
+  {
+    "question": "Show all studies in Early Phase 1.",
+    "sql": "SELECT brief_title FROM studies WHERE phase = 'Early Phase 1'",
+    "cypher": "MATCH (studies) WHERE studies.phase = 'Early Phase 1' RETURN studies.brief_title"
+  },
+  {
+    "question": "List facilities in Colorado.",
+    "sql": "SELECT name FROM facilities WHERE state = 'Colorado'",
+    "cypher": "MATCH (facilities) WHERE facilities.state = 'Colorado' RETURN facilities.name"
+  },
+  {
+    "question": "What studies have biospecimen retention?",
+    "sql": "SELECT brief_title FROM studies WHERE biospec_retention = 'Samples With DNA'",
+    "cypher": "MATCH (studies) WHERE studies.biospec_retention = 'Samples With DNA' RETURN studies.brief_title"
+  },
+  {
+    "question": "Show facilities in Denver.",
+    "sql": "SELECT name FROM facilities WHERE city = 'Denver'",
+    "cypher": "MATCH (facilities) WHERE facilities.city = 'Denver' RETURN facilities.name"
+  },
+  {
+    "question": "List all studies with 4 or more arms.",
+    "sql": "SELECT brief_title FROM studies WHERE number_of_arms >= 4",
+    "cypher": "MATCH (studies) WHERE studies.number_of_arms >= 4 RETURN studies.brief_title"
+  },
+  {
+    "question": "What are the statistical methods used in outcome analyses?",
+    "sql": "SELECT method FROM outcome_analyses",
+    "cypher": "MATCH (outcome_analyses) RETURN outcome_analyses.method"
+  },
+  {
+    "question": "Show facilities in Michigan.",
+    "sql": "SELECT name FROM facilities WHERE state = 'Michigan'",
+    "cypher": "MATCH (facilities) WHERE facilities.state = 'Michigan' RETURN facilities.name"
+  },
+  {
+    "question": "List all studies that are probabalistic sampling.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.sampling_method = 'Probability Sample'",
+    "cypher": "MATCH (studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE eligibilities.sampling_method = 'Probability Sample' RETURN studies.brief_title"
+  },
+  {
+    "question": "What facilities are in Atlanta?",
+    "sql": "SELECT name FROM facilities WHERE city = 'Atlanta'",
+    "cypher": "MATCH (facilities) WHERE facilities.city = 'Atlanta' RETURN facilities.name"
+  },
+  {
+    "question": "Show all studies with enrollment greater than 1000.",
+    "sql": "SELECT brief_title FROM studies WHERE enrollment > 1000",
+    "cypher": "MATCH (studies) WHERE studies.enrollment > 1000 RETURN studies.brief_title"
+  },
+  {
+    "question": "List facilities in Minnesota.",
+    "sql": "SELECT name FROM facilities WHERE state = 'Minnesota'",
+    "cypher": "MATCH (facilities) WHERE facilities.state = 'Minnesota' RETURN facilities.name"
+  },
+  {
+    "question": "What studies have randomized allocation?",
+    "sql": "SELECT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.allocation = 'Randomized'",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE designs.allocation = 'Randomized' RETURN studies.brief_title"
+  },
+  {
+    "question": "Show facilities in San Diego.",
+    "sql": "SELECT name FROM facilities WHERE city = 'San Diego'",
+    "cypher": "MATCH (facilities) WHERE facilities.city = 'San Diego' RETURN facilities.name"
+  },
+  {
+    "question": "List all studies with non-randomized allocation.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.allocation = 'Non-Randomized'",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE designs.allocation = 'Non-Randomized' RETURN studies.brief_title"
+  },
+  {
+    "question": "What facilities are in Nashville?",
+    "sql": "SELECT name FROM facilities WHERE city = 'Nashville'",
+    "cypher": "MATCH (facilities) WHERE facilities.city = 'Nashville' RETURN facilities.name"
+  },
+  {
+    "question": "Show all studies with parallel assignment intervention model.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.intervention_model = 'Parallel Assignment'",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE designs.intervention_model = 'Parallel Assignment' RETURN studies.brief_title"
+  },
+  {
+    "question": "List facilities in Virginia.",
+    "sql": "SELECT name FROM facilities WHERE state = 'Virginia'",
+    "cypher": "MATCH (facilities) WHERE facilities.state = 'Virginia' RETURN facilities.name"
+  },
+  {
+    "question": "What studies are treatment studies?",
+    "sql": "SELECT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.primary_purpose = 'Treatment'",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE designs.primary_purpose = 'Treatment' RETURN studies.brief_title"
+  },
+  {
+    "question": "Show facilities in Portland.",
+    "sql": "SELECT name FROM facilities WHERE city = 'Portland'",
+    "cypher": "MATCH (facilities) WHERE facilities.city = 'Portland' RETURN facilities.name"
+  },
+  {
+    "question": "List all studies with crossover assignment.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.intervention_model = 'Crossover Assignment'",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE designs.intervention_model = 'Crossover Assignment' RETURN studies.brief_title"
+  },
+  {
+    "question": "What are the acronyms used for studies?",
+    "sql": "SELECT acronym FROM studies",
+    "cypher": "MATCH (studies) RETURN studies.acronym"
+  },
+  {
+    "question": "Show facilities in Connecticut.",
+    "sql": "SELECT name FROM facilities WHERE state = 'Connecticut'",
+    "cypher": "MATCH (facilities) WHERE facilities.state = 'Connecticut' RETURN facilities.name"
+  },
+  {
+    "question": "List all prevention studies.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.primary_purpose = 'Prevention'",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE designs.primary_purpose = 'Prevention' RETURN studies.brief_title"
+  }
+]

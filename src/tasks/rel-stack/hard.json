@@ -48,5 +48,445 @@
     "question": "Find posts that received multiple votes within the first three days. Return post ID, title, early vote count, and unique voter count.",
     "sql": "SELECT p.Id, p.Title, COUNT(v.Id) as early_vote_count, COUNT(DISTINCT v.UserId) as unique_voters FROM posts p JOIN votes v ON p.Id = v.PostId WHERE julianday(v.CreationDate) - julianday(p.CreationDate) <= 3 GROUP BY p.Id, p.Title HAVING early_vote_count >= 5 ORDER BY early_vote_count DESC LIMIT 20;",
     "cypher": "MATCH (p:posts)<-[:VOTED_ON]-(v:votes) WHERE duration.between(datetime(replace(p.CreationDate, ' ', 'T')), datetime(replace(v.CreationDate, ' ', 'T'))).days <= 3 WITH p, COUNT(v) as early_vote_count, COUNT(DISTINCT v.UserId) as unique_voters WHERE early_vote_count >= 5 RETURN p.Id, p.Title, early_vote_count, unique_voters ORDER BY early_vote_count DESC LIMIT 20;"
+  },
+  {
+    "question": "Find users who have earned more than 5 badges and have written at least 10 comments, showing their badge count and comment count",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Id), COUNT(DISTINCT comments.Id) FROM users JOIN badges ON users.Id = badges.UserId JOIN comments ON users.Id = comments.UserId GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT badges.Id) > 5 AND COUNT(DISTINCT comments.Id) >= 10 ORDER BY COUNT(DISTINCT badges.Id) DESC",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[WROTE]->(comments:comments) WITH users, COUNT(DISTINCT badges) AS badgeCount, COUNT(DISTINCT comments) AS commentCount WHERE badgeCount > 5 AND commentCount >= 10 RETURN users.Id, users.DisplayName, badgeCount, commentCount ORDER BY badgeCount DESC"
+  },
+  {
+    "question": "List the top 10 posts by total vote count that have at least 3 comments and were created by users located in the United States",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT votes.Id), COUNT(DISTINCT comments.Id) FROM posts JOIN users ON posts.OwnerUserId = users.Id JOIN votes ON posts.Id = votes.PostId JOIN comments ON posts.Id = comments.PostId WHERE users.Location LIKE '%United States%' GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT comments.Id) >= 3 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 10",
+    "cypher": "MATCH (users:users)-[OWNS]->(posts:posts)<-[VOTED_ON]-(votes:votes), (comments:comments)-[IS_ON]->(posts) WHERE users.Location CONTAINS 'United States' WITH posts, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT comments) AS commentCount WHERE commentCount >= 3 RETURN posts.Id, posts.Title, voteCount, commentCount ORDER BY voteCount DESC LIMIT 10"
+  },
+  {
+    "question": "Find users who have cast votes on posts they also commented on, showing the count of such interactions",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT posts.Id) FROM users JOIN votes ON users.Id = votes.UserId JOIN posts ON votes.PostId = posts.Id JOIN comments ON posts.Id = comments.PostId AND users.Id = comments.UserId GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT posts.Id) > 0 ORDER BY COUNT(DISTINCT posts.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[CAST]->(votes:votes)-[VOTED_ON]->(posts:posts)<-[IS_ON]-(comments:comments)<-[WROTE]-(users) WITH users, COUNT(DISTINCT posts) AS interactionCount WHERE interactionCount > 0 RETURN users.Id, users.DisplayName, interactionCount ORDER BY interactionCount DESC LIMIT 20"
+  },
+  {
+    "question": "Show posts that have been edited more than 5 times and have received at least 10 upvotes (vote type 2)",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT postHistory.Id), COUNT(DISTINCT votes.Id) FROM posts JOIN postHistory ON posts.Id = postHistory.PostId JOIN votes ON posts.Id = votes.PostId WHERE votes.VoteTypeId = 2 GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT postHistory.Id) > 5 AND COUNT(DISTINCT votes.Id) >= 10 ORDER BY COUNT(DISTINCT votes.Id) DESC",
+    "cypher": "MATCH (postHistory:postHistory)-[RELATES_TO]->(posts:posts)<-[VOTED_ON]-(votes:votes) WHERE votes.VoteTypeId = 2 WITH posts, COUNT(DISTINCT postHistory) AS editCount, COUNT(DISTINCT votes) AS voteCount WHERE editCount > 5 AND voteCount >= 10 RETURN posts.Id, posts.Title, editCount, voteCount ORDER BY voteCount DESC"
+  },
+  {
+    "question": "Find users in Germany who have earned class 1 badges and have posts with accepted answers",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Id), COUNT(DISTINCT posts.Id) FROM users JOIN badges ON users.Id = badges.UserId JOIN posts ON users.Id = posts.OwnerUserId WHERE users.Location LIKE '%Germany%' AND badges.Class = 1 AND posts.AcceptedAnswerId > 0 GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT badges.Id) >= 1 ORDER BY COUNT(DISTINCT posts.Id) DESC",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[OWNS]->(posts:posts) WHERE users.Location CONTAINS 'Germany' AND badges.Class = 1 AND posts.AcceptedAnswerId > 0 WITH users, COUNT(DISTINCT badges) AS badgeCount, COUNT(DISTINCT posts) AS postCount WHERE badgeCount >= 1 RETURN users.Id, users.DisplayName, badgeCount, postCount ORDER BY postCount DESC"
+  },
+  {
+    "question": "List posts tagged with 'python' that have comments from at least 5 different users and more than 15 total votes",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT comments.UserId), COUNT(DISTINCT votes.Id) FROM posts JOIN comments ON posts.Id = comments.PostId JOIN votes ON posts.Id = votes.PostId WHERE posts.Tags LIKE '%python%' GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT comments.UserId) >= 5 AND COUNT(DISTINCT votes.Id) > 15 ORDER BY COUNT(DISTINCT votes.Id) DESC",
+    "cypher": "MATCH (comments:comments)-[IS_ON]->(posts:posts)<-[VOTED_ON]-(votes:votes) WHERE posts.Tags CONTAINS 'python' WITH posts, COUNT(DISTINCT comments.UserId) AS uniqueCommenters, COUNT(DISTINCT votes) AS voteCount WHERE uniqueCommenters >= 5 AND voteCount > 15 RETURN posts.Id, posts.Title, uniqueCommenters, voteCount ORDER BY voteCount DESC"
+  },
+  {
+    "question": "Find the top 15 users by total engagement (posts + comments + votes cast) who joined before 2015",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT posts.Id), COUNT(DISTINCT comments.Id), COUNT(DISTINCT votes.Id) FROM users LEFT JOIN posts ON users.Id = posts.OwnerUserId LEFT JOIN comments ON users.Id = comments.UserId LEFT JOIN votes ON users.Id = votes.UserId WHERE users.CreationDate < '2015-01-01' GROUP BY users.Id, users.DisplayName ORDER BY COUNT(DISTINCT posts.Id) + COUNT(DISTINCT comments.Id) + COUNT(DISTINCT votes.Id) DESC LIMIT 15",
+    "cypher": "MATCH (users:users) WHERE users.CreationDate < datetime('2015-01-01') OPTIONAL MATCH (users)-[OWNS]->(posts:posts) OPTIONAL MATCH (users)-[WROTE]->(comments:comments) OPTIONAL MATCH (users)-[CAST]->(votes:votes) WITH users, COUNT(DISTINCT posts) AS postCount, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT votes) AS voteCount RETURN users.Id, users.DisplayName, postCount, commentCount, voteCount ORDER BY postCount + commentCount + voteCount DESC LIMIT 15"
+  },
+  {
+    "question": "Show posts that link to other posts which have more than 20 votes, including the vote counts",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT postLinks.Id), SUM(voteCounts.voteCount) FROM posts JOIN postLinks ON posts.Id = postLinks.PostId JOIN (SELECT posts.Id, COUNT(votes.Id) AS voteCount FROM posts JOIN votes ON posts.Id = votes.PostId GROUP BY posts.Id HAVING COUNT(votes.Id) > 20) AS voteCounts ON postLinks.RelatedPostId = voteCounts.Id GROUP BY posts.Id, posts.Title ORDER BY COUNT(DISTINCT postLinks.Id) DESC LIMIT 20",
+    "cypher": "MATCH (posts:posts)-[HAS_LINK]->(postLinks:postLinks)-[POINTS_TO]->(relatedPosts:posts)<-[VOTED_ON]-(votes:votes) WITH posts, postLinks, relatedPosts, COUNT(votes) AS relatedVoteCount WHERE relatedVoteCount > 20 WITH posts, COUNT(DISTINCT postLinks) AS linkCount, SUM(relatedVoteCount) AS totalRelatedVotes RETURN posts.Id, posts.Title, linkCount, totalRelatedVotes ORDER BY linkCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find users who have earned badges named 'Teacher' or 'Student' and have written comments containing 'thanks'",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Id), COUNT(DISTINCT comments.Id) FROM users JOIN badges ON users.Id = badges.UserId JOIN comments ON users.Id = comments.UserId WHERE (badges.Name = 'Teacher' OR badges.Name = 'Student') AND comments.Text LIKE '%thanks%' GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT badges.Id) >= 1 ORDER BY COUNT(DISTINCT comments.Id) DESC",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[WROTE]->(comments:comments) WHERE (badges.Name = 'Teacher' OR badges.Name = 'Student') AND comments.Text CONTAINS 'thanks' WITH users, COUNT(DISTINCT badges) AS badgeCount, COUNT(DISTINCT comments) AS commentCount WHERE badgeCount >= 1 RETURN users.Id, users.DisplayName, badgeCount, commentCount ORDER BY commentCount DESC"
+  },
+  {
+    "question": "List the top 10 posts by comment count where all comments were made after 2020 and the post has at least one vote",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT comments.Id), COUNT(DISTINCT votes.Id) FROM posts JOIN comments ON posts.Id = comments.PostId JOIN votes ON posts.Id = votes.PostId WHERE comments.CreationDate > '2020-01-01' GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT votes.Id) >= 1 ORDER BY COUNT(DISTINCT comments.Id) DESC LIMIT 10",
+    "cypher": "MATCH (comments:comments)-[IS_ON]->(posts:posts)<-[VOTED_ON]-(votes:votes) WHERE comments.CreationDate > datetime('2020-01-01') WITH posts, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT votes) AS voteCount WHERE voteCount >= 1 RETURN posts.Id, posts.Title, commentCount, voteCount ORDER BY commentCount DESC LIMIT 10"
+  },
+  {
+    "question": "Find users who have cast more type 2 votes than type 1 votes on posts tagged with 'javascript'",
+    "sql": "SELECT users.Id, users.DisplayName, SUM(CASE WHEN votes.VoteTypeId = 2 THEN 1 ELSE 0 END), SUM(CASE WHEN votes.VoteTypeId = 1 THEN 1 ELSE 0 END) FROM users JOIN votes ON users.Id = votes.UserId JOIN posts ON votes.PostId = posts.Id WHERE posts.Tags LIKE '%javascript%' GROUP BY users.Id, users.DisplayName HAVING SUM(CASE WHEN votes.VoteTypeId = 2 THEN 1 ELSE 0 END) > SUM(CASE WHEN votes.VoteTypeId = 1 THEN 1 ELSE 0 END) ORDER BY SUM(CASE WHEN votes.VoteTypeId = 2 THEN 1 ELSE 0 END) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[CAST]->(votes:votes)-[VOTED_ON]->(posts:posts) WHERE posts.Tags CONTAINS 'javascript' WITH users, SUM(CASE WHEN votes.VoteTypeId = 2 THEN 1 ELSE 0 END) AS type2Votes, SUM(CASE WHEN votes.VoteTypeId = 1 THEN 1 ELSE 0 END) AS type1Votes WHERE type2Votes > type1Votes RETURN users.Id, users.DisplayName, type2Votes, type1Votes ORDER BY type2Votes DESC LIMIT 20"
+  },
+  {
+    "question": "Show posts with their owner information that have been edited by at least 3 different users and have received comments",
+    "sql": "SELECT posts.Id, posts.Title, users.DisplayName, COUNT(DISTINCT postHistory.UserId), COUNT(DISTINCT comments.Id) FROM posts JOIN users ON posts.OwnerUserId = users.Id JOIN postHistory ON posts.Id = postHistory.PostId JOIN comments ON posts.Id = comments.PostId GROUP BY posts.Id, posts.Title, users.DisplayName HAVING COUNT(DISTINCT postHistory.UserId) >= 3 ORDER BY COUNT(DISTINCT postHistory.UserId) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[OWNS]->(posts:posts)<-[RELATES_TO]-(postHistory:postHistory), (comments:comments)-[IS_ON]->(posts) WITH posts, users, COUNT(DISTINCT postHistory.UserId) AS editorCount, COUNT(DISTINCT comments) AS commentCount WHERE editorCount >= 3 RETURN posts.Id, posts.Title, users.DisplayName, editorCount, commentCount ORDER BY editorCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find the average number of badges per user for users who have at least 5 posts and are located in California",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT posts.Id), COUNT(DISTINCT badges.Id), COUNT(DISTINCT badges.Id) * 1.0 / COUNT(DISTINCT posts.Id) FROM users JOIN posts ON users.Id = posts.OwnerUserId JOIN badges ON users.Id = badges.UserId WHERE users.Location LIKE '%California%' GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT posts.Id) >= 5 ORDER BY COUNT(DISTINCT badges.Id) DESC",
+    "cypher": "MATCH (users:users)-[OWNS]->(posts:posts), (users)-[EARNED]->(badges:badges) WHERE users.Location CONTAINS 'California' WITH users, COUNT(DISTINCT posts) AS postCount, COUNT(DISTINCT badges) AS badgeCount WHERE postCount >= 5 RETURN users.Id, users.DisplayName, postCount, badgeCount, toFloat(badgeCount) / postCount ORDER BY badgeCount DESC"
+  },
+  {
+    "question": "List users who have earned tag-based badges and have posts with more than 10 comments each",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Id), COUNT(DISTINCT posts.Id) FROM users JOIN badges ON users.Id = badges.UserId JOIN posts ON users.Id = posts.OwnerUserId JOIN comments ON posts.Id = comments.PostId WHERE badges.TagBased = true GROUP BY users.Id, users.DisplayName, posts.Id HAVING COUNT(comments.Id) > 10",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[OWNS]->(posts:posts)<-[IS_ON]-(comments:comments) WHERE badges.TagBased = true WITH users, badges, posts, COUNT(comments) AS commentCount WHERE commentCount > 10 WITH users, COUNT(DISTINCT badges) AS tagBadgeCount, COUNT(DISTINCT posts) AS popularPostCount RETURN users.Id, users.DisplayName, tagBadgeCount, popularPostCount"
+  },
+  {
+    "question": "Find posts created between 2018 and 2020 that have both votes and comments, ordered by total engagement",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT votes.Id), COUNT(DISTINCT comments.Id), COUNT(DISTINCT votes.Id) + COUNT(DISTINCT comments.Id) FROM posts JOIN votes ON posts.Id = votes.PostId JOIN comments ON posts.Id = comments.PostId WHERE posts.CreationDate BETWEEN '2018-01-01' AND '2020-12-31' GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT votes.Id) > 0 AND COUNT(DISTINCT comments.Id) > 0 ORDER BY COUNT(DISTINCT votes.Id) + COUNT(DISTINCT comments.Id) DESC LIMIT 20",
+    "cypher": "MATCH (votes:votes)-[VOTED_ON]->(posts:posts)<-[IS_ON]-(comments:comments) WHERE posts.CreationDate >= datetime('2018-01-01') AND posts.CreationDate <= datetime('2020-12-31') WITH posts, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT comments) AS commentCount WHERE voteCount > 0 AND commentCount > 0 RETURN posts.Id, posts.Title, voteCount, commentCount, voteCount + commentCount ORDER BY voteCount + commentCount DESC LIMIT 20"
+  },
+  {
+    "question": "Show users who have voted on posts they don't own, grouped by vote type, having more than 100 votes",
+    "sql": "SELECT users.Id, users.DisplayName, votes.VoteTypeId, COUNT(votes.Id) FROM users JOIN votes ON users.Id = votes.UserId JOIN posts ON votes.PostId = posts.Id WHERE posts.OwnerUserId <> users.Id GROUP BY users.Id, users.DisplayName, votes.VoteTypeId HAVING COUNT(votes.Id) > 100 ORDER BY COUNT(votes.Id) DESC",
+    "cypher": "MATCH (users:users)-[CAST]->(votes:votes)-[VOTED_ON]->(posts:posts) WHERE posts.OwnerUserId <> users.Id WITH users, votes.VoteTypeId AS voteType, COUNT(votes) AS voteCount WHERE voteCount > 100 RETURN users.Id, users.DisplayName, voteType, voteCount ORDER BY voteCount DESC"
+  },
+  {
+    "question": "Find the top 20 most active commenters on posts with 'sql' tag who also have class 1 badges",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT comments.Id), COUNT(DISTINCT badges.Id) FROM users JOIN comments ON users.Id = comments.UserId JOIN posts ON comments.PostId = posts.Id JOIN badges ON users.Id = badges.UserId WHERE posts.Tags LIKE '%sql%' AND badges.Class = 1 GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT comments.Id) >= 1 ORDER BY COUNT(DISTINCT comments.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[WROTE]->(comments:comments)-[IS_ON]->(posts:posts), (users)-[EARNED]->(badges:badges) WHERE posts.Tags CONTAINS 'sql' AND badges.Class = 1 WITH users, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT badges) AS badgeCount WHERE commentCount >= 1 RETURN users.Id, users.DisplayName, commentCount, badgeCount ORDER BY commentCount DESC LIMIT 20"
+  },
+  {
+    "question": "List posts that have linked posts and the linked posts have received type 2 votes, showing counts",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT postLinks.Id), COUNT(DISTINCT votes.Id) FROM posts JOIN postLinks ON posts.Id = postLinks.PostId JOIN votes ON postLinks.RelatedPostId = votes.PostId WHERE votes.VoteTypeId = 2 GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT postLinks.Id) >= 2 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 15",
+    "cypher": "MATCH (posts:posts)-[HAS_LINK]->(postLinks:postLinks)-[POINTS_TO]->(relatedPosts:posts)<-[VOTED_ON]-(votes:votes) WHERE votes.VoteTypeId = 2 WITH posts, COUNT(DISTINCT postLinks) AS linkCount, COUNT(DISTINCT votes) AS voteCount WHERE linkCount >= 2 RETURN posts.Id, posts.Title, linkCount, voteCount ORDER BY voteCount DESC LIMIT 15"
+  },
+  {
+    "question": "Find users who have earned the 'Nice Answer' badge and whose posts have received at least 50 total votes",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Id), SUM(voteCounts.cnt) FROM users JOIN badges ON users.Id = badges.UserId JOIN posts ON users.Id = posts.OwnerUserId JOIN (SELECT votes.PostId, COUNT(votes.Id) AS cnt FROM votes GROUP BY votes.PostId) AS voteCounts ON posts.Id = voteCounts.PostId WHERE badges.Name = 'Nice Answer' GROUP BY users.Id, users.DisplayName HAVING SUM(voteCounts.cnt) >= 50 ORDER BY SUM(voteCounts.cnt) DESC",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[OWNS]->(posts:posts)<-[VOTED_ON]-(votes:votes) WHERE badges.Name = 'Nice Answer' WITH users, COUNT(DISTINCT badges) AS badgeCount, COUNT(votes) AS totalVotes WHERE totalVotes >= 50 RETURN users.Id, users.DisplayName, badgeCount, totalVotes ORDER BY totalVotes DESC"
+  },
+  {
+    "question": "Show the distribution of badge classes among users who have written more than 20 comments",
+    "sql": "SELECT badges.Class, COUNT(DISTINCT badges.Id), COUNT(DISTINCT users.Id) FROM badges JOIN users ON badges.UserId = users.Id JOIN comments ON users.Id = comments.UserId GROUP BY badges.Class, users.Id HAVING COUNT(DISTINCT comments.Id) > 20",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[WROTE]->(comments:comments) WITH users, badges.Class AS badgeClass, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT badges) AS badgeCount WHERE commentCount > 20 RETURN badgeClass, SUM(badgeCount), COUNT(DISTINCT users)"
+  },
+  {
+    "question": "Find posts with accepted answers where both the question and answer have received votes",
+    "sql": "SELECT posts.Id, posts.Title, posts.AcceptedAnswerId, COUNT(DISTINCT votes.Id) FROM posts JOIN votes ON posts.Id = votes.PostId JOIN posts AS answers ON posts.AcceptedAnswerId = answers.Id JOIN votes AS answerVotes ON answers.Id = answerVotes.PostId WHERE posts.PostTypeId = 1 AND posts.AcceptedAnswerId > 0 GROUP BY posts.Id, posts.Title, posts.AcceptedAnswerId HAVING COUNT(DISTINCT votes.Id) > 0 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 20",
+    "cypher": "MATCH (votes:votes)-[VOTED_ON]->(posts:posts)-[ACCEPTED_ANSWER]->(answers:posts)<-[VOTED_ON]-(answerVotes:votes) WHERE posts.PostTypeId = 1 WITH posts, answers, COUNT(DISTINCT votes) AS questionVotes, COUNT(DISTINCT answerVotes) AS answerVotes WHERE questionVotes > 0 AND answerVotes > 0 RETURN posts.Id, posts.Title, answers.Id, questionVotes, answerVotes ORDER BY questionVotes DESC LIMIT 20"
+  },
+  {
+    "question": "List users who have both written comments on and voted for the same posts, showing overlap count",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT posts.Id), COUNT(DISTINCT comments.Id), COUNT(DISTINCT votes.Id) FROM users JOIN comments ON users.Id = comments.UserId JOIN posts ON comments.PostId = posts.Id JOIN votes ON posts.Id = votes.PostId AND users.Id = votes.UserId GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT posts.Id) >= 5 ORDER BY COUNT(DISTINCT posts.Id) DESC LIMIT 15",
+    "cypher": "MATCH (users:users)-[WROTE]->(comments:comments)-[IS_ON]->(posts:posts)<-[VOTED_ON]-(votes:votes)<-[CAST]-(users) WITH users, COUNT(DISTINCT posts) AS overlapCount, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT votes) AS voteCount WHERE overlapCount >= 5 RETURN users.Id, users.DisplayName, overlapCount, commentCount, voteCount ORDER BY overlapCount DESC LIMIT 15"
+  },
+  {
+    "question": "Find the most edited posts per tag category where edits exceed 10 and post has votes",
+    "sql": "SELECT posts.Tags, posts.Id, posts.Title, COUNT(DISTINCT postHistory.Id), COUNT(DISTINCT votes.Id) FROM posts JOIN postHistory ON posts.Id = postHistory.PostId JOIN votes ON posts.Id = votes.PostId WHERE posts.Tags > '' GROUP BY posts.Tags, posts.Id, posts.Title HAVING COUNT(DISTINCT postHistory.Id) > 10 ORDER BY COUNT(DISTINCT postHistory.Id) DESC LIMIT 25",
+    "cypher": "MATCH (postHistory:postHistory)-[RELATES_TO]->(posts:posts)<-[VOTED_ON]-(votes:votes) WHERE posts.Tags > '' WITH posts, COUNT(DISTINCT postHistory) AS editCount, COUNT(DISTINCT votes) AS voteCount WHERE editCount > 10 RETURN posts.Tags, posts.Id, posts.Title, editCount, voteCount ORDER BY editCount DESC LIMIT 25"
+  },
+  {
+    "question": "Show users who earned badges in 2022 and have posts created in the same year with comments",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Id), COUNT(DISTINCT posts.Id), COUNT(DISTINCT comments.Id) FROM users JOIN badges ON users.Id = badges.UserId JOIN posts ON users.Id = posts.OwnerUserId JOIN comments ON posts.Id = comments.PostId WHERE badges.Date BETWEEN '2022-01-01' AND '2022-12-31' AND posts.CreationDate BETWEEN '2022-01-01' AND '2022-12-31' GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT badges.Id) >= 1 ORDER BY COUNT(DISTINCT posts.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[OWNS]->(posts:posts)<-[IS_ON]-(comments:comments) WHERE badges.Date >= datetime('2022-01-01') AND badges.Date <= datetime('2022-12-31') AND posts.CreationDate >= datetime('2022-01-01') AND posts.CreationDate <= datetime('2022-12-31') WITH users, COUNT(DISTINCT badges) AS badgeCount, COUNT(DISTINCT posts) AS postCount, COUNT(DISTINCT comments) AS commentCount WHERE badgeCount >= 1 RETURN users.Id, users.DisplayName, badgeCount, postCount, commentCount ORDER BY postCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find posts tagged with 'java' that have more type 2 votes than type 3 votes",
+    "sql": "SELECT posts.Id, posts.Title, SUM(CASE WHEN votes.VoteTypeId = 2 THEN 1 ELSE 0 END), SUM(CASE WHEN votes.VoteTypeId = 3 THEN 1 ELSE 0 END) FROM posts JOIN votes ON posts.Id = votes.PostId JOIN users ON posts.OwnerUserId = users.Id WHERE posts.Tags LIKE '%java%' GROUP BY posts.Id, posts.Title HAVING SUM(CASE WHEN votes.VoteTypeId = 2 THEN 1 ELSE 0 END) > SUM(CASE WHEN votes.VoteTypeId = 3 THEN 1 ELSE 0 END) ORDER BY SUM(CASE WHEN votes.VoteTypeId = 2 THEN 1 ELSE 0 END) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[OWNS]->(posts:posts)<-[VOTED_ON]-(votes:votes) WHERE posts.Tags CONTAINS 'java' WITH posts, users, SUM(CASE WHEN votes.VoteTypeId = 2 THEN 1 ELSE 0 END) AS upvotes, SUM(CASE WHEN votes.VoteTypeId = 3 THEN 1 ELSE 0 END) AS downvotes WHERE upvotes > downvotes RETURN posts.Id, posts.Title, upvotes, downvotes ORDER BY upvotes DESC LIMIT 20"
+  },
+  {
+    "question": "List users from the UK who have the most combined badges and comments on posts with accepted answers",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Id), COUNT(DISTINCT comments.Id) FROM users JOIN badges ON users.Id = badges.UserId JOIN comments ON users.Id = comments.UserId JOIN posts ON comments.PostId = posts.Id WHERE users.Location LIKE '%UK%' AND posts.AcceptedAnswerId > 0 GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT badges.Id) >= 1 OR COUNT(DISTINCT comments.Id) >= 1 ORDER BY COUNT(DISTINCT badges.Id) + COUNT(DISTINCT comments.Id) DESC LIMIT 15",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[WROTE]->(comments:comments)-[IS_ON]->(posts:posts) WHERE users.Location CONTAINS 'UK' AND posts.AcceptedAnswerId > 0 WITH users, COUNT(DISTINCT badges) AS badgeCount, COUNT(DISTINCT comments) AS commentCount WHERE badgeCount >= 1 OR commentCount >= 1 RETURN users.Id, users.DisplayName, badgeCount, commentCount ORDER BY badgeCount + commentCount DESC LIMIT 15"
+  },
+  {
+    "question": "Find the top 10 posts by unique voter count that also have post history entries of type 2",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT votes.UserId), COUNT(DISTINCT postHistory.Id) FROM posts JOIN votes ON posts.Id = votes.PostId JOIN postHistory ON posts.Id = postHistory.PostId WHERE postHistory.PostHistoryTypeId = 2 GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT postHistory.Id) >= 1 ORDER BY COUNT(DISTINCT votes.UserId) DESC LIMIT 10",
+    "cypher": "MATCH (votes:votes)-[VOTED_ON]->(posts:posts)<-[RELATES_TO]-(postHistory:postHistory) WHERE postHistory.PostHistoryTypeId = 2 WITH posts, COUNT(DISTINCT votes.UserId) AS uniqueVoters, COUNT(DISTINCT postHistory) AS historyCount WHERE historyCount >= 1 RETURN posts.Id, posts.Title, uniqueVoters, historyCount ORDER BY uniqueVoters DESC LIMIT 10"
+  },
+  {
+    "question": "Show badges earned by users whose posts have been linked to more than 5 times",
+    "sql": "SELECT users.Id, users.DisplayName, badges.Name, COUNT(DISTINCT badges.Id), COUNT(DISTINCT postLinks.Id) FROM users JOIN badges ON users.Id = badges.UserId JOIN posts ON users.Id = posts.OwnerUserId JOIN postLinks ON posts.Id = postLinks.RelatedPostId GROUP BY users.Id, users.DisplayName, badges.Name HAVING COUNT(DISTINCT postLinks.Id) > 5 ORDER BY COUNT(DISTINCT postLinks.Id) DESC",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[OWNS]->(posts:posts)<-[POINTS_TO]-(postLinks:postLinks) WITH users, badges.Name AS badgeName, COUNT(DISTINCT badges) AS badgeCount, COUNT(DISTINCT postLinks) AS linkCount WHERE linkCount > 5 RETURN users.Id, users.DisplayName, badgeName, badgeCount, linkCount ORDER BY linkCount DESC"
+  },
+  {
+    "question": "Find users who have voted on posts and the post owner has earned badges, showing engagement metrics",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT votes.Id), COUNT(DISTINCT badges.Id) FROM users JOIN votes ON users.Id = votes.UserId JOIN posts ON votes.PostId = posts.Id JOIN badges ON posts.OwnerUserId = badges.UserId GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT votes.Id) > 50 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[CAST]->(votes:votes)-[VOTED_ON]->(posts:posts)<-[OWNS]-(owners:users)-[EARNED]->(badges:badges) WITH users, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT badges) AS ownerBadges WHERE voteCount > 50 RETURN users.Id, users.DisplayName, voteCount, ownerBadges ORDER BY voteCount DESC LIMIT 20"
+  },
+  {
+    "question": "List posts where the owner has written comments on other posts and earned class 2 badges",
+    "sql": "SELECT DISTINCT posts.Id, posts.Title, users.DisplayName, COUNT(DISTINCT comments.Id), COUNT(DISTINCT badges.Id) FROM posts JOIN users ON posts.OwnerUserId = users.Id JOIN comments ON users.Id = comments.UserId JOIN badges ON users.Id = badges.UserId WHERE comments.PostId <> posts.Id AND badges.Class = 2 GROUP BY posts.Id, posts.Title, users.DisplayName HAVING COUNT(DISTINCT comments.Id) >= 5 ORDER BY COUNT(DISTINCT badges.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[OWNS]->(posts:posts), (users)-[WROTE]->(comments:comments)-[IS_ON]->(otherPosts:posts), (users)-[EARNED]->(badges:badges) WHERE otherPosts.Id <> posts.Id AND badges.Class = 2 WITH posts, users, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT badges) AS badgeCount WHERE commentCount >= 5 RETURN DISTINCT posts.Id, posts.Title, users.DisplayName, commentCount, badgeCount ORDER BY badgeCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find the average vote count per post for users who have more than 10 badges",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Id), COUNT(DISTINCT posts.Id), AVG(voteCounts.cnt) FROM users JOIN badges ON users.Id = badges.UserId JOIN posts ON users.Id = posts.OwnerUserId JOIN (SELECT votes.PostId, COUNT(votes.Id) AS cnt FROM votes GROUP BY votes.PostId) AS voteCounts ON posts.Id = voteCounts.PostId GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT badges.Id) > 10 ORDER BY AVG(voteCounts.cnt) DESC LIMIT 15",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[OWNS]->(posts:posts)<-[VOTED_ON]-(votes:votes) WITH users, COUNT(DISTINCT badges) AS badgeCount, posts, COUNT(votes) AS postVotes WHERE badgeCount > 10 WITH users, badgeCount, COUNT(DISTINCT posts) AS postCount, AVG(postVotes) AS avgVotes RETURN users.Id, users.DisplayName, badgeCount, postCount, avgVotes ORDER BY avgVotes DESC LIMIT 15"
+  },
+  {
+    "question": "Show posts with comments from users who joined in the same year the post was created",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT comments.Id), COUNT(DISTINCT users.Id) FROM posts JOIN comments ON posts.Id = comments.PostId JOIN users ON comments.UserId = users.Id WHERE EXTRACT(YEAR FROM users.CreationDate) = EXTRACT(YEAR FROM posts.CreationDate) GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT comments.Id) >= 3 ORDER BY COUNT(DISTINCT comments.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[WROTE]->(comments:comments)-[IS_ON]->(posts:posts) WHERE users.CreationDate.year = posts.CreationDate.year WITH posts, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT users) AS userCount WHERE commentCount >= 3 RETURN posts.Id, posts.Title, commentCount, userCount ORDER BY commentCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find users who have posts in the posts table that they also edited in postHistory",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT posts.Id), COUNT(DISTINCT postHistory.Id) FROM users JOIN posts ON users.Id = posts.OwnerUserId JOIN postHistory ON posts.Id = postHistory.PostId AND users.Id = postHistory.UserId GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT posts.Id) >= 3 ORDER BY COUNT(DISTINCT postHistory.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[OWNS]->(posts:posts)<-[RELATES_TO]-(postHistory:postHistory)<-[EDITED]-(users) WITH users, COUNT(DISTINCT posts) AS postCount, COUNT(DISTINCT postHistory) AS editCount WHERE postCount >= 3 RETURN users.Id, users.DisplayName, postCount, editCount ORDER BY editCount DESC LIMIT 20"
+  },
+  {
+    "question": "List the top 15 posts by engagement that have both link type 1 and link type 2 connections",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT CASE WHEN postLinks.LinkTypeId = 1 THEN postLinks.Id END), COUNT(DISTINCT CASE WHEN postLinks.LinkTypeId = 2 THEN postLinks.Id END), COUNT(DISTINCT votes.Id) FROM posts JOIN postLinks ON posts.Id = postLinks.PostId JOIN votes ON posts.Id = votes.PostId GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT CASE WHEN postLinks.LinkTypeId = 1 THEN postLinks.Id END) > 0 AND COUNT(DISTINCT CASE WHEN postLinks.LinkTypeId = 2 THEN postLinks.Id END) > 0 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 15",
+    "cypher": "MATCH (posts:posts)-[HAS_LINK]->(postLinks:postLinks), (votes:votes)-[VOTED_ON]->(posts) WITH posts, SUM(CASE WHEN postLinks.LinkTypeId = 1 THEN 1 ELSE 0 END) AS type1Links, SUM(CASE WHEN postLinks.LinkTypeId = 2 THEN 1 ELSE 0 END) AS type2Links, COUNT(DISTINCT votes) AS voteCount WHERE type1Links > 0 AND type2Links > 0 RETURN posts.Id, posts.Title, type1Links, type2Links, voteCount ORDER BY voteCount DESC LIMIT 15"
+  },
+  {
+    "question": "Find users who have voted on posts tagged with both 'python' and 'django'",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT votes.Id), COUNT(DISTINCT posts.Id) FROM users JOIN votes ON users.Id = votes.UserId JOIN posts ON votes.PostId = posts.Id WHERE posts.Tags LIKE '%python%' AND posts.Tags LIKE '%django%' GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT votes.Id) >= 2 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[CAST]->(votes:votes)-[VOTED_ON]->(posts:posts) WHERE posts.Tags CONTAINS 'python' AND posts.Tags CONTAINS 'django' WITH users, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT posts) AS postCount WHERE voteCount >= 2 RETURN users.Id, users.DisplayName, voteCount, postCount ORDER BY voteCount DESC LIMIT 20"
+  },
+  {
+    "question": "Show the top commenters on posts owned by users with the 'Teacher' badge",
+    "sql": "SELECT commenters.Id, commenters.DisplayName, COUNT(DISTINCT comments.Id), COUNT(DISTINCT posts.Id) FROM users AS commenters JOIN comments ON commenters.Id = comments.UserId JOIN posts ON comments.PostId = posts.Id JOIN users AS owners ON posts.OwnerUserId = owners.Id JOIN badges ON owners.Id = badges.UserId WHERE badges.Name = 'Teacher' GROUP BY commenters.Id, commenters.DisplayName HAVING COUNT(DISTINCT comments.Id) >= 5 ORDER BY COUNT(DISTINCT comments.Id) DESC LIMIT 15",
+    "cypher": "MATCH (commenters:users)-[WROTE]->(comments:comments)-[IS_ON]->(posts:posts)<-[OWNS]-(owners:users)-[EARNED]->(badges:badges) WHERE badges.Name = 'Teacher' WITH commenters, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT posts) AS postCount WHERE commentCount >= 5 RETURN commenters.Id, commenters.DisplayName, commentCount, postCount ORDER BY commentCount DESC LIMIT 15"
+  },
+  {
+    "question": "Find posts that have received votes from users who also earned badges on the same day",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT votes.Id), COUNT(DISTINCT badges.Id) FROM posts JOIN votes ON posts.Id = votes.PostId JOIN badges ON votes.UserId = badges.UserId WHERE DATE(votes.CreationDate) = DATE(badges.Date) GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT votes.Id) >= 1 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 20",
+    "cypher": "MATCH (votes:votes)-[VOTED_ON]->(posts:posts), (users:users)-[CAST]->(votes), (users)-[EARNED]->(badges:badges) WHERE date(votes.CreationDate) = date(badges.Date) WITH posts, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT badges) AS badgeCount WHERE voteCount >= 1 RETURN posts.Id, posts.Title, voteCount, badgeCount ORDER BY voteCount DESC LIMIT 20"
+  },
+  {
+    "question": "List users who have earned multiple badge classes and have commented on posts with high vote counts",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Class), COUNT(DISTINCT comments.Id) FROM users JOIN badges ON users.Id = badges.UserId JOIN comments ON users.Id = comments.UserId JOIN posts ON comments.PostId = posts.Id JOIN votes ON posts.Id = votes.PostId GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT badges.Class) >= 2 AND COUNT(DISTINCT votes.Id) > 10 ORDER BY COUNT(DISTINCT badges.Class) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[WROTE]->(comments:comments)-[IS_ON]->(posts:posts)<-[VOTED_ON]-(votes:votes) WITH users, COUNT(DISTINCT badges.Class) AS classCount, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT votes) AS voteCount WHERE classCount >= 2 AND voteCount > 10 RETURN users.Id, users.DisplayName, classCount, commentCount ORDER BY classCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find the average number of comments per post for each badge class of the post owner",
+    "sql": "SELECT badges.Class, AVG(commentCounts.cnt), COUNT(DISTINCT posts.Id) FROM badges JOIN users ON badges.UserId = users.Id JOIN posts ON users.Id = posts.OwnerUserId JOIN (SELECT comments.PostId, COUNT(comments.Id) AS cnt FROM comments GROUP BY comments.PostId) AS commentCounts ON posts.Id = commentCounts.PostId GROUP BY badges.Class ORDER BY AVG(commentCounts.cnt) DESC",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[OWNS]->(posts:posts)<-[IS_ON]-(comments:comments) WITH badges.Class AS badgeClass, posts, COUNT(comments) AS commentCount WITH badgeClass, AVG(commentCount) AS avgComments, COUNT(DISTINCT posts) AS postCount RETURN badgeClass, avgComments, postCount ORDER BY avgComments DESC"
+  },
+  {
+    "question": "Show posts with the most diverse set of comment authors who also have votes",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT comments.UserId), COUNT(DISTINCT votes.Id) FROM posts JOIN comments ON posts.Id = comments.PostId JOIN votes ON posts.Id = votes.PostId GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT comments.UserId) >= 10 AND COUNT(DISTINCT votes.Id) >= 5 ORDER BY COUNT(DISTINCT comments.UserId) DESC LIMIT 20",
+    "cypher": "MATCH (comments:comments)-[IS_ON]->(posts:posts)<-[VOTED_ON]-(votes:votes) WITH posts, COUNT(DISTINCT comments.UserId) AS authorCount, COUNT(DISTINCT votes) AS voteCount WHERE authorCount >= 10 AND voteCount >= 5 RETURN posts.Id, posts.Title, authorCount, voteCount ORDER BY authorCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find users who have cast votes on posts edited by other users and have earned badges",
+    "sql": "SELECT voters.Id, voters.DisplayName, COUNT(DISTINCT votes.Id), COUNT(DISTINCT badges.Id) FROM users AS voters JOIN votes ON voters.Id = votes.UserId JOIN posts ON votes.PostId = posts.Id JOIN postHistory ON posts.Id = postHistory.PostId JOIN badges ON voters.Id = badges.UserId WHERE postHistory.UserId <> voters.Id GROUP BY voters.Id, voters.DisplayName HAVING COUNT(DISTINCT votes.Id) >= 10 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 20",
+    "cypher": "MATCH (voters:users)-[CAST]->(votes:votes)-[VOTED_ON]->(posts:posts)<-[RELATES_TO]-(postHistory:postHistory), (voters)-[EARNED]->(badges:badges) WHERE postHistory.UserId <> voters.Id WITH voters, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT badges) AS badgeCount WHERE voteCount >= 10 RETURN voters.Id, voters.DisplayName, voteCount, badgeCount ORDER BY voteCount DESC LIMIT 20"
+  },
+  {
+    "question": "List posts tagged with 'c#' with at least 5 comments from users who have earned class 1 badges",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT comments.Id), COUNT(DISTINCT badges.Id) FROM posts JOIN comments ON posts.Id = comments.PostId JOIN users ON comments.UserId = users.Id JOIN badges ON users.Id = badges.UserId WHERE posts.Tags LIKE '%c#%' AND badges.Class = 1 GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT comments.Id) >= 5 ORDER BY COUNT(DISTINCT comments.Id) DESC LIMIT 15",
+    "cypher": "MATCH (comments:comments)-[IS_ON]->(posts:posts), (users:users)-[WROTE]->(comments), (users)-[EARNED]->(badges:badges) WHERE posts.Tags CONTAINS 'c#' AND badges.Class = 1 WITH posts, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT badges) AS badgeCount WHERE commentCount >= 5 RETURN posts.Id, posts.Title, commentCount, badgeCount ORDER BY commentCount DESC LIMIT 15"
+  },
+  {
+    "question": "Find the top 10 users by total engagement on posts created after 2021",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT posts.Id), COUNT(DISTINCT comments.Id), COUNT(DISTINCT votes.Id) FROM users JOIN posts ON users.Id = posts.OwnerUserId JOIN comments ON users.Id = comments.UserId JOIN votes ON users.Id = votes.UserId WHERE posts.CreationDate > '2021-01-01' GROUP BY users.Id, users.DisplayName ORDER BY COUNT(DISTINCT posts.Id) + COUNT(DISTINCT comments.Id) + COUNT(DISTINCT votes.Id) DESC LIMIT 10",
+    "cypher": "MATCH (users:users)-[OWNS]->(posts:posts) WHERE posts.CreationDate > datetime('2021-01-01') OPTIONAL MATCH (users)-[WROTE]->(comments:comments) OPTIONAL MATCH (users)-[CAST]->(votes:votes) WITH users, COUNT(DISTINCT posts) AS postCount, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT votes) AS voteCount RETURN users.Id, users.DisplayName, postCount, commentCount, voteCount ORDER BY postCount + commentCount + voteCount DESC LIMIT 10"
+  },
+  {
+    "question": "Show posts that have been linked to and commented on by the same user",
+    "sql": "SELECT DISTINCT posts.Id, posts.Title, COUNT(DISTINCT postLinks.Id), COUNT(DISTINCT comments.Id) FROM posts JOIN postLinks ON posts.Id = postLinks.RelatedPostId JOIN comments ON posts.Id = comments.PostId JOIN users ON comments.UserId = users.Id GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT postLinks.Id) >= 2 AND COUNT(DISTINCT comments.Id) >= 2 ORDER BY COUNT(DISTINCT postLinks.Id) DESC LIMIT 20",
+    "cypher": "MATCH (postLinks:postLinks)-[POINTS_TO]->(posts:posts)<-[IS_ON]-(comments:comments) WITH posts, COUNT(DISTINCT postLinks) AS linkCount, COUNT(DISTINCT comments) AS commentCount WHERE linkCount >= 2 AND commentCount >= 2 RETURN posts.Id, posts.Title, linkCount, commentCount ORDER BY linkCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find users who have earned badges and commented on posts they also voted on",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Id), COUNT(DISTINCT posts.Id) FROM users JOIN badges ON users.Id = badges.UserId JOIN comments ON users.Id = comments.UserId JOIN posts ON comments.PostId = posts.Id JOIN votes ON posts.Id = votes.PostId AND users.Id = votes.UserId GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT badges.Id) >= 1 AND COUNT(DISTINCT posts.Id) >= 3 ORDER BY COUNT(DISTINCT badges.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[WROTE]->(comments:comments)-[IS_ON]->(posts:posts)<-[VOTED_ON]-(votes:votes)<-[CAST]-(users) WITH users, COUNT(DISTINCT badges) AS badgeCount, COUNT(DISTINCT posts) AS postCount WHERE badgeCount >= 1 AND postCount >= 3 RETURN users.Id, users.DisplayName, badgeCount, postCount ORDER BY badgeCount DESC LIMIT 20"
+  },
+  {
+    "question": "List posts by vote count where the post owner has more than 3 class 1 badges",
+    "sql": "SELECT posts.Id, posts.Title, users.DisplayName, COUNT(DISTINCT votes.Id), COUNT(DISTINCT badges.Id) FROM posts JOIN users ON posts.OwnerUserId = users.Id JOIN badges ON users.Id = badges.UserId JOIN votes ON posts.Id = votes.PostId WHERE badges.Class = 1 GROUP BY posts.Id, posts.Title, users.DisplayName HAVING COUNT(DISTINCT badges.Id) > 3 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[OWNS]->(posts:posts)<-[VOTED_ON]-(votes:votes), (users)-[EARNED]->(badges:badges) WHERE badges.Class = 1 WITH posts, users, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT badges) AS class1BadgeCount WHERE class1BadgeCount > 3 RETURN posts.Id, posts.Title, users.DisplayName, voteCount, class1BadgeCount ORDER BY voteCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find the most active editors who have also written comments and earned tag-based badges",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT postHistory.Id), COUNT(DISTINCT comments.Id), COUNT(DISTINCT badges.Id) FROM users JOIN postHistory ON users.Id = postHistory.UserId JOIN comments ON users.Id = comments.UserId JOIN badges ON users.Id = badges.UserId WHERE badges.TagBased = true GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT postHistory.Id) >= 10 ORDER BY COUNT(DISTINCT postHistory.Id) DESC LIMIT 15",
+    "cypher": "MATCH (users:users)-[EDITED]->(postHistory:postHistory), (users)-[WROTE]->(comments:comments), (users)-[EARNED]->(badges:badges) WHERE badges.TagBased = true WITH users, COUNT(DISTINCT postHistory) AS editCount, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT badges) AS tagBadgeCount WHERE editCount >= 10 RETURN users.Id, users.DisplayName, editCount, commentCount, tagBadgeCount ORDER BY editCount DESC LIMIT 15"
+  },
+  {
+    "question": "Show posts with accepted answers that have more comments than the original question",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT comments.Id), posts.AcceptedAnswerId FROM posts JOIN comments ON posts.Id = comments.PostId JOIN posts AS answers ON posts.AcceptedAnswerId = answers.Id JOIN comments AS answerComments ON answers.Id = answerComments.PostId WHERE posts.PostTypeId = 1 GROUP BY posts.Id, posts.Title, posts.AcceptedAnswerId HAVING COUNT(DISTINCT comments.Id) > 0 ORDER BY COUNT(DISTINCT comments.Id) DESC LIMIT 20",
+    "cypher": "MATCH (comments:comments)-[IS_ON]->(posts:posts)-[ACCEPTED_ANSWER]->(answers:posts)<-[IS_ON]-(answerComments:comments) WHERE posts.PostTypeId = 1 WITH posts, answers, COUNT(DISTINCT comments) AS questionComments, COUNT(DISTINCT answerComments) AS answerCommentCount WHERE answerCommentCount > questionComments RETURN posts.Id, posts.Title, questionComments, answerCommentCount ORDER BY answerCommentCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find users who have earned the most badges in different categories while maintaining active commenting",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Name), COUNT(DISTINCT badges.Id), COUNT(DISTINCT comments.Id) FROM users JOIN badges ON users.Id = badges.UserId JOIN comments ON users.Id = comments.UserId GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT badges.Name) >= 5 AND COUNT(DISTINCT comments.Id) >= 20 ORDER BY COUNT(DISTINCT badges.Name) DESC LIMIT 15",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[WROTE]->(comments:comments) WITH users, COUNT(DISTINCT badges.Name) AS uniqueBadgeTypes, COUNT(DISTINCT badges) AS totalBadges, COUNT(DISTINCT comments) AS commentCount WHERE uniqueBadgeTypes >= 5 AND commentCount >= 20 RETURN users.Id, users.DisplayName, uniqueBadgeTypes, totalBadges, commentCount ORDER BY uniqueBadgeTypes DESC LIMIT 15"
+  },
+  {
+    "question": "List posts tagged with 'api' that have votes from users who also own posts with accepted answers",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT votes.Id), COUNT(DISTINCT voterPosts.Id) FROM posts JOIN votes ON posts.Id = votes.PostId JOIN users ON votes.UserId = users.Id JOIN posts AS voterPosts ON users.Id = voterPosts.OwnerUserId WHERE posts.Tags LIKE '%api%' AND voterPosts.AcceptedAnswerId > 0 GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT votes.Id) >= 3 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 20",
+    "cypher": "MATCH (votes:votes)-[VOTED_ON]->(posts:posts), (voters:users)-[CAST]->(votes), (voters)-[OWNS]->(voterPosts:posts) WHERE posts.Tags CONTAINS 'api' AND voterPosts.AcceptedAnswerId > 0 WITH posts, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT voterPosts) AS voterPostCount WHERE voteCount >= 3 RETURN posts.Id, posts.Title, voteCount, voterPostCount ORDER BY voteCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find posts that have been edited by users who also commented on the same post and earned badges",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT postHistory.Id), COUNT(DISTINCT comments.Id), COUNT(DISTINCT badges.Id) FROM posts JOIN postHistory ON posts.Id = postHistory.PostId JOIN comments ON posts.Id = comments.PostId AND postHistory.UserId = comments.UserId JOIN badges ON postHistory.UserId = badges.UserId GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT postHistory.Id) >= 1 ORDER BY COUNT(DISTINCT postHistory.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[EDITED]->(postHistory:postHistory)-[RELATES_TO]->(posts:posts)<-[IS_ON]-(comments:comments)<-[WROTE]-(users), (users)-[EARNED]->(badges:badges) WITH posts, COUNT(DISTINCT postHistory) AS editCount, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT badges) AS badgeCount WHERE editCount >= 1 RETURN posts.Id, posts.Title, editCount, commentCount, badgeCount ORDER BY editCount DESC LIMIT 20"
+  },
+  {
+    "question": "Show the distribution of votes per post type for users located in India who have badges",
+    "sql": "SELECT posts.PostTypeId, COUNT(DISTINCT votes.Id), COUNT(DISTINCT users.Id) FROM votes JOIN posts ON votes.PostId = posts.Id JOIN users ON votes.UserId = users.Id JOIN badges ON users.Id = badges.UserId WHERE users.Location LIKE '%India%' GROUP BY posts.PostTypeId HAVING COUNT(DISTINCT votes.Id) >= 10 ORDER BY COUNT(DISTINCT votes.Id) DESC",
+    "cypher": "MATCH (users:users)-[CAST]->(votes:votes)-[VOTED_ON]->(posts:posts), (users)-[EARNED]->(badges:badges) WHERE users.Location CONTAINS 'India' WITH posts.PostTypeId AS postType, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT users) AS userCount WHERE voteCount >= 10 RETURN postType, voteCount, userCount ORDER BY voteCount DESC"
+  },
+  {
+    "question": "Find users who have posts with more than 5 post links and have earned class 2 or 3 badges",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT posts.Id), COUNT(DISTINCT postLinks.Id), COUNT(DISTINCT badges.Id) FROM users JOIN posts ON users.Id = posts.OwnerUserId JOIN postLinks ON posts.Id = postLinks.PostId JOIN badges ON users.Id = badges.UserId WHERE badges.Class IN (2, 3) GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT postLinks.Id) > 5 ORDER BY COUNT(DISTINCT postLinks.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[OWNS]->(posts:posts)-[HAS_LINK]->(postLinks:postLinks), (users)-[EARNED]->(badges:badges) WHERE badges.Class IN [2, 3] WITH users, COUNT(DISTINCT posts) AS postCount, COUNT(DISTINCT postLinks) AS linkCount, COUNT(DISTINCT badges) AS badgeCount WHERE linkCount > 5 RETURN users.Id, users.DisplayName, postCount, linkCount, badgeCount ORDER BY linkCount DESC LIMIT 20"
+  },
+  {
+    "question": "List the top 20 posts by total engagement from users who joined between 2015 and 2020",
+    "sql": "SELECT posts.Id, posts.Title, users.DisplayName, COUNT(DISTINCT comments.Id), COUNT(DISTINCT votes.Id), COUNT(DISTINCT comments.Id) + COUNT(DISTINCT votes.Id) FROM posts JOIN users ON posts.OwnerUserId = users.Id JOIN comments ON posts.Id = comments.PostId JOIN votes ON posts.Id = votes.PostId WHERE users.CreationDate BETWEEN '2015-01-01' AND '2020-12-31' GROUP BY posts.Id, posts.Title, users.DisplayName ORDER BY COUNT(DISTINCT comments.Id) + COUNT(DISTINCT votes.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[OWNS]->(posts:posts)<-[IS_ON]-(comments:comments), (votes:votes)-[VOTED_ON]->(posts) WHERE users.CreationDate >= datetime('2015-01-01') AND users.CreationDate <= datetime('2020-12-31') WITH posts, users, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT votes) AS voteCount RETURN posts.Id, posts.Title, users.DisplayName, commentCount, voteCount, commentCount + voteCount ORDER BY commentCount + voteCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find posts where the accepted answer has more votes than the question itself",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT questionVotes.Id), COUNT(DISTINCT answerVotes.Id) FROM posts JOIN votes AS questionVotes ON posts.Id = questionVotes.PostId JOIN posts AS answers ON posts.AcceptedAnswerId = answers.Id JOIN votes AS answerVotes ON answers.Id = answerVotes.PostId WHERE posts.PostTypeId = 1 AND posts.AcceptedAnswerId > 0 GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT answerVotes.Id) > COUNT(DISTINCT questionVotes.Id) ORDER BY COUNT(DISTINCT answerVotes.Id) DESC LIMIT 20",
+    "cypher": "MATCH (questionVotes:votes)-[VOTED_ON]->(posts:posts)-[ACCEPTED_ANSWER]->(answers:posts)<-[VOTED_ON]-(answerVotes:votes) WHERE posts.PostTypeId = 1 WITH posts, answers, COUNT(DISTINCT questionVotes) AS questionVoteCount, COUNT(DISTINCT answerVotes) AS answerVoteCount WHERE answerVoteCount > questionVoteCount RETURN posts.Id, posts.Title, questionVoteCount, answerVoteCount ORDER BY answerVoteCount DESC LIMIT 20"
+  },
+  {
+    "question": "Show users who have voted, commented, and earned badges all in the same month",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT votes.Id), COUNT(DISTINCT comments.Id), COUNT(DISTINCT badges.Id) FROM users JOIN votes ON users.Id = votes.UserId JOIN comments ON users.Id = comments.UserId JOIN badges ON users.Id = badges.UserId WHERE EXTRACT(MONTH FROM votes.CreationDate) = EXTRACT(MONTH FROM comments.CreationDate) AND EXTRACT(MONTH FROM comments.CreationDate) = EXTRACT(MONTH FROM badges.Date) GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT votes.Id) >= 5 ORDER BY COUNT(DISTINCT badges.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[CAST]->(votes:votes), (users)-[WROTE]->(comments:comments), (users)-[EARNED]->(badges:badges) WHERE votes.CreationDate.month = comments.CreationDate.month AND comments.CreationDate.month = badges.Date.month WITH users, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT badges) AS badgeCount WHERE voteCount >= 5 RETURN users.Id, users.DisplayName, voteCount, commentCount, badgeCount ORDER BY badgeCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find posts with comments that have been edited multiple times by different users",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT comments.Id), COUNT(DISTINCT postHistory.UserId), COUNT(DISTINCT postHistory.Id) FROM posts JOIN comments ON posts.Id = comments.PostId JOIN postHistory ON posts.Id = postHistory.PostId GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT postHistory.UserId) >= 3 AND COUNT(DISTINCT postHistory.Id) >= 5 ORDER BY COUNT(DISTINCT postHistory.UserId) DESC LIMIT 20",
+    "cypher": "MATCH (comments:comments)-[IS_ON]->(posts:posts)<-[RELATES_TO]-(postHistory:postHistory) WITH posts, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT postHistory.UserId) AS editorCount, COUNT(DISTINCT postHistory) AS editCount WHERE editorCount >= 3 AND editCount >= 5 RETURN posts.Id, posts.Title, commentCount, editorCount, editCount ORDER BY editorCount DESC LIMIT 20"
+  },
+  {
+    "question": "List users who have earned the 'Editor' badge and whose posts have been linked to by other posts",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Id), COUNT(DISTINCT postLinks.Id) FROM users JOIN badges ON users.Id = badges.UserId JOIN posts ON users.Id = posts.OwnerUserId JOIN postLinks ON posts.Id = postLinks.RelatedPostId WHERE badges.Name = 'Editor' GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT postLinks.Id) >= 2 ORDER BY COUNT(DISTINCT postLinks.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[OWNS]->(posts:posts)<-[POINTS_TO]-(postLinks:postLinks) WHERE badges.Name = 'Editor' WITH users, COUNT(DISTINCT badges) AS badgeCount, COUNT(DISTINCT postLinks) AS linkCount WHERE linkCount >= 2 RETURN users.Id, users.DisplayName, badgeCount, linkCount ORDER BY linkCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find the correlation between user badge count and average votes received on their posts",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Id), COUNT(DISTINCT posts.Id), AVG(voteCounts.cnt) FROM users JOIN badges ON users.Id = badges.UserId JOIN posts ON users.Id = posts.OwnerUserId JOIN (SELECT votes.PostId, COUNT(votes.Id) AS cnt FROM votes GROUP BY votes.PostId) AS voteCounts ON posts.Id = voteCounts.PostId GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT badges.Id) >= 5 ORDER BY COUNT(DISTINCT badges.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[OWNS]->(posts:posts)<-[VOTED_ON]-(votes:votes) WITH users, COUNT(DISTINCT badges) AS badgeCount, posts, COUNT(votes) AS postVotes WHERE badgeCount >= 5 WITH users, badgeCount, COUNT(DISTINCT posts) AS postCount, AVG(postVotes) AS avgVotes RETURN users.Id, users.DisplayName, badgeCount, postCount, avgVotes ORDER BY badgeCount DESC LIMIT 20"
+  },
+  {
+    "question": "Show posts tagged with 'react' or 'angular' that have both high vote counts and multiple editors",
+    "sql": "SELECT posts.Id, posts.Title, posts.Tags, COUNT(DISTINCT votes.Id), COUNT(DISTINCT postHistory.UserId) FROM posts JOIN votes ON posts.Id = votes.PostId JOIN postHistory ON posts.Id = postHistory.PostId WHERE posts.Tags LIKE '%react%' OR posts.Tags LIKE '%angular%' GROUP BY posts.Id, posts.Title, posts.Tags HAVING COUNT(DISTINCT votes.Id) >= 10 AND COUNT(DISTINCT postHistory.UserId) >= 2 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 20",
+    "cypher": "MATCH (votes:votes)-[VOTED_ON]->(posts:posts)<-[RELATES_TO]-(postHistory:postHistory) WHERE posts.Tags CONTAINS 'react' OR posts.Tags CONTAINS 'angular' WITH posts, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT postHistory.UserId) AS editorCount WHERE voteCount >= 10 AND editorCount >= 2 RETURN posts.Id, posts.Title, posts.Tags, voteCount, editorCount ORDER BY voteCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find users who own posts that have been voted on by users with more badges than themselves",
+    "sql": "SELECT owners.Id, owners.DisplayName, COUNT(DISTINCT posts.Id), COUNT(DISTINCT ownerBadges.Id) FROM users AS owners JOIN posts ON owners.Id = posts.OwnerUserId JOIN votes ON posts.Id = votes.PostId JOIN users AS voters ON votes.UserId = voters.Id JOIN badges AS ownerBadges ON owners.Id = ownerBadges.UserId JOIN badges AS voterBadges ON voters.Id = voterBadges.UserId GROUP BY owners.Id, owners.DisplayName HAVING COUNT(DISTINCT voterBadges.Id) > COUNT(DISTINCT ownerBadges.Id) ORDER BY COUNT(DISTINCT posts.Id) DESC LIMIT 20",
+    "cypher": "MATCH (owners:users)-[OWNS]->(posts:posts)<-[VOTED_ON]-(votes:votes)<-[CAST]-(voters:users), (owners)-[EARNED]->(ownerBadges:badges), (voters)-[EARNED]->(voterBadges:badges) WITH owners, posts, COUNT(DISTINCT ownerBadges) AS ownerBadgeCount, COUNT(DISTINCT voterBadges) AS voterBadgeCount WHERE voterBadgeCount > ownerBadgeCount WITH owners, COUNT(DISTINCT posts) AS postCount, ownerBadgeCount RETURN owners.Id, owners.DisplayName, postCount, ownerBadgeCount ORDER BY postCount DESC LIMIT 20"
+  },
+  {
+    "question": "List the most commented posts by users who have not earned any tag-based badges",
+    "sql": "SELECT posts.Id, posts.Title, users.DisplayName, COUNT(DISTINCT comments.Id) FROM posts JOIN users ON posts.OwnerUserId = users.Id JOIN comments ON posts.Id = comments.PostId WHERE users.Id NOT IN (SELECT badges.UserId FROM badges WHERE badges.TagBased = true) GROUP BY posts.Id, posts.Title, users.DisplayName HAVING COUNT(DISTINCT comments.Id) >= 5 ORDER BY COUNT(DISTINCT comments.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[OWNS]->(posts:posts)<-[IS_ON]-(comments:comments) WHERE NOT EXISTS { MATCH (users)-[EARNED]->(badges:badges) WHERE badges.TagBased = true } WITH posts, users, COUNT(DISTINCT comments) AS commentCount WHERE commentCount >= 5 RETURN posts.Id, posts.Title, users.DisplayName, commentCount ORDER BY commentCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find posts that have received votes from users in at least 3 different locations",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT users.Location), COUNT(DISTINCT votes.Id) FROM posts JOIN votes ON posts.Id = votes.PostId JOIN users ON votes.UserId = users.Id WHERE users.Location > '' GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT users.Location) >= 3 ORDER BY COUNT(DISTINCT users.Location) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[CAST]->(votes:votes)-[VOTED_ON]->(posts:posts) WHERE users.Location > '' WITH posts, COUNT(DISTINCT users.Location) AS locationCount, COUNT(DISTINCT votes) AS voteCount WHERE locationCount >= 3 RETURN posts.Id, posts.Title, locationCount, voteCount ORDER BY locationCount DESC LIMIT 20"
+  },
+  {
+    "question": "Show users who have the highest ratio of badges to posts owned",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Id), COUNT(DISTINCT posts.Id), COUNT(DISTINCT badges.Id) * 1.0 / NULLIF(COUNT(DISTINCT posts.Id), 0) FROM users JOIN badges ON users.Id = badges.UserId JOIN posts ON users.Id = posts.OwnerUserId GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT posts.Id) >= 5 ORDER BY COUNT(DISTINCT badges.Id) * 1.0 / COUNT(DISTINCT posts.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[OWNS]->(posts:posts) WITH users, COUNT(DISTINCT badges) AS badgeCount, COUNT(DISTINCT posts) AS postCount WHERE postCount >= 5 RETURN users.Id, users.DisplayName, badgeCount, postCount, toFloat(badgeCount) / postCount ORDER BY toFloat(badgeCount) / postCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find posts with votes where the voter also edited the same post",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT votes.Id), COUNT(DISTINCT postHistory.Id) FROM posts JOIN votes ON posts.Id = votes.PostId JOIN postHistory ON posts.Id = postHistory.PostId AND votes.UserId = postHistory.UserId GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT votes.Id) >= 1 AND COUNT(DISTINCT postHistory.Id) >= 1 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[CAST]->(votes:votes)-[VOTED_ON]->(posts:posts)<-[RELATES_TO]-(postHistory:postHistory)<-[EDITED]-(users) WITH posts, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT postHistory) AS editCount WHERE voteCount >= 1 AND editCount >= 1 RETURN posts.Id, posts.Title, voteCount, editCount ORDER BY voteCount DESC LIMIT 20"
+  },
+  {
+    "question": "List users who have commented on posts owned by users with the 'Guru' badge",
+    "sql": "SELECT commenters.Id, commenters.DisplayName, COUNT(DISTINCT comments.Id), COUNT(DISTINCT posts.Id) FROM users AS commenters JOIN comments ON commenters.Id = comments.UserId JOIN posts ON comments.PostId = posts.Id JOIN users AS owners ON posts.OwnerUserId = owners.Id JOIN badges ON owners.Id = badges.UserId WHERE badges.Name = 'Guru' GROUP BY commenters.Id, commenters.DisplayName HAVING COUNT(DISTINCT comments.Id) >= 3 ORDER BY COUNT(DISTINCT comments.Id) DESC LIMIT 20",
+    "cypher": "MATCH (commenters:users)-[WROTE]->(comments:comments)-[IS_ON]->(posts:posts)<-[OWNS]-(owners:users)-[EARNED]->(badges:badges) WHERE badges.Name = 'Guru' WITH commenters, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT posts) AS postCount WHERE commentCount >= 3 RETURN commenters.Id, commenters.DisplayName, commentCount, postCount ORDER BY commentCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find posts tagged with 'nodejs' that have comments from users who also voted on the same post",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT comments.Id), COUNT(DISTINCT votes.Id) FROM posts JOIN comments ON posts.Id = comments.PostId JOIN votes ON posts.Id = votes.PostId AND comments.UserId = votes.UserId WHERE posts.Tags LIKE '%nodejs%' GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT comments.Id) >= 2 ORDER BY COUNT(DISTINCT comments.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[WROTE]->(comments:comments)-[IS_ON]->(posts:posts)<-[VOTED_ON]-(votes:votes)<-[CAST]-(users) WHERE posts.Tags CONTAINS 'nodejs' WITH posts, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT votes) AS voteCount WHERE commentCount >= 2 RETURN posts.Id, posts.Title, commentCount, voteCount ORDER BY commentCount DESC LIMIT 20"
+  },
+  {
+    "question": "Show the top 15 users by combined score of badges, posts, and comments weighted differently",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Id), COUNT(DISTINCT posts.Id), COUNT(DISTINCT comments.Id), COUNT(DISTINCT badges.Id) * 3 + COUNT(DISTINCT posts.Id) * 2 + COUNT(DISTINCT comments.Id) FROM users JOIN badges ON users.Id = badges.UserId JOIN posts ON users.Id = posts.OwnerUserId JOIN comments ON users.Id = comments.UserId GROUP BY users.Id, users.DisplayName ORDER BY COUNT(DISTINCT badges.Id) * 3 + COUNT(DISTINCT posts.Id) * 2 + COUNT(DISTINCT comments.Id) DESC LIMIT 15",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[OWNS]->(posts:posts), (users)-[WROTE]->(comments:comments) WITH users, COUNT(DISTINCT badges) AS badgeCount, COUNT(DISTINCT posts) AS postCount, COUNT(DISTINCT comments) AS commentCount RETURN users.Id, users.DisplayName, badgeCount, postCount, commentCount, badgeCount * 3 + postCount * 2 + commentCount ORDER BY badgeCount * 3 + postCount * 2 + commentCount DESC LIMIT 15"
+  },
+  {
+    "question": "Find posts that link to posts with high comment counts and have themselves received many votes",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT postLinks.Id), COUNT(DISTINCT votes.Id) FROM posts JOIN postLinks ON posts.Id = postLinks.PostId JOIN posts AS linkedPosts ON postLinks.RelatedPostId = linkedPosts.Id JOIN comments ON linkedPosts.Id = comments.PostId JOIN votes ON posts.Id = votes.PostId GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT comments.Id) >= 5 AND COUNT(DISTINCT votes.Id) >= 5 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 20",
+    "cypher": "MATCH (posts:posts)-[HAS_LINK]->(postLinks:postLinks)-[POINTS_TO]->(linkedPosts:posts)<-[IS_ON]-(comments:comments), (votes:votes)-[VOTED_ON]->(posts) WITH posts, COUNT(DISTINCT postLinks) AS linkCount, COUNT(DISTINCT comments) AS linkedCommentCount, COUNT(DISTINCT votes) AS voteCount WHERE linkedCommentCount >= 5 AND voteCount >= 5 RETURN posts.Id, posts.Title, linkCount, linkedCommentCount, voteCount ORDER BY voteCount DESC LIMIT 20"
+  },
+  {
+    "question": "List users who earned their first badge within a month of joining and have since been active",
+    "sql": "SELECT users.Id, users.DisplayName, MIN(badges.Date), users.CreationDate, COUNT(DISTINCT posts.Id), COUNT(DISTINCT comments.Id) FROM users JOIN badges ON users.Id = badges.UserId JOIN posts ON users.Id = posts.OwnerUserId JOIN comments ON users.Id = comments.UserId GROUP BY users.Id, users.DisplayName, users.CreationDate HAVING MIN(badges.Date) <= users.CreationDate + INTERVAL '30 days' AND COUNT(DISTINCT posts.Id) >= 5 ORDER BY COUNT(DISTINCT posts.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[OWNS]->(posts:posts), (users)-[WROTE]->(comments:comments) WITH users, MIN(badges.Date) AS firstBadgeDate, COUNT(DISTINCT posts) AS postCount, COUNT(DISTINCT comments) AS commentCount WHERE duration.between(users.CreationDate, firstBadgeDate).days <= 30 AND postCount >= 5 RETURN users.Id, users.DisplayName, firstBadgeDate, users.CreationDate, postCount, commentCount ORDER BY postCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find posts with the highest vote-to-comment ratio among posts with at least 5 comments",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT votes.Id), COUNT(DISTINCT comments.Id), COUNT(DISTINCT votes.Id) * 1.0 / COUNT(DISTINCT comments.Id) FROM posts JOIN votes ON posts.Id = votes.PostId JOIN comments ON posts.Id = comments.PostId GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT comments.Id) >= 5 ORDER BY COUNT(DISTINCT votes.Id) * 1.0 / COUNT(DISTINCT comments.Id) DESC LIMIT 20",
+    "cypher": "MATCH (votes:votes)-[VOTED_ON]->(posts:posts)<-[IS_ON]-(comments:comments) WITH posts, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT comments) AS commentCount WHERE commentCount >= 5 RETURN posts.Id, posts.Title, voteCount, commentCount, toFloat(voteCount) / commentCount ORDER BY toFloat(voteCount) / commentCount DESC LIMIT 20"
+  },
+  {
+    "question": "Show users who have earned class 1 badges and have posts that received type 2 votes from users in the same location",
+    "sql": "SELECT owners.Id, owners.DisplayName, owners.Location, COUNT(DISTINCT badges.Id), COUNT(DISTINCT votes.Id) FROM users AS owners JOIN badges ON owners.Id = badges.UserId JOIN posts ON owners.Id = posts.OwnerUserId JOIN votes ON posts.Id = votes.PostId JOIN users AS voters ON votes.UserId = voters.Id WHERE badges.Class = 1 AND votes.VoteTypeId = 2 AND owners.Location = voters.Location AND owners.Location > '' GROUP BY owners.Id, owners.DisplayName, owners.Location HAVING COUNT(DISTINCT votes.Id) >= 3 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 20",
+    "cypher": "MATCH (owners:users)-[EARNED]->(badges:badges), (owners)-[OWNS]->(posts:posts)<-[VOTED_ON]-(votes:votes)<-[CAST]-(voters:users) WHERE badges.Class = 1 AND votes.VoteTypeId = 2 AND owners.Location = voters.Location AND owners.Location > '' WITH owners, COUNT(DISTINCT badges) AS badgeCount, COUNT(DISTINCT votes) AS voteCount WHERE voteCount >= 3 RETURN owners.Id, owners.DisplayName, owners.Location, badgeCount, voteCount ORDER BY voteCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find posts that have post history entries of multiple types and have received different vote types",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT postHistory.PostHistoryTypeId), COUNT(DISTINCT votes.VoteTypeId), COUNT(DISTINCT votes.Id) FROM posts JOIN postHistory ON posts.Id = postHistory.PostId JOIN votes ON posts.Id = votes.PostId GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT postHistory.PostHistoryTypeId) >= 3 AND COUNT(DISTINCT votes.VoteTypeId) >= 2 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 20",
+    "cypher": "MATCH (postHistory:postHistory)-[RELATES_TO]->(posts:posts)<-[VOTED_ON]-(votes:votes) WITH posts, COUNT(DISTINCT postHistory.PostHistoryTypeId) AS historyTypes, COUNT(DISTINCT votes.VoteTypeId) AS voteTypes, COUNT(DISTINCT votes) AS voteCount WHERE historyTypes >= 3 AND voteTypes >= 2 RETURN posts.Id, posts.Title, historyTypes, voteTypes, voteCount ORDER BY voteCount DESC LIMIT 20"
+  },
+  {
+    "question": "List the most active users who have both asked questions and provided accepted answers",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT questions.Id), COUNT(DISTINCT answers.Id) FROM users JOIN posts AS questions ON users.Id = questions.OwnerUserId AND questions.PostTypeId = 1 JOIN posts AS answers ON users.Id = answers.OwnerUserId AND answers.PostTypeId = 2 JOIN posts AS parentQuestions ON answers.ParentId = parentQuestions.Id AND parentQuestions.AcceptedAnswerId = answers.Id GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT questions.Id) >= 3 AND COUNT(DISTINCT answers.Id) >= 3 ORDER BY COUNT(DISTINCT questions.Id) + COUNT(DISTINCT answers.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[OWNS]->(questions:posts) WHERE questions.PostTypeId = 1 MATCH (users)-[OWNS]->(answers:posts)<-[ACCEPTED_ANSWER]-(parentQuestions:posts) WHERE answers.PostTypeId = 2 WITH users, COUNT(DISTINCT questions) AS questionCount, COUNT(DISTINCT answers) AS acceptedAnswerCount WHERE questionCount >= 3 AND acceptedAnswerCount >= 3 RETURN users.Id, users.DisplayName, questionCount, acceptedAnswerCount ORDER BY questionCount + acceptedAnswerCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find posts with comments containing 'solution' that have been voted on by users with the 'Critic' badge",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT comments.Id), COUNT(DISTINCT votes.Id) FROM posts JOIN comments ON posts.Id = comments.PostId JOIN votes ON posts.Id = votes.PostId JOIN badges ON votes.UserId = badges.UserId WHERE comments.Text LIKE '%solution%' AND badges.Name = 'Critic' GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT comments.Id) >= 1 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 20",
+    "cypher": "MATCH (comments:comments)-[IS_ON]->(posts:posts)<-[VOTED_ON]-(votes:votes)<-[CAST]-(voters:users)-[EARNED]->(badges:badges) WHERE comments.Text CONTAINS 'solution' AND badges.Name = 'Critic' WITH posts, COUNT(DISTINCT comments) AS commentCount, COUNT(DISTINCT votes) AS voteCount WHERE commentCount >= 1 RETURN posts.Id, posts.Title, commentCount, voteCount ORDER BY voteCount DESC LIMIT 20"
+  },
+  {
+    "question": "Show the distribution of comment counts per post type for posts owned by users with class 3 badges",
+    "sql": "SELECT posts.PostTypeId, AVG(commentCounts.cnt), COUNT(DISTINCT posts.Id) FROM posts JOIN users ON posts.OwnerUserId = users.Id JOIN badges ON users.Id = badges.UserId JOIN (SELECT comments.PostId, COUNT(comments.Id) AS cnt FROM comments GROUP BY comments.PostId) AS commentCounts ON posts.Id = commentCounts.PostId WHERE badges.Class = 3 GROUP BY posts.PostTypeId ORDER BY AVG(commentCounts.cnt) DESC",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[OWNS]->(posts:posts)<-[IS_ON]-(comments:comments) WHERE badges.Class = 3 WITH posts.PostTypeId AS postType, posts, COUNT(comments) AS commentCount WITH postType, AVG(commentCount) AS avgComments, COUNT(DISTINCT posts) AS postCount RETURN postType, avgComments, postCount ORDER BY avgComments DESC"
+  },
+  {
+    "question": "Find users who have the most diverse badge collection among those with more than 50 votes cast",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Name), COUNT(DISTINCT badges.Id), COUNT(DISTINCT votes.Id) FROM users JOIN badges ON users.Id = badges.UserId JOIN votes ON users.Id = votes.UserId GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT votes.Id) > 50 ORDER BY COUNT(DISTINCT badges.Name) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[CAST]->(votes:votes) WITH users, COUNT(DISTINCT badges.Name) AS uniqueBadgeNames, COUNT(DISTINCT badges) AS totalBadges, COUNT(DISTINCT votes) AS voteCount WHERE voteCount > 50 RETURN users.Id, users.DisplayName, uniqueBadgeNames, totalBadges, voteCount ORDER BY uniqueBadgeNames DESC LIMIT 20"
+  },
+  {
+    "question": "List posts that have been referenced by other posts through links and have high engagement",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT postLinks.Id), COUNT(DISTINCT votes.Id), COUNT(DISTINCT comments.Id) FROM posts JOIN postLinks ON posts.Id = postLinks.RelatedPostId JOIN votes ON posts.Id = votes.PostId JOIN comments ON posts.Id = comments.PostId GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT postLinks.Id) >= 3 AND COUNT(DISTINCT votes.Id) >= 10 ORDER BY COUNT(DISTINCT postLinks.Id) DESC LIMIT 20",
+    "cypher": "MATCH (postLinks:postLinks)-[POINTS_TO]->(posts:posts)<-[VOTED_ON]-(votes:votes), (comments:comments)-[IS_ON]->(posts) WITH posts, COUNT(DISTINCT postLinks) AS referenceCount, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT comments) AS commentCount WHERE referenceCount >= 3 AND voteCount >= 10 RETURN posts.Id, posts.Title, referenceCount, voteCount, commentCount ORDER BY referenceCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find users whose posts have been edited by users who also earned badges in the same period",
+    "sql": "SELECT owners.Id, owners.DisplayName, COUNT(DISTINCT posts.Id), COUNT(DISTINCT postHistory.UserId), COUNT(DISTINCT badges.Id) FROM users AS owners JOIN posts ON owners.Id = posts.OwnerUserId JOIN postHistory ON posts.Id = postHistory.PostId JOIN badges ON postHistory.UserId = badges.UserId WHERE postHistory.UserId <> owners.Id GROUP BY owners.Id, owners.DisplayName HAVING COUNT(DISTINCT postHistory.UserId) >= 2 ORDER BY COUNT(DISTINCT posts.Id) DESC LIMIT 20",
+    "cypher": "MATCH (owners:users)-[OWNS]->(posts:posts)<-[RELATES_TO]-(postHistory:postHistory)<-[EDITED]-(editors:users)-[EARNED]->(badges:badges) WHERE editors.Id <> owners.Id WITH owners, COUNT(DISTINCT posts) AS postCount, COUNT(DISTINCT editors) AS editorCount, COUNT(DISTINCT badges) AS editorBadges WHERE editorCount >= 2 RETURN owners.Id, owners.DisplayName, postCount, editorCount, editorBadges ORDER BY postCount DESC LIMIT 20"
+  },
+  {
+    "question": "Show the top 20 posts by combined engagement that have tags containing 'web' and comments from users outside the US",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT votes.Id), COUNT(DISTINCT comments.Id) FROM posts JOIN votes ON posts.Id = votes.PostId JOIN comments ON posts.Id = comments.PostId JOIN users ON comments.UserId = users.Id WHERE posts.Tags LIKE '%web%' AND users.Location NOT LIKE '%United States%' AND users.Location > '' GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT comments.Id) >= 2 ORDER BY COUNT(DISTINCT votes.Id) + COUNT(DISTINCT comments.Id) DESC LIMIT 20",
+    "cypher": "MATCH (votes:votes)-[VOTED_ON]->(posts:posts)<-[IS_ON]-(comments:comments)<-[WROTE]-(users:users) WHERE posts.Tags CONTAINS 'web' AND NOT users.Location CONTAINS 'United States' AND users.Location > '' WITH posts, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT comments) AS commentCount WHERE commentCount >= 2 RETURN posts.Id, posts.Title, voteCount, commentCount ORDER BY voteCount + commentCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find users who have earned badges every year since they joined and have consistent posting activity",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Id), COUNT(DISTINCT posts.Id), MIN(badges.Date), MAX(badges.Date) FROM users JOIN badges ON users.Id = badges.UserId JOIN posts ON users.Id = posts.OwnerUserId GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT badges.Id) >= 10 AND COUNT(DISTINCT posts.Id) >= 10 ORDER BY COUNT(DISTINCT badges.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[OWNS]->(posts:posts) WITH users, COUNT(DISTINCT badges) AS badgeCount, COUNT(DISTINCT posts) AS postCount, MIN(badges.Date) AS firstBadge, MAX(badges.Date) AS lastBadge WHERE badgeCount >= 10 AND postCount >= 10 RETURN users.Id, users.DisplayName, badgeCount, postCount, firstBadge, lastBadge ORDER BY badgeCount DESC LIMIT 20"
+  },
+  {
+    "question": "List posts with the most diverse voter base in terms of user locations and badge counts",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT users.Location), COUNT(DISTINCT votes.Id), COUNT(DISTINCT badges.Id) FROM posts JOIN votes ON posts.Id = votes.PostId JOIN users ON votes.UserId = users.Id JOIN badges ON users.Id = badges.UserId WHERE users.Location > '' GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT users.Location) >= 5 ORDER BY COUNT(DISTINCT users.Location) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[CAST]->(votes:votes)-[VOTED_ON]->(posts:posts), (users)-[EARNED]->(badges:badges) WHERE users.Location > '' WITH posts, COUNT(DISTINCT users.Location) AS locationCount, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT badges) AS voterBadges WHERE locationCount >= 5 RETURN posts.Id, posts.Title, locationCount, voteCount, voterBadges ORDER BY locationCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find posts created in 2019 that have received continuous engagement through votes and comments",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT votes.Id), COUNT(DISTINCT comments.Id), MAX(votes.CreationDate), MAX(comments.CreationDate) FROM posts JOIN votes ON posts.Id = votes.PostId JOIN comments ON posts.Id = comments.PostId WHERE posts.CreationDate BETWEEN '2019-01-01' AND '2019-12-31' GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT votes.Id) >= 10 AND COUNT(DISTINCT comments.Id) >= 5 ORDER BY MAX(votes.CreationDate) DESC LIMIT 20",
+    "cypher": "MATCH (votes:votes)-[VOTED_ON]->(posts:posts)<-[IS_ON]-(comments:comments) WHERE posts.CreationDate >= datetime('2019-01-01') AND posts.CreationDate <= datetime('2019-12-31') WITH posts, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT comments) AS commentCount, MAX(votes.CreationDate) AS lastVote, MAX(comments.CreationDate) AS lastComment WHERE voteCount >= 10 AND commentCount >= 5 RETURN posts.Id, posts.Title, voteCount, commentCount, lastVote, lastComment ORDER BY lastVote DESC LIMIT 20"
+  },
+  {
+    "question": "Show users who have contributed to posts through both editing and commenting while earning badges",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT postHistory.PostId), COUNT(DISTINCT comments.PostId), COUNT(DISTINCT badges.Id) FROM users JOIN postHistory ON users.Id = postHistory.UserId JOIN comments ON users.Id = comments.UserId JOIN badges ON users.Id = badges.UserId GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT postHistory.PostId) >= 5 AND COUNT(DISTINCT comments.PostId) >= 10 ORDER BY COUNT(DISTINCT badges.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[EDITED]->(postHistory:postHistory), (users)-[WROTE]->(comments:comments), (users)-[EARNED]->(badges:badges) WITH users, COUNT(DISTINCT postHistory.PostId) AS editedPosts, COUNT(DISTINCT comments.PostId) AS commentedPosts, COUNT(DISTINCT badges) AS badgeCount WHERE editedPosts >= 5 AND commentedPosts >= 10 RETURN users.Id, users.DisplayName, editedPosts, commentedPosts, badgeCount ORDER BY badgeCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find the relationship between post link count and vote count for posts with multiple editors",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT postLinks.Id), COUNT(DISTINCT votes.Id), COUNT(DISTINCT postHistory.UserId) FROM posts JOIN postLinks ON posts.Id = postLinks.PostId JOIN votes ON posts.Id = votes.PostId JOIN postHistory ON posts.Id = postHistory.PostId GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT postHistory.UserId) >= 2 ORDER BY COUNT(DISTINCT postLinks.Id) DESC LIMIT 20",
+    "cypher": "MATCH (posts:posts)-[HAS_LINK]->(postLinks:postLinks), (votes:votes)-[VOTED_ON]->(posts), (postHistory:postHistory)-[RELATES_TO]->(posts) WITH posts, COUNT(DISTINCT postLinks) AS linkCount, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT postHistory.UserId) AS editorCount WHERE editorCount >= 2 RETURN posts.Id, posts.Title, linkCount, voteCount, editorCount ORDER BY linkCount DESC LIMIT 20"
+  },
+  {
+    "question": "List users who have voted on posts in tags they have badges for",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT votes.Id), COUNT(DISTINCT badges.Id), COUNT(DISTINCT posts.Id) FROM users JOIN votes ON users.Id = votes.UserId JOIN posts ON votes.PostId = posts.Id JOIN badges ON users.Id = badges.UserId WHERE badges.TagBased = true AND posts.Tags > '' GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT votes.Id) >= 10 ORDER BY COUNT(DISTINCT votes.Id) DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[CAST]->(votes:votes)-[VOTED_ON]->(posts:posts), (users)-[EARNED]->(badges:badges) WHERE badges.TagBased = true AND posts.Tags > '' WITH users, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT badges) AS tagBadgeCount, COUNT(DISTINCT posts) AS postCount WHERE voteCount >= 10 RETURN users.Id, users.DisplayName, voteCount, tagBadgeCount, postCount ORDER BY voteCount DESC LIMIT 20"
+  },
+  {
+    "question": "Find the most interconnected posts through links that also have high comment and vote engagement",
+    "sql": "SELECT posts.Id, posts.Title, COUNT(DISTINCT outLinks.Id) + COUNT(DISTINCT inLinks.Id), COUNT(DISTINCT votes.Id), COUNT(DISTINCT comments.Id) FROM posts JOIN postLinks AS outLinks ON posts.Id = outLinks.PostId JOIN postLinks AS inLinks ON posts.Id = inLinks.RelatedPostId JOIN votes ON posts.Id = votes.PostId JOIN comments ON posts.Id = comments.PostId GROUP BY posts.Id, posts.Title HAVING COUNT(DISTINCT outLinks.Id) >= 1 AND COUNT(DISTINCT inLinks.Id) >= 1 ORDER BY COUNT(DISTINCT outLinks.Id) + COUNT(DISTINCT inLinks.Id) DESC LIMIT 20",
+    "cypher": "MATCH (posts:posts)-[HAS_LINK]->(outLinks:postLinks), (inLinks:postLinks)-[POINTS_TO]->(posts), (votes:votes)-[VOTED_ON]->(posts), (comments:comments)-[IS_ON]->(posts) WITH posts, COUNT(DISTINCT outLinks) AS outLinkCount, COUNT(DISTINCT inLinks) AS inLinkCount, COUNT(DISTINCT votes) AS voteCount, COUNT(DISTINCT comments) AS commentCount WHERE outLinkCount >= 1 AND inLinkCount >= 1 RETURN posts.Id, posts.Title, outLinkCount + inLinkCount, voteCount, commentCount ORDER BY outLinkCount + inLinkCount DESC LIMIT 20"
+  },
+  {
+    "question": "Show users with the highest engagement quality score based on badges, accepted answers, and vote ratio",
+    "sql": "SELECT users.Id, users.DisplayName, COUNT(DISTINCT badges.Id), COUNT(DISTINCT posts.Id), SUM(CASE WHEN posts.AcceptedAnswerId > 0 THEN 1 ELSE 0 END) FROM users JOIN badges ON users.Id = badges.UserId JOIN posts ON users.Id = posts.OwnerUserId JOIN votes ON posts.Id = votes.PostId GROUP BY users.Id, users.DisplayName HAVING COUNT(DISTINCT badges.Id) >= 5 AND COUNT(DISTINCT posts.Id) >= 5 ORDER BY COUNT(DISTINCT badges.Id) * 2 + SUM(CASE WHEN posts.AcceptedAnswerId > 0 THEN 1 ELSE 0 END) * 3 DESC LIMIT 20",
+    "cypher": "MATCH (users:users)-[EARNED]->(badges:badges), (users)-[OWNS]->(posts:posts)<-[VOTED_ON]-(votes:votes) WITH users, COUNT(DISTINCT badges) AS badgeCount, COUNT(DISTINCT posts) AS postCount, SUM(CASE WHEN posts.AcceptedAnswerId > 0 THEN 1 ELSE 0 END) AS acceptedCount WHERE badgeCount >= 5 AND postCount >= 5 RETURN users.Id, users.DisplayName, badgeCount, postCount, acceptedCount ORDER BY badgeCount * 2 + acceptedCount * 3 DESC LIMIT 20"
   }
 ]

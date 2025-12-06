@@ -1,0 +1,477 @@
+[
+  {
+    "question": "What studies are investigating diabetes?",
+    "sql": "SELECT studies.brief_title FROM studies JOIN conditions_studies ON studies.nct_id = conditions_studies.nct_id JOIN conditions ON conditions_studies.condition_id = conditions.condition_id WHERE conditions.mesh_term = 'Diabetes Mellitus'",
+    "cypher": "MATCH (studies)-[HAS_CONDITION_RECORD]->(conditions_studies)-[FOR_CONDITION]->(conditions) WHERE conditions.mesh_term = 'Diabetes Mellitus' RETURN studies.brief_title"
+  },
+  {
+    "question": "Which facilities in California are conducting Phase 3 studies?",
+    "sql": "SELECT DISTINCT facilities.name FROM facilities JOIN facilities_studies ON facilities.facility_id = facilities_studies.facility_id JOIN studies ON facilities_studies.nct_id = studies.nct_id WHERE facilities.state = 'California' AND studies.phase = 'Phase 3'",
+    "cypher": "MATCH (facilities)<-[AT_FACILITY]-(facilities_studies)<-[HAS_FACILITY_RECORD]-(studies) WHERE facilities.state = 'California' AND studies.phase = 'Phase 3' RETURN DISTINCT facilities.name"
+  },
+  {
+    "question": "How many studies are sponsored by Pfizer?",
+    "sql": "SELECT COUNT(*) FROM studies JOIN sponsors_studies ON studies.nct_id = sponsors_studies.nct_id JOIN sponsors ON sponsors_studies.sponsor_id = sponsors.sponsor_id WHERE sponsors.name = 'Pfizer'",
+    "cypher": "MATCH (studies)-[HAS_SPONSOR_RECORD]->(sponsors_studies)-[BY_SPONSOR]->(sponsors) WHERE sponsors.name = 'Pfizer' RETURN COUNT(studies)"
+  },
+  {
+    "question": "List studies using aspirin as an intervention.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN interventions_studies ON studies.nct_id = interventions_studies.nct_id JOIN interventions ON interventions_studies.intervention_id = interventions.intervention_id WHERE interventions.mesh_term = 'Aspirin'",
+    "cypher": "MATCH (studies)-[HAS_INTERVENTION_RECORD]->(interventions_studies)-[FOR_INTERVENTION]->(interventions) WHERE interventions.mesh_term = 'Aspirin' RETURN studies.brief_title"
+  },
+  {
+    "question": "What are the primary outcomes for studies about cancer?",
+    "sql": "SELECT DISTINCT outcomes.title FROM outcomes JOIN studies ON outcomes.nct_id = studies.nct_id JOIN conditions_studies ON studies.nct_id = conditions_studies.nct_id JOIN conditions ON conditions_studies.condition_id = conditions.condition_id WHERE conditions.mesh_term LIKE '%Cancer%' AND outcomes.outcome_type = 'Primary'",
+    "cypher": "MATCH (studies)-[HAS_OUTCOME]->(outcomes), (studies)-[HAS_CONDITION_RECORD]->(conditions_studies)-[FOR_CONDITION]->(conditions) WHERE conditions.mesh_term CONTAINS 'Cancer' AND outcomes.outcome_type = 'Primary' RETURN DISTINCT outcomes.title"
+  },
+  {
+    "question": "How many interventional studies are being conducted in New York?",
+    "sql": "SELECT COUNT(DISTINCT studies.nct_id) FROM studies JOIN facilities_studies ON studies.nct_id = facilities_studies.nct_id JOIN facilities ON facilities_studies.facility_id = facilities.facility_id WHERE facilities.state = 'New York' AND studies.study_type = 'Interventional'",
+    "cypher": "MATCH (studies)-[HAS_FACILITY_RECORD]->(facilities_studies)-[AT_FACILITY]->(facilities) WHERE facilities.state = 'New York' AND studies.study_type = 'Interventional' RETURN COUNT(DISTINCT studies)"
+  },
+  {
+    "question": "Which sponsors are funding studies on hypertension?",
+    "sql": "SELECT DISTINCT sponsors.name FROM sponsors JOIN sponsors_studies ON sponsors.sponsor_id = sponsors_studies.sponsor_id JOIN studies ON sponsors_studies.nct_id = studies.nct_id JOIN conditions_studies ON studies.nct_id = conditions_studies.nct_id JOIN conditions ON conditions_studies.condition_id = conditions.condition_id WHERE conditions.mesh_term = 'Hypertension'",
+    "cypher": "MATCH (sponsors)<-[BY_SPONSOR]-(sponsors_studies)<-[HAS_SPONSOR_RECORD]-(studies)-[HAS_CONDITION_RECORD]->(conditions_studies)-[FOR_CONDITION]->(conditions) WHERE conditions.mesh_term = 'Hypertension' RETURN DISTINCT sponsors.name"
+  },
+  {
+    "question": "List Phase 2 studies that accept healthy volunteers.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE studies.phase = 'Phase 2' AND eligibilities.healthy_volunteers = 'Accepts Healthy Volunteers'",
+    "cypher": "MATCH (studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE studies.phase = 'Phase 2' AND eligibilities.healthy_volunteers = 'Accepts Healthy Volunteers' RETURN studies.brief_title"
+  },
+  {
+    "question": "What interventions are being tested in studies with more than 500 participants?",
+    "sql": "SELECT DISTINCT interventions.mesh_term FROM interventions JOIN interventions_studies ON interventions.intervention_id = interventions_studies.intervention_id JOIN studies ON interventions_studies.nct_id = studies.nct_id WHERE studies.enrollment > 500",
+    "cypher": "MATCH (interventions)<-[FOR_INTERVENTION]-(interventions_studies)<-[HAS_INTERVENTION_RECORD]-(studies) WHERE studies.enrollment > 500 RETURN DISTINCT interventions.mesh_term"
+  },
+  {
+    "question": "How many studies have both randomized allocation and double masking?",
+    "sql": "SELECT COUNT(*) FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.allocation = 'Randomized' AND designs.masking = 'Double'",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE designs.allocation = 'Randomized' AND designs.masking = 'Double' RETURN COUNT(studies)"
+  },
+  {
+    "question": "Which facilities in Boston are conducting cancer studies?",
+    "sql": "SELECT DISTINCT facilities.name FROM facilities JOIN facilities_studies ON facilities.facility_id = facilities_studies.facility_id JOIN studies ON facilities_studies.nct_id = studies.nct_id JOIN conditions_studies ON studies.nct_id = conditions_studies.nct_id JOIN conditions ON conditions_studies.condition_id = conditions.condition_id WHERE facilities.city = 'Boston' AND conditions.mesh_term LIKE '%Cancer%'",
+    "cypher": "MATCH (facilities)<-[AT_FACILITY]-(facilities_studies)<-[HAS_FACILITY_RECORD]-(studies)-[HAS_CONDITION_RECORD]->(conditions_studies)-[FOR_CONDITION]->(conditions) WHERE facilities.city = 'Boston' AND conditions.mesh_term CONTAINS 'Cancer' RETURN DISTINCT facilities.name"
+  },
+  {
+    "question": "Count the number of studies by study type.",
+    "sql": "SELECT studies.study_type, COUNT(*) FROM studies GROUP BY studies.study_type",
+    "cypher": "MATCH (studies) RETURN studies.study_type, COUNT(studies)"
+  },
+  {
+    "question": "What are the top 5 most common conditions being studied?",
+    "sql": "SELECT conditions.mesh_term, COUNT(*) FROM conditions JOIN conditions_studies ON conditions.condition_id = conditions_studies.condition_id GROUP BY conditions.mesh_term ORDER BY COUNT(*) DESC LIMIT 5",
+    "cypher": "MATCH (conditions)<-[FOR_CONDITION]-(conditions_studies) RETURN conditions.mesh_term, COUNT(conditions_studies) ORDER BY COUNT(conditions_studies) DESC LIMIT 5"
+  },
+  {
+    "question": "List studies sponsored by industry conducting Phase 3 trials.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN sponsors_studies ON studies.nct_id = sponsors_studies.nct_id JOIN sponsors ON sponsors_studies.sponsor_id = sponsors.sponsor_id WHERE sponsors.agency_class = 'INDUSTRY' AND studies.phase = 'Phase 3'",
+    "cypher": "MATCH (studies)-[HAS_SPONSOR_RECORD]->(sponsors_studies)-[BY_SPONSOR]->(sponsors) WHERE sponsors.agency_class = 'INDUSTRY' AND studies.phase = 'Phase 3' RETURN studies.brief_title"
+  },
+  {
+    "question": "How many studies test each intervention type?",
+    "sql": "SELECT interventions.mesh_term, COUNT(*) FROM interventions JOIN interventions_studies ON interventions.intervention_id = interventions_studies.intervention_id GROUP BY interventions.mesh_term ORDER BY COUNT(*) DESC LIMIT 20",
+    "cypher": "MATCH (interventions)<-[FOR_INTERVENTION]-(interventions_studies) RETURN interventions.mesh_term, COUNT(interventions_studies) ORDER BY COUNT(interventions_studies) DESC LIMIT 20"
+  },
+  {
+    "question": "Which studies in Texas are FDA regulated drugs?",
+    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN facilities_studies ON studies.nct_id = facilities_studies.nct_id JOIN facilities ON facilities_studies.facility_id = facilities.facility_id WHERE facilities.state = 'Texas' AND studies.is_fda_regulated_drug = 'true'",
+    "cypher": "MATCH (studies)-[HAS_FACILITY_RECORD]->(facilities_studies)-[AT_FACILITY]->(facilities) WHERE facilities.state = 'Texas' AND studies.is_fda_regulated_drug = 'true' RETURN DISTINCT studies.brief_title"
+  },
+  {
+    "question": "What is the average enrollment for Phase 3 studies?",
+    "sql": "SELECT AVG(studies.enrollment) FROM studies WHERE studies.phase = 'Phase 3'",
+    "cypher": "MATCH (studies) WHERE studies.phase = 'Phase 3' RETURN AVG(studies.enrollment)"
+  },
+  {
+    "question": "List all observational studies with prospective time perspective.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE studies.study_type = 'Observational' AND designs.time_perspective = 'Prospective'",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE studies.study_type = 'Observational' AND designs.time_perspective = 'Prospective' RETURN studies.brief_title"
+  },
+  {
+    "question": "How many studies are conducted at each facility in California?",
+    "sql": "SELECT facilities.name, COUNT(*) FROM facilities JOIN facilities_studies ON facilities.facility_id = facilities_studies.facility_id WHERE facilities.state = 'California' GROUP BY facilities.name ORDER BY COUNT(*) DESC LIMIT 10",
+    "cypher": "MATCH (facilities)<-[AT_FACILITY]-(facilities_studies) WHERE facilities.state = 'California' RETURN facilities.name, COUNT(facilities_studies) ORDER BY COUNT(facilities_studies) DESC LIMIT 10"
+  },
+  {
+    "question": "Which conditions are studied in randomized controlled trials?",
+    "sql": "SELECT DISTINCT conditions.mesh_term FROM conditions JOIN conditions_studies ON conditions.condition_id = conditions_studies.condition_id JOIN studies ON conditions_studies.nct_id = studies.nct_id JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.allocation = 'Randomized'",
+    "cypher": "MATCH (conditions)<-[FOR_CONDITION]-(conditions_studies)<-[HAS_CONDITION_RECORD]-(studies)-[HAS_DESIGN]->(designs) WHERE designs.allocation = 'Randomized' RETURN DISTINCT conditions.mesh_term"
+  },
+  {
+    "question": "What are the withdrawal reasons for studies with more than 100 participants?",
+    "sql": "SELECT DISTINCT drop_withdrawals.reason FROM drop_withdrawals JOIN studies ON drop_withdrawals.nct_id = studies.nct_id WHERE studies.enrollment > 100",
+    "cypher": "MATCH (drop_withdrawals)<-[HAS_WITHDRAWAL]-(studies) WHERE studies.enrollment > 100 RETURN DISTINCT drop_withdrawals.reason"
+  },
+  {
+    "question": "List NIH-sponsored studies on cardiovascular diseases.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN sponsors_studies ON studies.nct_id = sponsors_studies.nct_id JOIN sponsors ON sponsors_studies.sponsor_id = sponsors.sponsor_id JOIN conditions_studies ON studies.nct_id = conditions_studies.nct_id JOIN conditions ON conditions_studies.condition_id = conditions.condition_id WHERE sponsors.agency_class = 'NIH' AND conditions.mesh_term LIKE '%Cardiovascular%'",
+    "cypher": "MATCH (studies)-[HAS_SPONSOR_RECORD]->(sponsors_studies)-[BY_SPONSOR]->(sponsors), (studies)-[HAS_CONDITION_RECORD]->(conditions_studies)-[FOR_CONDITION]->(conditions) WHERE sponsors.agency_class = 'NIH' AND conditions.mesh_term CONTAINS 'Cardiovascular' RETURN studies.brief_title"
+  },
+  {
+    "question": "How many studies include children as participants?",
+    "sql": "SELECT COUNT(*) FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.child = 'true'",
+    "cypher": "MATCH (studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE eligibilities.child = 'true' RETURN COUNT(studies)"
+  },
+  {
+    "question": "What interventions are used in treatment studies?",
+    "sql": "SELECT DISTINCT interventions.mesh_term FROM interventions JOIN interventions_studies ON interventions.intervention_id = interventions_studies.intervention_id JOIN studies ON interventions_studies.nct_id = studies.nct_id JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.primary_purpose = 'Treatment'",
+    "cypher": "MATCH (interventions)<-[FOR_INTERVENTION]-(interventions_studies)<-[HAS_INTERVENTION_RECORD]-(studies)-[HAS_DESIGN]->(designs) WHERE designs.primary_purpose = 'Treatment' RETURN DISTINCT interventions.mesh_term"
+  },
+  {
+    "question": "Which facilities are conducting studies with parallel assignment design?",
+    "sql": "SELECT DISTINCT facilities.name FROM facilities JOIN facilities_studies ON facilities.facility_id = facilities_studies.facility_id JOIN studies ON facilities_studies.nct_id = studies.nct_id JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.intervention_model = 'Parallel Assignment'",
+    "cypher": "MATCH (facilities)<-[AT_FACILITY]-(facilities_studies)<-[HAS_FACILITY_RECORD]-(studies)-[HAS_DESIGN]->(designs) WHERE designs.intervention_model = 'Parallel Assignment' RETURN DISTINCT facilities.name"
+  },
+  {
+    "question": "Count studies by phase.",
+    "sql": "SELECT studies.phase, COUNT(*) FROM studies GROUP BY studies.phase ORDER BY COUNT(*) DESC",
+    "cypher": "MATCH (studies) RETURN studies.phase, COUNT(studies) ORDER BY COUNT(studies) DESC"
+  },
+  {
+    "question": "What are the most studied conditions in Phase 1 trials?",
+    "sql": "SELECT conditions.mesh_term, COUNT(*) FROM conditions JOIN conditions_studies ON conditions.condition_id = conditions_studies.condition_id JOIN studies ON conditions_studies.nct_id = studies.nct_id WHERE studies.phase = 'Phase 1' GROUP BY conditions.mesh_term ORDER BY COUNT(*) DESC LIMIT 10",
+    "cypher": "MATCH (conditions)<-[FOR_CONDITION]-(conditions_studies)<-[HAS_CONDITION_RECORD]-(studies) WHERE studies.phase = 'Phase 1' RETURN conditions.mesh_term, COUNT(conditions_studies) ORDER BY COUNT(conditions_studies) DESC LIMIT 10"
+  },
+  {
+    "question": "List studies that have reported adverse events and are FDA regulated.",
+    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN reported_event_totals ON studies.nct_id = reported_event_totals.nct_id WHERE studies.is_fda_regulated_drug = 'true'",
+    "cypher": "MATCH (studies)-[HAS_EVENT_TOTAL]->(reported_event_totals) WHERE studies.is_fda_regulated_drug = 'true' RETURN DISTINCT studies.brief_title"
+  },
+  {
+    "question": "How many studies have each masking type?",
+    "sql": "SELECT designs.masking, COUNT(*) FROM designs JOIN studies ON designs.nct_id = studies.nct_id GROUP BY designs.masking ORDER BY COUNT(*) DESC",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) RETURN designs.masking, COUNT(studies) ORDER BY COUNT(studies) DESC"
+  },
+  {
+    "question": "Which sponsors fund the most Phase 2 studies?",
+    "sql": "SELECT sponsors.name, COUNT(*) FROM sponsors JOIN sponsors_studies ON sponsors.sponsor_id = sponsors_studies.sponsor_id JOIN studies ON sponsors_studies.nct_id = studies.nct_id WHERE studies.phase = 'Phase 2' GROUP BY sponsors.name ORDER BY COUNT(*) DESC LIMIT 10",
+    "cypher": "MATCH (sponsors)<-[BY_SPONSOR]-(sponsors_studies)<-[HAS_SPONSOR_RECORD]-(studies) WHERE studies.phase = 'Phase 2' RETURN sponsors.name, COUNT(studies) ORDER BY COUNT(studies) DESC LIMIT 10"
+  },
+  {
+    "question": "What are the outcomes for diabetes studies with more than 200 participants?",
+    "sql": "SELECT DISTINCT outcomes.title FROM outcomes JOIN studies ON outcomes.nct_id = studies.nct_id JOIN conditions_studies ON studies.nct_id = conditions_studies.nct_id JOIN conditions ON conditions_studies.condition_id = conditions.condition_id WHERE conditions.mesh_term = 'Diabetes Mellitus' AND studies.enrollment > 200",
+    "cypher": "MATCH (studies)-[HAS_OUTCOME]->(outcomes), (studies)-[HAS_CONDITION_RECORD]->(conditions_studies)-[FOR_CONDITION]->(conditions) WHERE conditions.mesh_term = 'Diabetes Mellitus' AND studies.enrollment > 200 RETURN DISTINCT outcomes.title"
+  },
+  {
+    "question": "List studies in Florida that include older adults.",
+    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN facilities_studies ON studies.nct_id = facilities_studies.nct_id JOIN facilities ON facilities_studies.facility_id = facilities.facility_id JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE facilities.state = 'Florida' AND eligibilities.older_adult = 'true'",
+    "cypher": "MATCH (studies)-[HAS_FACILITY_RECORD]->(facilities_studies)-[AT_FACILITY]->(facilities), (studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE facilities.state = 'Florida' AND eligibilities.older_adult = 'true' RETURN DISTINCT studies.brief_title"
+  },
+  {
+    "question": "How many interventional studies are sponsored by each agency class?",
+    "sql": "SELECT sponsors.agency_class, COUNT(DISTINCT studies.nct_id) FROM sponsors JOIN sponsors_studies ON sponsors.sponsor_id = sponsors_studies.sponsor_id JOIN studies ON sponsors_studies.nct_id = studies.nct_id WHERE studies.study_type = 'Interventional' GROUP BY sponsors.agency_class",
+    "cypher": "MATCH (sponsors)<-[BY_SPONSOR]-(sponsors_studies)<-[HAS_SPONSOR_RECORD]-(studies) WHERE studies.study_type = 'Interventional' RETURN sponsors.agency_class, COUNT(DISTINCT studies)"
+  },
+  {
+    "question": "What conditions are being studied in crossover design trials?",
+    "sql": "SELECT DISTINCT conditions.mesh_term FROM conditions JOIN conditions_studies ON conditions.condition_id = conditions_studies.condition_id JOIN studies ON conditions_studies.nct_id = studies.nct_id JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.intervention_model = 'Crossover Assignment'",
+    "cypher": "MATCH (conditions)<-[FOR_CONDITION]-(conditions_studies)<-[HAS_CONDITION_RECORD]-(studies)-[HAS_DESIGN]->(designs) WHERE designs.intervention_model = 'Crossover Assignment' RETURN DISTINCT conditions.mesh_term"
+  },
+  {
+    "question": "Which interventions are most commonly tested in Phase 3 trials?",
+    "sql": "SELECT interventions.mesh_term, COUNT(*) FROM interventions JOIN interventions_studies ON interventions.intervention_id = interventions_studies.intervention_id JOIN studies ON interventions_studies.nct_id = studies.nct_id WHERE studies.phase = 'Phase 3' GROUP BY interventions.mesh_term ORDER BY COUNT(*) DESC LIMIT 10",
+    "cypher": "MATCH (interventions)<-[FOR_INTERVENTION]-(interventions_studies)<-[HAS_INTERVENTION_RECORD]-(studies) WHERE studies.phase = 'Phase 3' RETURN interventions.mesh_term, COUNT(interventions_studies) ORDER BY COUNT(interventions_studies) DESC LIMIT 10"
+  },
+  {
+    "question": "List studies with triple masking that are randomized.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.masking = 'Triple' AND designs.allocation = 'Randomized'",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE designs.masking = 'Triple' AND designs.allocation = 'Randomized' RETURN studies.brief_title"
+  },
+  {
+    "question": "How many studies per state are conducting cancer research?",
+    "sql": "SELECT facilities.state, COUNT(DISTINCT studies.nct_id) FROM facilities JOIN facilities_studies ON facilities.facility_id = facilities_studies.facility_id JOIN studies ON facilities_studies.nct_id = studies.nct_id JOIN conditions_studies ON studies.nct_id = conditions_studies.nct_id JOIN conditions ON conditions_studies.condition_id = conditions.condition_id WHERE conditions.mesh_term LIKE '%Cancer%' GROUP BY facilities.state ORDER BY COUNT(DISTINCT studies.nct_id) DESC LIMIT 15",
+    "cypher": "MATCH (facilities)<-[AT_FACILITY]-(facilities_studies)<-[HAS_FACILITY_RECORD]-(studies)-[HAS_CONDITION_RECORD]->(conditions_studies)-[FOR_CONDITION]->(conditions) WHERE conditions.mesh_term CONTAINS 'Cancer' RETURN facilities.state, COUNT(DISTINCT studies) ORDER BY COUNT(DISTINCT studies) DESC LIMIT 15"
+  },
+  {
+    "question": "What is the maximum enrollment for studies in each phase?",
+    "sql": "SELECT studies.phase, MAX(studies.enrollment) FROM studies GROUP BY studies.phase",
+    "cypher": "MATCH (studies) RETURN studies.phase, MAX(studies.enrollment)"
+  },
+  {
+    "question": "Which facilities in Massachusetts are conducting observational studies?",
+    "sql": "SELECT DISTINCT facilities.name FROM facilities JOIN facilities_studies ON facilities.facility_id = facilities_studies.facility_id JOIN studies ON facilities_studies.nct_id = studies.nct_id WHERE facilities.state = 'Massachusetts' AND studies.study_type = 'Observational'",
+    "cypher": "MATCH (facilities)<-[AT_FACILITY]-(facilities_studies)<-[HAS_FACILITY_RECORD]-(studies) WHERE facilities.state = 'Massachusetts' AND studies.study_type = 'Observational' RETURN DISTINCT facilities.name"
+  },
+  {
+    "question": "List prevention studies that accept healthy volunteers.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE designs.primary_purpose = 'Prevention' AND eligibilities.healthy_volunteers = 'Accepts Healthy Volunteers'",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs), (studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE designs.primary_purpose = 'Prevention' AND eligibilities.healthy_volunteers = 'Accepts Healthy Volunteers' RETURN studies.brief_title"
+  },
+  {
+    "question": "How many studies are there for each intervention model?",
+    "sql": "SELECT designs.intervention_model, COUNT(*) FROM designs JOIN studies ON designs.nct_id = studies.nct_id GROUP BY designs.intervention_model ORDER BY COUNT(*) DESC",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) RETURN designs.intervention_model, COUNT(studies) ORDER BY COUNT(studies) DESC"
+  },
+  {
+    "question": "What are the top 10 sponsors by number of studies?",
+    "sql": "SELECT sponsors.name, COUNT(*) FROM sponsors JOIN sponsors_studies ON sponsors.sponsor_id = sponsors_studies.sponsor_id GROUP BY sponsors.name ORDER BY COUNT(*) DESC LIMIT 10",
+    "cypher": "MATCH (sponsors)<-[BY_SPONSOR]-(sponsors_studies) RETURN sponsors.name, COUNT(sponsors_studies) ORDER BY COUNT(sponsors_studies) DESC LIMIT 10"
+  },
+  {
+    "question": "Which studies in Chicago are testing drug interventions?",
+    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN facilities_studies ON studies.nct_id = facilities_studies.nct_id JOIN facilities ON facilities_studies.facility_id = facilities.facility_id WHERE facilities.city = 'Chicago' AND studies.is_fda_regulated_drug = 'true'",
+    "cypher": "MATCH (studies)-[HAS_FACILITY_RECORD]->(facilities_studies)-[AT_FACILITY]->(facilities) WHERE facilities.city = 'Chicago' AND studies.is_fda_regulated_drug = 'true' RETURN DISTINCT studies.brief_title"
+  },
+  {
+    "question": "Count studies by primary purpose.",
+    "sql": "SELECT designs.primary_purpose, COUNT(*) FROM designs JOIN studies ON designs.nct_id = studies.nct_id GROUP BY designs.primary_purpose ORDER BY COUNT(*) DESC",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) RETURN designs.primary_purpose, COUNT(studies) ORDER BY COUNT(studies) DESC"
+  },
+  {
+    "question": "What interventions are used in diabetes prevention studies?",
+    "sql": "SELECT DISTINCT interventions.mesh_term FROM interventions JOIN interventions_studies ON interventions.intervention_id = interventions_studies.intervention_id JOIN studies ON interventions_studies.nct_id = studies.nct_id JOIN designs ON studies.nct_id = designs.nct_id JOIN conditions_studies ON studies.nct_id = conditions_studies.nct_id JOIN conditions ON conditions_studies.condition_id = conditions.condition_id WHERE conditions.mesh_term = 'Diabetes Mellitus' AND designs.primary_purpose = 'Prevention'",
+    "cypher": "MATCH (interventions)<-[FOR_INTERVENTION]-(interventions_studies)<-[HAS_INTERVENTION_RECORD]-(studies)-[HAS_DESIGN]->(designs), (studies)-[HAS_CONDITION_RECORD]->(conditions_studies)-[FOR_CONDITION]->(conditions) WHERE conditions.mesh_term = 'Diabetes Mellitus' AND designs.primary_purpose = 'Prevention' RETURN DISTINCT interventions.mesh_term"
+  },
+  {
+    "question": "List studies with more than 3 arms.",
+    "sql": "SELECT studies.brief_title FROM studies WHERE studies.number_of_arms > 3 ORDER BY studies.number_of_arms DESC",
+    "cypher": "MATCH (studies) WHERE studies.number_of_arms > 3 RETURN studies.brief_title ORDER BY studies.number_of_arms DESC"
+  },
+  {
+    "question": "How many studies include female-only participants?",
+    "sql": "SELECT COUNT(*) FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.gender = 'Female'",
+    "cypher": "MATCH (studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE eligibilities.gender = 'Female' RETURN COUNT(studies)"
+  },
+  {
+    "question": "Which conditions are studied most in observational cohort studies?",
+    "sql": "SELECT conditions.mesh_term, COUNT(*) FROM conditions JOIN conditions_studies ON conditions.condition_id = conditions_studies.condition_id JOIN studies ON conditions_studies.nct_id = studies.nct_id JOIN designs ON studies.nct_id = designs.nct_id WHERE studies.study_type = 'Observational' AND designs.observational_model = 'Cohort' GROUP BY conditions.mesh_term ORDER BY COUNT(*) DESC LIMIT 10",
+    "cypher": "MATCH (conditions)<-[FOR_CONDITION]-(conditions_studies)<-[HAS_CONDITION_RECORD]-(studies)-[HAS_DESIGN]->(designs) WHERE studies.study_type = 'Observational' AND designs.observational_model = 'Cohort' RETURN conditions.mesh_term, COUNT(conditions_studies) ORDER BY COUNT(conditions_studies) DESC LIMIT 10"
+  },
+  {
+    "question": "What is the average enrollment for interventional studies?",
+    "sql": "SELECT AVG(studies.enrollment) FROM studies WHERE studies.study_type = 'Interventional'",
+    "cypher": "MATCH (studies) WHERE studies.study_type = 'Interventional' RETURN AVG(studies.enrollment)"
+  },
+  {
+    "question": "List studies with quadruple masking.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.masking = 'Quadruple'",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE designs.masking = 'Quadruple' RETURN studies.brief_title"
+  },
+  {
+    "question": "Which facilities are running the most clinical trials?",
+    "sql": "SELECT facilities.name, COUNT(*) FROM facilities JOIN facilities_studies ON facilities.facility_id = facilities_studies.facility_id GROUP BY facilities.name ORDER BY COUNT(*) DESC LIMIT 20",
+    "cypher": "MATCH (facilities)<-[AT_FACILITY]-(facilities_studies) RETURN facilities.name, COUNT(facilities_studies) ORDER BY COUNT(facilities_studies) DESC LIMIT 20"
+  },
+  {
+    "question": "How many studies involve subjects at risk for adverse events?",
+    "sql": "SELECT COUNT(DISTINCT studies.nct_id) FROM studies JOIN reported_event_totals ON studies.nct_id = reported_event_totals.nct_id WHERE reported_event_totals.subjects_at_risk > 0",
+    "cypher": "MATCH (studies)-[HAS_EVENT_TOTAL]->(reported_event_totals) WHERE reported_event_totals.subjects_at_risk > 0 RETURN COUNT(DISTINCT studies)"
+  },
+  {
+    "question": "What conditions are being studied in single group assignment trials?",
+    "sql": "SELECT DISTINCT conditions.mesh_term FROM conditions JOIN conditions_studies ON conditions.condition_id = conditions_studies.condition_id JOIN studies ON conditions_studies.nct_id = studies.nct_id JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.intervention_model = 'Single Group Assignment'",
+    "cypher": "MATCH (conditions)<-[FOR_CONDITION]-(conditions_studies)<-[HAS_CONDITION_RECORD]-(studies)-[HAS_DESIGN]->(designs) WHERE designs.intervention_model = 'Single Group Assignment' RETURN DISTINCT conditions.mesh_term"
+  },
+  {
+    "question": "List industry-sponsored Phase 1 studies.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN sponsors_studies ON studies.nct_id = sponsors_studies.nct_id JOIN sponsors ON sponsors_studies.sponsor_id = sponsors.sponsor_id WHERE sponsors.agency_class = 'INDUSTRY' AND studies.phase = 'Phase 1'",
+    "cypher": "MATCH (studies)-[HAS_SPONSOR_RECORD]->(sponsors_studies)-[BY_SPONSOR]->(sponsors) WHERE sponsors.agency_class = 'INDUSTRY' AND studies.phase = 'Phase 1' RETURN studies.brief_title"
+  },
+  {
+    "question": "How many studies started in 2019?",
+    "sql": "SELECT COUNT(*) FROM studies WHERE studies.start_date >= '2019-01-01' AND studies.start_date < '2020-01-01'",
+    "cypher": "MATCH (studies) WHERE studies.start_date >= datetime('2019-01-01T00:00:00') AND studies.start_date < datetime('2020-01-01T00:00:00') RETURN COUNT(studies)"
+  },
+  {
+    "question": "Which interventions are tested in non-randomized trials?",
+    "sql": "SELECT DISTINCT interventions.mesh_term FROM interventions JOIN interventions_studies ON interventions.intervention_id = interventions_studies.intervention_id JOIN studies ON interventions_studies.nct_id = studies.nct_id JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.allocation = 'Non-Randomized'",
+    "cypher": "MATCH (interventions)<-[FOR_INTERVENTION]-(interventions_studies)<-[HAS_INTERVENTION_RECORD]-(studies)-[HAS_DESIGN]->(designs) WHERE designs.allocation = 'Non-Randomized' RETURN DISTINCT interventions.mesh_term"
+  },
+  {
+    "question": "What are the outcomes for hypertension studies in Phase 3?",
+    "sql": "SELECT DISTINCT outcomes.title FROM outcomes JOIN studies ON outcomes.nct_id = studies.nct_id JOIN conditions_studies ON studies.nct_id = conditions_studies.nct_id JOIN conditions ON conditions_studies.condition_id = conditions.condition_id WHERE conditions.mesh_term = 'Hypertension' AND studies.phase = 'Phase 3'",
+    "cypher": "MATCH (studies)-[HAS_OUTCOME]->(outcomes), (studies)-[HAS_CONDITION_RECORD]->(conditions_studies)-[FOR_CONDITION]->(conditions) WHERE conditions.mesh_term = 'Hypertension' AND studies.phase = 'Phase 3' RETURN DISTINCT outcomes.title"
+  },
+  {
+    "question": "Count the number of studies per city in California.",
+    "sql": "SELECT facilities.city, COUNT(DISTINCT studies.nct_id) FROM facilities JOIN facilities_studies ON facilities.facility_id = facilities_studies.facility_id JOIN studies ON facilities_studies.nct_id = studies.nct_id WHERE facilities.state = 'California' GROUP BY facilities.city ORDER BY COUNT(DISTINCT studies.nct_id) DESC LIMIT 10",
+    "cypher": "MATCH (facilities)<-[AT_FACILITY]-(facilities_studies)<-[HAS_FACILITY_RECORD]-(studies) WHERE facilities.state = 'California' RETURN facilities.city, COUNT(DISTINCT studies) ORDER BY COUNT(DISTINCT studies) DESC LIMIT 10"
+  },
+  {
+    "question": "List studies that are both FDA regulated drugs and devices.",
+    "sql": "SELECT studies.brief_title FROM studies WHERE studies.is_fda_regulated_drug = 'true' AND studies.is_fda_regulated_device = 'true'",
+    "cypher": "MATCH (studies) WHERE studies.is_fda_regulated_drug = 'true' AND studies.is_fda_regulated_device = 'true' RETURN studies.brief_title"
+  },
+  {
+    "question": "Which sponsors fund studies in pediatric populations?",
+    "sql": "SELECT DISTINCT sponsors.name FROM sponsors JOIN sponsors_studies ON sponsors.sponsor_id = sponsors_studies.sponsor_id JOIN studies ON sponsors_studies.nct_id = studies.nct_id JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.child = 'true'",
+    "cypher": "MATCH (sponsors)<-[BY_SPONSOR]-(sponsors_studies)<-[HAS_SPONSOR_RECORD]-(studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE eligibilities.child = 'true' RETURN DISTINCT sponsors.name"
+  },
+  {
+    "question": "What is the total enrollment across all Phase 2 studies?",
+    "sql": "SELECT SUM(studies.enrollment) FROM studies WHERE studies.phase = 'Phase 2'",
+    "cypher": "MATCH (studies) WHERE studies.phase = 'Phase 2' RETURN SUM(studies.enrollment)"
+  },
+  {
+    "question": "List diagnostic studies with case-control design.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.primary_purpose = 'Diagnostic' AND designs.observational_model = 'Case-Control'",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE designs.primary_purpose = 'Diagnostic' AND designs.observational_model = 'Case-Control' RETURN studies.brief_title"
+  },
+  {
+    "question": "How many studies by each sponsor class are conducting cancer research?",
+    "sql": "SELECT sponsors.agency_class, COUNT(DISTINCT studies.nct_id) FROM sponsors JOIN sponsors_studies ON sponsors.sponsor_id = sponsors_studies.sponsor_id JOIN studies ON sponsors_studies.nct_id = studies.nct_id JOIN conditions_studies ON studies.nct_id = conditions_studies.nct_id JOIN conditions ON conditions_studies.condition_id = conditions.condition_id WHERE conditions.mesh_term LIKE '%Cancer%' GROUP BY sponsors.agency_class",
+    "cypher": "MATCH (sponsors)<-[BY_SPONSOR]-(sponsors_studies)<-[HAS_SPONSOR_RECORD]-(studies)-[HAS_CONDITION_RECORD]->(conditions_studies)-[FOR_CONDITION]->(conditions) WHERE conditions.mesh_term CONTAINS 'Cancer' RETURN sponsors.agency_class, COUNT(DISTINCT studies)"
+  },
+  {
+    "question": "Which facilities in New York are conducting Phase 2 trials?",
+    "sql": "SELECT DISTINCT facilities.name FROM facilities JOIN facilities_studies ON facilities.facility_id = facilities_studies.facility_id JOIN studies ON facilities_studies.nct_id = studies.nct_id WHERE facilities.state = 'New York' AND studies.phase = 'Phase 2'",
+    "cypher": "MATCH (facilities)<-[AT_FACILITY]-(facilities_studies)<-[HAS_FACILITY_RECORD]-(studies) WHERE facilities.state = 'New York' AND studies.phase = 'Phase 2' RETURN DISTINCT facilities.name"
+  },
+  {
+    "question": "What are the most common primary purposes across all studies?",
+    "sql": "SELECT designs.primary_purpose, COUNT(*) FROM designs GROUP BY designs.primary_purpose ORDER BY COUNT(*) DESC LIMIT 10",
+    "cypher": "MATCH (designs) RETURN designs.primary_purpose, COUNT(designs) ORDER BY COUNT(designs) DESC LIMIT 10"
+  },
+  {
+    "question": "List studies with factorial assignment intervention model.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.intervention_model = 'Factorial Assignment'",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE designs.intervention_model = 'Factorial Assignment' RETURN studies.brief_title"
+  },
+  {
+    "question": "How many studies include male-only participants?",
+    "sql": "SELECT COUNT(*) FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.gender = 'Male'",
+    "cypher": "MATCH (studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE eligibilities.gender = 'Male' RETURN COUNT(studies)"
+  },
+  {
+    "question": "Which conditions are studied in retrospective observational studies?",
+    "sql": "SELECT DISTINCT conditions.mesh_term FROM conditions JOIN conditions_studies ON conditions.condition_id = conditions_studies.condition_id JOIN studies ON conditions_studies.nct_id = studies.nct_id JOIN designs ON studies.nct_id = designs.nct_id WHERE studies.study_type = 'Observational' AND designs.time_perspective = 'Retrospective'",
+    "cypher": "MATCH (conditions)<-[FOR_CONDITION]-(conditions_studies)<-[HAS_CONDITION_RECORD]-(studies)-[HAS_DESIGN]->(designs) WHERE studies.study_type = 'Observational' AND designs.time_perspective = 'Retrospective' RETURN DISTINCT conditions.mesh_term"
+  },
+  {
+    "question": "What is the minimum enrollment for Phase 4 studies?",
+    "sql": "SELECT MIN(studies.enrollment) FROM studies WHERE studies.phase = 'Phase 4'",
+    "cypher": "MATCH (studies) WHERE studies.phase = 'Phase 4' RETURN MIN(studies.enrollment)"
+  },
+  {
+    "question": "List studies in Pennsylvania that do not accept healthy volunteers.",
+    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN facilities_studies ON studies.nct_id = facilities_studies.nct_id JOIN facilities ON facilities_studies.facility_id = facilities.facility_id JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE facilities.state = 'Pennsylvania' AND eligibilities.healthy_volunteers = 'No'",
+    "cypher": "MATCH (studies)-[HAS_FACILITY_RECORD]->(facilities_studies)-[AT_FACILITY]->(facilities), (studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE facilities.state = 'Pennsylvania' AND eligibilities.healthy_volunteers = 'No' RETURN DISTINCT studies.brief_title"
+  },
+  {
+    "question": "How many studies per allocation type?",
+    "sql": "SELECT designs.allocation, COUNT(*) FROM designs GROUP BY designs.allocation ORDER BY COUNT(*) DESC",
+    "cypher": "MATCH (designs) RETURN designs.allocation, COUNT(designs) ORDER BY COUNT(designs) DESC"
+  },
+  {
+    "question": "What interventions are being tested for asthma?",
+    "sql": "SELECT DISTINCT interventions.mesh_term FROM interventions JOIN interventions_studies ON interventions.intervention_id = interventions_studies.intervention_id JOIN studies ON interventions_studies.nct_id = studies.nct_id JOIN conditions_studies ON studies.nct_id = conditions_studies.nct_id JOIN conditions ON conditions_studies.condition_id = conditions.condition_id WHERE conditions.mesh_term = 'Asthma'",
+    "cypher": "MATCH (interventions)<-[FOR_INTERVENTION]-(interventions_studies)<-[HAS_INTERVENTION_RECORD]-(studies)-[HAS_CONDITION_RECORD]->(conditions_studies)-[FOR_CONDITION]->(conditions) WHERE conditions.mesh_term = 'Asthma' RETURN DISTINCT interventions.mesh_term"
+  },
+  {
+    "question": "Which facilities in Los Angeles are conducting interventional trials?",
+    "sql": "SELECT DISTINCT facilities.name FROM facilities JOIN facilities_studies ON facilities.facility_id = facilities_studies.facility_id JOIN studies ON facilities_studies.nct_id = studies.nct_id WHERE facilities.city = 'Los Angeles' AND studies.study_type = 'Interventional'",
+    "cypher": "MATCH (facilities)<-[AT_FACILITY]-(facilities_studies)<-[HAS_FACILITY_RECORD]-(studies) WHERE facilities.city = 'Los Angeles' AND studies.study_type = 'Interventional' RETURN DISTINCT facilities.name"
+  },
+  {
+    "question": "List studies with sequential assignment design.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.intervention_model = 'Sequential Assignment'",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE designs.intervention_model = 'Sequential Assignment' RETURN studies.brief_title"
+  },
+  {
+    "question": "How many studies have outcomes with p-values less than 0.05?",
+    "sql": "SELECT COUNT(DISTINCT studies.nct_id) FROM studies JOIN outcomes ON studies.nct_id = outcomes.nct_id JOIN outcome_analyses ON outcomes.id = outcome_analyses.outcome_id WHERE outcome_analyses.p_value < 0.05",
+    "cypher": "MATCH (studies)-[HAS_OUTCOME]->(outcomes)-[HAS_ANALYSIS]->(outcome_analyses) WHERE outcome_analyses.p_value < 0.05 RETURN COUNT(DISTINCT studies)"
+  },
+  {
+    "question": "What are the top 5 conditions studied in Phase 4 trials?",
+    "sql": "SELECT conditions.mesh_term, COUNT(*) FROM conditions JOIN conditions_studies ON conditions.condition_id = conditions_studies.condition_id JOIN studies ON conditions_studies.nct_id = studies.nct_id WHERE studies.phase = 'Phase 4' GROUP BY conditions.mesh_term ORDER BY COUNT(*) DESC LIMIT 5",
+    "cypher": "MATCH (conditions)<-[FOR_CONDITION]-(conditions_studies)<-[HAS_CONDITION_RECORD]-(studies) WHERE studies.phase = 'Phase 4' RETURN conditions.mesh_term, COUNT(conditions_studies) ORDER BY COUNT(conditions_studies) DESC LIMIT 5"
+  },
+  {
+    "question": "List studies sponsored by universities.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN sponsors_studies ON studies.nct_id = sponsors_studies.nct_id JOIN sponsors ON sponsors_studies.sponsor_id = sponsors.sponsor_id WHERE sponsors.agency_class = 'OTHER' AND sponsors.name LIKE '%University%'",
+    "cypher": "MATCH (studies)-[HAS_SPONSOR_RECORD]->(sponsors_studies)-[BY_SPONSOR]->(sponsors) WHERE sponsors.agency_class = 'OTHER' AND sponsors.name CONTAINS 'University' RETURN studies.brief_title"
+  },
+  {
+    "question": "How many observational studies use each observational model?",
+    "sql": "SELECT designs.observational_model, COUNT(*) FROM designs JOIN studies ON designs.nct_id = studies.nct_id WHERE studies.study_type = 'Observational' GROUP BY designs.observational_model ORDER BY COUNT(*) DESC",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE studies.study_type = 'Observational' RETURN designs.observational_model, COUNT(studies) ORDER BY COUNT(studies) DESC"
+  },
+  {
+    "question": "Which conditions are being studied with drug interventions in Phase 2?",
+    "sql": "SELECT DISTINCT conditions.mesh_term FROM conditions JOIN conditions_studies ON conditions.condition_id = conditions_studies.condition_id JOIN studies ON conditions_studies.nct_id = studies.nct_id WHERE studies.phase = 'Phase 2' AND studies.is_fda_regulated_drug = 'true'",
+    "cypher": "MATCH (conditions)<-[FOR_CONDITION]-(conditions_studies)<-[HAS_CONDITION_RECORD]-(studies) WHERE studies.phase = 'Phase 2' AND studies.is_fda_regulated_drug = 'true' RETURN DISTINCT conditions.mesh_term"
+  },
+  {
+    "question": "What is the average number of arms in interventional studies?",
+    "sql": "SELECT AVG(studies.number_of_arms) FROM studies WHERE studies.study_type = 'Interventional' AND studies.number_of_arms IS NOT NULL",
+    "cypher": "MATCH (studies) WHERE studies.study_type = 'Interventional' AND studies.number_of_arms IS NOT NULL RETURN AVG(studies.number_of_arms)"
+  },
+  {
+    "question": "List studies in Texas with enrollment over 1000.",
+    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN facilities_studies ON studies.nct_id = facilities_studies.nct_id JOIN facilities ON facilities_studies.facility_id = facilities.facility_id WHERE facilities.state = 'Texas' AND studies.enrollment > 1000",
+    "cypher": "MATCH (studies)-[HAS_FACILITY_RECORD]->(facilities_studies)-[AT_FACILITY]->(facilities) WHERE facilities.state = 'Texas' AND studies.enrollment > 1000 RETURN DISTINCT studies.brief_title"
+  },
+  {
+    "question": "How many studies have each time perspective in observational designs?",
+    "sql": "SELECT designs.time_perspective, COUNT(*) FROM designs JOIN studies ON designs.nct_id = studies.nct_id WHERE studies.study_type = 'Observational' GROUP BY designs.time_perspective ORDER BY COUNT(*) DESC",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE studies.study_type = 'Observational' RETURN designs.time_perspective, COUNT(studies) ORDER BY COUNT(studies) DESC"
+  },
+  {
+    "question": "Which interventions are used in studies that include older adults?",
+    "sql": "SELECT DISTINCT interventions.mesh_term FROM interventions JOIN interventions_studies ON interventions.intervention_id = interventions_studies.intervention_id JOIN studies ON interventions_studies.nct_id = studies.nct_id JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.older_adult = 'true'",
+    "cypher": "MATCH (interventions)<-[FOR_INTERVENTION]-(interventions_studies)<-[HAS_INTERVENTION_RECORD]-(studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE eligibilities.older_adult = 'true' RETURN DISTINCT interventions.mesh_term"
+  },
+  {
+    "question": "What are secondary outcomes for cardiovascular studies?",
+    "sql": "SELECT DISTINCT outcomes.title FROM outcomes JOIN studies ON outcomes.nct_id = studies.nct_id JOIN conditions_studies ON studies.nct_id = conditions_studies.nct_id JOIN conditions ON conditions_studies.condition_id = conditions.condition_id WHERE conditions.mesh_term LIKE '%Cardiovascular%' AND outcomes.outcome_type = 'Secondary'",
+    "cypher": "MATCH (studies)-[HAS_OUTCOME]->(outcomes), (studies)-[HAS_CONDITION_RECORD]->(conditions_studies)-[FOR_CONDITION]->(conditions) WHERE conditions.mesh_term CONTAINS 'Cardiovascular' AND outcomes.outcome_type = 'Secondary' RETURN DISTINCT outcomes.title"
+  },
+  {
+    "question": "Count studies in each country.",
+    "sql": "SELECT facilities.country, COUNT(DISTINCT studies.nct_id) FROM facilities JOIN facilities_studies ON facilities.facility_id = facilities_studies.facility_id JOIN studies ON facilities_studies.nct_id = studies.nct_id GROUP BY facilities.country ORDER BY COUNT(DISTINCT studies.nct_id) DESC LIMIT 15",
+    "cypher": "MATCH (facilities)<-[AT_FACILITY]-(facilities_studies)<-[HAS_FACILITY_RECORD]-(studies) RETURN facilities.country, COUNT(DISTINCT studies) ORDER BY COUNT(DISTINCT studies) DESC LIMIT 15"
+  },
+  {
+    "question": "List screening studies with more than 200 participants.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.primary_purpose = 'Screening' AND studies.enrollment > 200",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE designs.primary_purpose = 'Screening' AND studies.enrollment > 200 RETURN studies.brief_title"
+  },
+  {
+    "question": "How many federal-sponsored studies are there per phase?",
+    "sql": "SELECT studies.phase, COUNT(*) FROM studies JOIN sponsors_studies ON studies.nct_id = sponsors_studies.nct_id JOIN sponsors ON sponsors_studies.sponsor_id = sponsors.sponsor_id WHERE sponsors.agency_class = 'FED' GROUP BY studies.phase ORDER BY COUNT(*) DESC",
+    "cypher": "MATCH (studies)-[HAS_SPONSOR_RECORD]->(sponsors_studies)-[BY_SPONSOR]->(sponsors) WHERE sponsors.agency_class = 'FED' RETURN studies.phase, COUNT(studies) ORDER BY COUNT(studies) DESC"
+  },
+  {
+    "question": "Which facilities in San Francisco are conducting drug trials?",
+    "sql": "SELECT DISTINCT facilities.name FROM facilities JOIN facilities_studies ON facilities.facility_id = facilities_studies.facility_id JOIN studies ON facilities_studies.nct_id = studies.nct_id WHERE facilities.city = 'San Francisco' AND studies.is_fda_regulated_drug = 'true'",
+    "cypher": "MATCH (facilities)<-[AT_FACILITY]-(facilities_studies)<-[HAS_FACILITY_RECORD]-(studies) WHERE facilities.city = 'San Francisco' AND studies.is_fda_regulated_drug = 'true' RETURN DISTINCT facilities.name"
+  },
+  {
+    "question": "What is the total number of study withdrawals reported?",
+    "sql": "SELECT SUM(drop_withdrawals.count) FROM drop_withdrawals",
+    "cypher": "MATCH (drop_withdrawals) RETURN SUM(drop_withdrawals.count)"
+  },
+  {
+    "question": "List supportive care studies that include adults.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE designs.primary_purpose = 'Supportive Care' AND eligibilities.adult = 'true'",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs), (studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE designs.primary_purpose = 'Supportive Care' AND eligibilities.adult = 'true' RETURN studies.brief_title"
+  },
+  {
+    "question": "How many studies are there for each enrollment type?",
+    "sql": "SELECT studies.enrollment_type, COUNT(*) FROM studies GROUP BY studies.enrollment_type ORDER BY COUNT(*) DESC",
+    "cypher": "MATCH (studies) RETURN studies.enrollment_type, COUNT(studies) ORDER BY COUNT(studies) DESC"
+  },
+  {
+    "question": "Which interventions are being tested in pediatric populations?",
+    "sql": "SELECT DISTINCT interventions.mesh_term FROM interventions JOIN interventions_studies ON interventions.intervention_id = interventions_studies.intervention_id JOIN studies ON interventions_studies.nct_id = studies.nct_id JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.child = 'true'",
+    "cypher": "MATCH (interventions)<-[FOR_INTERVENTION]-(interventions_studies)<-[HAS_INTERVENTION_RECORD]-(studies)-[HAS_ELIGIBILITY]->(eligibilities) WHERE eligibilities.child = 'true' RETURN DISTINCT interventions.mesh_term"
+  },
+  {
+    "question": "What are outcomes for studies with more than 5 arms?",
+    "sql": "SELECT DISTINCT outcomes.title FROM outcomes JOIN studies ON outcomes.nct_id = studies.nct_id WHERE studies.number_of_arms > 5",
+    "cypher": "MATCH (studies)-[HAS_OUTCOME]->(outcomes) WHERE studies.number_of_arms > 5 RETURN DISTINCT outcomes.title"
+  },
+  {
+    "question": "Count studies by sponsor type and phase.",
+    "sql": "SELECT sponsors.agency_class, studies.phase, COUNT(*) FROM sponsors JOIN sponsors_studies ON sponsors.sponsor_id = sponsors_studies.sponsor_id JOIN studies ON sponsors_studies.nct_id = studies.nct_id GROUP BY sponsors.agency_class, studies.phase ORDER BY sponsors.agency_class, COUNT(*) DESC",
+    "cypher": "MATCH (sponsors)<-[BY_SPONSOR]-(sponsors_studies)<-[HAS_SPONSOR_RECORD]-(studies) RETURN sponsors.agency_class, studies.phase, COUNT(studies) ORDER BY sponsors.agency_class, COUNT(studies) DESC"
+  },
+  {
+    "question": "List open-label studies with parallel assignment.",
+    "sql": "SELECT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.masking = 'None (Open Label)' AND designs.intervention_model = 'Parallel Assignment'",
+    "cypher": "MATCH (studies)-[HAS_DESIGN]->(designs) WHERE designs.masking = 'None (Open Label)' AND designs.intervention_model = 'Parallel Assignment' RETURN studies.brief_title"
+  }
+]
