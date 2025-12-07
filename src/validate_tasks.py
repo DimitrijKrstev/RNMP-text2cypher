@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 from typing import Optional
 
+from tqdm import tqdm
+
 from constants import get_duckdb_path
 from database.neo4j import query_neo4j
 from database.duckdb import query_duckdb
@@ -29,7 +31,7 @@ def validate(
     valid_tasks: set[Task] = set()
     invalid_tasks: dict[Task, dict[TaskType, str]] = {}
 
-    for task in tasks:
+    for task in tqdm(tasks, desc=f"Validating {tasks_path.stem}", unit="task"):
         errors: dict[TaskType, str] = {}
 
         for task_type in task_types:
@@ -49,6 +51,7 @@ def validate(
         else:
             invalid_tasks[task] = errors
 
+    print()
     print(f"Path: {tasks_path}")
     print(f"Total: {len(tasks)} | Valid: {len(valid_tasks)} | Invalid: {len(invalid_tasks)}")
     print(f"Validated: {', '.join(t.value for t in task_types)}")

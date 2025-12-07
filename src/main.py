@@ -39,11 +39,13 @@ def load_duckdb(dataset_name: DatasetName, sample_size: float = 1.0) -> None:
 @app.command()
 def validate_tasks(
     dataset_name: DatasetName,
-    task_types: list[TaskType],
+    task_types: Optional[list[TaskType]] = typer.Argument(default=None),
 ) -> None:
-    types_to_validate = task_types if task_types else None
+    if task_types is None:
+        task_types = [TaskType.SQL, TaskType.CYPHER]
+    
     for path in Path(f"src/tasks/{dataset_name}").glob("*.json"):
-        validate(path, dataset_name, types_to_validate)
+        validate(path, dataset_name, task_types)
 
 
 @app.command()
