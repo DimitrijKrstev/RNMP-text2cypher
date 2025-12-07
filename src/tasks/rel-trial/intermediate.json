@@ -76,8 +76,8 @@
   },
   {
     "question": "Which sponsors fund studies that accept healthy volunteers?",
-    "sql": "SELECT DISTINCT sponsors.name FROM sponsors JOIN sponsors_studies ON sponsors.sponsor_id = sponsors_studies.sponsor_id JOIN studies ON sponsors_studies.nct_id = studies.nct_id JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.healthy_volunteers = 'Yes'",
-    "cypher": "MATCH (sponsor:sponsors)<-[:BY_SPONSOR]-(ss:sponsors_studies)<-[:HAS_SPONSOR_RECORD]-(study:studies)-[:HAS_ELIGIBILITY]->(elig:eligibilities) WHERE elig.healthy_volunteers = 'Yes' RETURN DISTINCT sponsor.name"
+    "sql": "SELECT DISTINCT sponsors.name FROM sponsors JOIN sponsors_studies ON sponsors.sponsor_id = sponsors_studies.sponsor_id JOIN studies ON sponsors_studies.nct_id = studies.nct_id JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.healthy_volunteers = 'Accepts Healthy Volunteers'",
+    "cypher": "MATCH (sponsor:sponsors)<-[:BY_SPONSOR]-(ss:sponsors_studies)<-[:HAS_SPONSOR_RECORD]-(study:studies)-[:HAS_ELIGIBILITY]->(elig:eligibilities) WHERE elig.healthy_volunteers = 'Accepts Healthy Volunteers' RETURN DISTINCT sponsor.name"
   },
   {
     "question": "How many studies with randomized design are there for each phase?",
@@ -116,8 +116,8 @@
   },
   {
     "question": "List conditions studied in FDA regulated drug trials",
-    "sql": "SELECT DISTINCT conditions.mesh_term FROM conditions JOIN conditions_studies ON conditions.condition_id = conditions_studies.condition_id JOIN studies ON conditions_studies.nct_id = studies.nct_id WHERE studies.is_fda_regulated_drug = 'Yes'",
-    "cypher": "MATCH (condition:conditions)<-[:FOR_CONDITION]-(cs:conditions_studies)<-[:HAS_CONDITION_RECORD]-(study:studies) WHERE study.is_fda_regulated_drug = 'Yes' RETURN DISTINCT condition.mesh_term"
+    "sql": "SELECT DISTINCT conditions.mesh_term FROM conditions JOIN conditions_studies ON conditions.condition_id = conditions_studies.condition_id JOIN studies ON conditions_studies.nct_id = studies.nct_id WHERE studies.is_fda_regulated_drug = 't'",
+    "cypher": "MATCH (condition:conditions)<-[:FOR_CONDITION]-(cs:conditions_studies)<-[:HAS_CONDITION_RECORD]-(study:studies) WHERE study.is_fda_regulated_drug = 't' RETURN DISTINCT condition.mesh_term"
   },
   {
     "question": "How many studies are there per intervention model type?",
@@ -131,8 +131,8 @@
   },
   {
     "question": "Which studies have eligibility criteria allowing only adults and older adults?",
-    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.adult = 'Yes' AND eligibilities.older_adult = 'Yes' AND eligibilities.child = 'No'",
-    "cypher": "MATCH (study:studies)-[:HAS_ELIGIBILITY]->(elig:eligibilities) WHERE elig.adult = 'Yes' AND elig.older_adult = 'Yes' AND elig.child = 'No' RETURN DISTINCT study.brief_title"
+    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.adult = 't' AND eligibilities.older_adult = 't' AND eligibilities.child = 'f'",
+    "cypher": "MATCH (study:studies)-[:HAS_ELIGIBILITY]->(elig:eligibilities) WHERE elig.adult = 't' AND elig.older_adult = 't' AND elig.child = 'f' RETURN DISTINCT study.brief_title"
   },
   {
     "question": "Count the number of studies by gender eligibility",
@@ -156,8 +156,8 @@
   },
   {
     "question": "Find studies accepting children that also have a data monitoring committee",
-    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.child = 'Yes' AND studies.has_dmc = 't'",
-    "cypher": "MATCH (study:studies)-[:HAS_ELIGIBILITY]->(elig:eligibilities) WHERE elig.child = 'Yes' AND study.has_dmc = 't' RETURN DISTINCT study.brief_title"
+    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.child = 't' AND studies.has_dmc = 't'",
+    "cypher": "MATCH (study:studies)-[:HAS_ELIGIBILITY]->(elig:eligibilities) WHERE elig.child = 't' AND study.has_dmc = 't' RETURN DISTINCT study.brief_title"
   },
   {
     "question": "Count studies by masking type for Phase 3 trials",
@@ -171,8 +171,8 @@
   },
   {
     "question": "List interventional studies that accept healthy volunteers and have more than 2 arms",
-    "sql": "SELECT DISTINCT studies.brief_title, studies.number_of_arms FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE studies.study_type = 'Interventional' AND eligibilities.healthy_volunteers = 'Yes' AND studies.number_of_arms > 2",
-    "cypher": "MATCH (study:studies)-[:HAS_ELIGIBILITY]->(elig:eligibilities) WHERE study.study_type = 'Interventional' AND elig.healthy_volunteers = 'Yes' AND toInteger(study.number_of_arms) > 2 RETURN DISTINCT study.brief_title, study.number_of_arms"
+    "sql": "SELECT DISTINCT studies.brief_title, studies.number_of_arms FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE studies.study_type = 'Interventional' AND eligibilities.healthy_volunteers = 'Accepts Healthy Volunteers' AND studies.number_of_arms > 2",
+    "cypher": "MATCH (study:studies)-[:HAS_ELIGIBILITY]->(elig:eligibilities) WHERE study.study_type = 'Interventional' AND elig.healthy_volunteers = 'Accepts Healthy Volunteers' AND toInteger(study.number_of_arms) > 2 RETURN DISTINCT study.brief_title, study.number_of_arms"
   },
   {
     "question": "How many secondary outcomes are there per outcome parameter type?",
@@ -196,8 +196,8 @@
   },
   {
     "question": "List FDA regulated device studies with quadruple masking",
-    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE studies.is_fda_regulated_device = 'Yes' AND designs.masking = 'Quadruple'",
-    "cypher": "MATCH (study:studies)-[:HAS_DESIGN]->(design:designs) WHERE study.is_fda_regulated_device = 'Yes' AND design.masking = 'Quadruple' RETURN DISTINCT study.brief_title"
+    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE studies.is_fda_regulated_device = 't' AND designs.masking = 'Quadruple'",
+    "cypher": "MATCH (study:studies)-[:HAS_DESIGN]->(design:designs) WHERE study.is_fda_regulated_device = 't' AND design.masking = 'Quadruple' RETURN DISTINCT study.brief_title"
   },
   {
     "question": "How many studies have outcomes measured in weeks by study phase?",
@@ -221,8 +221,8 @@
   },
   {
     "question": "Find studies with crossover design accepting healthy volunteers",
-    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE designs.intervention_model = 'Crossover Assignment' AND eligibilities.healthy_volunteers = 'Yes'",
-    "cypher": "MATCH (study:studies)-[:HAS_DESIGN]->(design:designs), (study)-[:HAS_ELIGIBILITY]->(elig:eligibilities) WHERE design.intervention_model = 'Crossover Assignment' AND elig.healthy_volunteers = 'Yes' RETURN DISTINCT study.brief_title"
+    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE designs.intervention_model = 'Crossover Assignment' AND eligibilities.healthy_volunteers = 'Accepts Healthy Volunteers'",
+    "cypher": "MATCH (study:studies)-[:HAS_DESIGN]->(design:designs), (study)-[:HAS_ELIGIBILITY]->(elig:eligibilities) WHERE design.intervention_model = 'Crossover Assignment' AND elig.healthy_volunteers = 'Accepts Healthy Volunteers' RETURN DISTINCT study.brief_title"
   },
   {
     "question": "How many studies are there for each combination of study type and enrollment type?",
@@ -231,8 +231,8 @@
   },
   {
     "question": "List studies with diagnostic purpose that have subject masking",
-    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.primary_purpose = 'Diagnostic' AND designs.subject_masked = 'Yes'",
-    "cypher": "MATCH (study:studies)-[:HAS_DESIGN]->(design:designs) WHERE design.primary_purpose = 'Diagnostic' AND design.subject_masked = 'Yes' RETURN DISTINCT study.brief_title"
+    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN designs ON studies.nct_id = designs.nct_id WHERE designs.primary_purpose = 'Diagnostic' AND designs.subject_masked = 't'",
+    "cypher": "MATCH (study:studies)-[:HAS_DESIGN]->(design:designs) WHERE design.primary_purpose = 'Diagnostic' AND design.subject_masked = 't' RETURN DISTINCT study.brief_title"
   },
   {
     "question": "Count outcomes by dispersion type for interventional studies",
@@ -241,8 +241,8 @@
   },
   {
     "question": "Find studies enrolling older adults with treatment purpose and enrollment over 75",
-    "sql": "SELECT DISTINCT studies.brief_title, studies.enrollment FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id JOIN designs ON studies.nct_id = designs.nct_id WHERE eligibilities.older_adult = 'Yes' AND designs.primary_purpose = 'Treatment' AND studies.enrollment > 75",
-    "cypher": "MATCH (study:studies)-[:HAS_ELIGIBILITY]->(elig:eligibilities), (study)-[:HAS_DESIGN]->(design:designs) WHERE elig.older_adult = 'Yes' AND design.primary_purpose = 'Treatment' AND toInteger(study.enrollment) > 75 RETURN DISTINCT study.brief_title, study.enrollment"
+    "sql": "SELECT DISTINCT studies.brief_title, studies.enrollment FROM studies JOIN eligibilities ON studies.nct_id = eligibilities.nct_id JOIN designs ON studies.nct_id = designs.nct_id WHERE eligibilities.older_adult = 't' AND designs.primary_purpose = 'Treatment' AND studies.enrollment > 75",
+    "cypher": "MATCH (study:studies)-[:HAS_ELIGIBILITY]->(elig:eligibilities), (study)-[:HAS_DESIGN]->(design:designs) WHERE elig.older_adult = 't' AND design.primary_purpose = 'Treatment' AND toInteger(study.enrollment) > 75 RETURN DISTINCT study.brief_title, study.enrollment"
   },
   {
     "question": "What is the total number of outcomes per phase?",
@@ -251,8 +251,8 @@
   },
   {
     "question": "How many serious adverse events are reported per study phase?",
-    "sql": "SELECT studies.phase, COUNT(reported_event_totals.id) FROM studies JOIN reported_event_totals ON studies.nct_id = reported_event_totals.nct_id WHERE reported_event_totals.event_type = 'Serious' GROUP BY studies.phase ORDER BY COUNT(reported_event_totals.id) DESC",
-    "cypher": "MATCH (study:studies)-[:HAS_EVENT_TOTAL]->(event:reported_event_totals) WHERE event.event_type = 'Serious' RETURN study.phase, count(event) ORDER BY count(event) DESC"
+    "sql": "SELECT studies.phase, COUNT(reported_event_totals.id) FROM studies JOIN reported_event_totals ON studies.nct_id = reported_event_totals.nct_id WHERE reported_event_totals.event_type = 'serious' GROUP BY studies.phase ORDER BY COUNT(reported_event_totals.id) DESC",
+    "cypher": "MATCH (study:studies)-[:HAS_EVENT_TOTAL]->(event:reported_event_totals) WHERE event.event_type = 'serious' RETURN study.phase, count(event) ORDER BY count(event) DESC"
   },
   {
     "question": "What is the total number of subjects affected by adverse events in Phase 3 trials?",
@@ -301,8 +301,8 @@
   },
   {
     "question": "Find studies with both serious and other adverse events reported",
-    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN reported_event_totals ON studies.nct_id = reported_event_totals.nct_id WHERE reported_event_totals.event_type = 'Serious' OR reported_event_totals.event_type = 'Other'",
-    "cypher": "MATCH (study:studies)-[:HAS_EVENT_TOTAL]->(event:reported_event_totals) WHERE event.event_type = 'Serious' OR event.event_type = 'Other' RETURN DISTINCT study.brief_title"
+    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN reported_event_totals ON studies.nct_id = reported_event_totals.nct_id WHERE reported_event_totals.event_type = 'serious' OR reported_event_totals.event_type = 'Other'",
+    "cypher": "MATCH (study:studies)-[:HAS_EVENT_TOTAL]->(event:reported_event_totals) WHERE event.event_type = 'serious' OR event.event_type = 'Other' RETURN DISTINCT study.brief_title"
   },
   {
     "question": "How many withdrawal reasons are recorded for each sponsor agency class?",
@@ -336,8 +336,8 @@
   },
   {
     "question": "List FDA regulated studies with protocol violations as withdrawal reason",
-    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN drop_withdrawals ON studies.nct_id = drop_withdrawals.nct_id WHERE studies.is_fda_regulated_drug = 'Yes' AND drop_withdrawals.reason LIKE '%Protocol%'",
-    "cypher": "MATCH (study:studies)-[:HAS_WITHDRAWAL]->(withdrawal:drop_withdrawals) WHERE study.is_fda_regulated_drug = 'Yes' AND withdrawal.reason CONTAINS 'Protocol' RETURN DISTINCT study.brief_title"
+    "sql": "SELECT DISTINCT studies.brief_title FROM studies JOIN drop_withdrawals ON studies.nct_id = drop_withdrawals.nct_id WHERE studies.is_fda_regulated_drug = 't' AND drop_withdrawals.reason LIKE '%Protocol%'",
+    "cypher": "MATCH (study:studies)-[:HAS_WITHDRAWAL]->(withdrawal:drop_withdrawals) WHERE study.is_fda_regulated_drug = 't' AND withdrawal.reason CONTAINS 'Protocol' RETURN DISTINCT study.brief_title"
   },
   {
     "question": "How many events are reported per study for each phase?",
@@ -346,8 +346,8 @@
   },
   {
     "question": "Find studies with more than 50 subjects affected by serious events",
-    "sql": "SELECT DISTINCT studies.brief_title, reported_event_totals.subjects_affected FROM studies JOIN reported_event_totals ON studies.nct_id = reported_event_totals.nct_id WHERE reported_event_totals.event_type = 'Serious' AND reported_event_totals.subjects_affected > 50",
-    "cypher": "MATCH (study:studies)-[:HAS_EVENT_TOTAL]->(event:reported_event_totals) WHERE event.event_type = 'Serious' AND toInteger(event.subjects_affected) > 50 RETURN DISTINCT study.brief_title, event.subjects_affected"
+    "sql": "SELECT DISTINCT studies.brief_title, reported_event_totals.subjects_affected FROM studies JOIN reported_event_totals ON studies.nct_id = reported_event_totals.nct_id WHERE reported_event_totals.event_type = 'serious' AND reported_event_totals.subjects_affected > 50",
+    "cypher": "MATCH (study:studies)-[:HAS_EVENT_TOTAL]->(event:reported_event_totals) WHERE event.event_type = 'serious' AND toInteger(event.subjects_affected) > 50 RETURN DISTINCT study.brief_title, event.subjects_affected"
   },
   {
     "question": "Count outcome analyses by parameter type",
@@ -396,8 +396,8 @@
   },
   {
     "question": "Count studies per condition that accept healthy volunteers",
-    "sql": "SELECT conditions.mesh_term, COUNT(DISTINCT studies.nct_id) FROM conditions JOIN conditions_studies ON conditions.condition_id = conditions_studies.condition_id JOIN studies ON conditions_studies.nct_id = studies.nct_id JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.healthy_volunteers = 'Yes' GROUP BY conditions.mesh_term ORDER BY COUNT(DISTINCT studies.nct_id) DESC LIMIT 20",
-    "cypher": "MATCH (condition:conditions)<-[:FOR_CONDITION]-(cs:conditions_studies)<-[:HAS_CONDITION_RECORD]-(study:studies)-[:HAS_ELIGIBILITY]->(elig:eligibilities) WHERE elig.healthy_volunteers = 'Yes' RETURN condition.mesh_term, count(DISTINCT study) ORDER BY count(DISTINCT study) DESC LIMIT 20"
+    "sql": "SELECT conditions.mesh_term, COUNT(DISTINCT studies.nct_id) FROM conditions JOIN conditions_studies ON conditions.condition_id = conditions_studies.condition_id JOIN studies ON conditions_studies.nct_id = studies.nct_id JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE eligibilities.healthy_volunteers = 'Accepts Healthy Volunteers' GROUP BY conditions.mesh_term ORDER BY COUNT(DISTINCT studies.nct_id) DESC LIMIT 20",
+    "cypher": "MATCH (condition:conditions)<-[:FOR_CONDITION]-(cs:conditions_studies)<-[:HAS_CONDITION_RECORD]-(study:studies)-[:HAS_ELIGIBILITY]->(elig:eligibilities) WHERE elig.healthy_volunteers = 'Accepts Healthy Volunteers' RETURN condition.mesh_term, count(DISTINCT study) ORDER BY count(DISTINCT study) DESC LIMIT 20"
   },
   {
     "question": "What interventions are used in studies at facilities in the United Kingdom?",
@@ -431,8 +431,8 @@
   },
   {
     "question": "List interventions used in FDA regulated drug trials with triple masking",
-    "sql": "SELECT DISTINCT interventions.mesh_term FROM interventions JOIN interventions_studies ON interventions.intervention_id = interventions_studies.intervention_id JOIN studies ON interventions_studies.nct_id = studies.nct_id JOIN designs ON studies.nct_id = designs.nct_id WHERE studies.is_fda_regulated_drug = 'Yes' AND designs.masking = 'Triple'",
-    "cypher": "MATCH (intervention:interventions)<-[:FOR_INTERVENTION]-(is:interventions_studies)<-[:HAS_INTERVENTION_RECORD]-(study:studies)-[:HAS_DESIGN]->(design:designs) WHERE study.is_fda_regulated_drug = 'Yes' AND design.masking = 'Triple' RETURN DISTINCT intervention.mesh_term"
+    "sql": "SELECT DISTINCT interventions.mesh_term FROM interventions JOIN interventions_studies ON interventions.intervention_id = interventions_studies.intervention_id JOIN studies ON interventions_studies.nct_id = studies.nct_id JOIN designs ON studies.nct_id = designs.nct_id WHERE studies.is_fda_regulated_drug = 't' AND designs.masking = 'Triple'",
+    "cypher": "MATCH (intervention:interventions)<-[:FOR_INTERVENTION]-(is:interventions_studies)<-[:HAS_INTERVENTION_RECORD]-(study:studies)-[:HAS_DESIGN]->(design:designs) WHERE study.is_fda_regulated_drug = 't' AND design.masking = 'Triple' RETURN DISTINCT intervention.mesh_term"
   },
   {
     "question": "What is the average number of arms for studies per sponsor type?",
@@ -441,8 +441,8 @@
   },
   {
     "question": "Find facilities in France with studies accepting children",
-    "sql": "SELECT DISTINCT facilities.name, facilities.city FROM facilities JOIN facilities_studies ON facilities.facility_id = facilities_studies.facility_id JOIN studies ON facilities_studies.nct_id = studies.nct_id JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE facilities.country = 'France' AND eligibilities.child = 'Yes'",
-    "cypher": "MATCH (facility:facilities)<-[:AT_FACILITY]-(fs:facilities_studies)<-[:HAS_FACILITY_RECORD]-(study:studies)-[:HAS_ELIGIBILITY]->(elig:eligibilities) WHERE facility.country = 'France' AND elig.child = 'Yes' RETURN DISTINCT facility.name, facility.city"
+    "sql": "SELECT DISTINCT facilities.name, facilities.city FROM facilities JOIN facilities_studies ON facilities.facility_id = facilities_studies.facility_id JOIN studies ON facilities_studies.nct_id = studies.nct_id JOIN eligibilities ON studies.nct_id = eligibilities.nct_id WHERE facilities.country = 'France' AND eligibilities.child = 't'",
+    "cypher": "MATCH (facility:facilities)<-[:AT_FACILITY]-(fs:facilities_studies)<-[:HAS_FACILITY_RECORD]-(study:studies)-[:HAS_ELIGIBILITY]->(elig:eligibilities) WHERE facility.country = 'France' AND elig.child = 't' RETURN DISTINCT facility.name, facility.city"
   },
   {
     "question": "Count studies by condition for observational cohort studies",
@@ -481,8 +481,8 @@
   },
   {
     "question": "List facilities in Canada conducting studies with investigator masking",
-    "sql": "SELECT DISTINCT facilities.name, facilities.city FROM facilities JOIN facilities_studies ON facilities.facility_id = facilities_studies.facility_id JOIN studies ON facilities_studies.nct_id = studies.nct_id JOIN designs ON studies.nct_id = designs.nct_id WHERE facilities.country = 'Canada' AND designs.investigator_masked = 'Yes'",
-    "cypher": "MATCH (facility:facilities)<-[:AT_FACILITY]-(fs:facilities_studies)<-[:HAS_FACILITY_RECORD]-(study:studies)-[:HAS_DESIGN]->(design:designs) WHERE facility.country = 'Canada' AND design.investigator_masked = 'Yes' RETURN DISTINCT facility.name, facility.city"
+    "sql": "SELECT DISTINCT facilities.name, facilities.city FROM facilities JOIN facilities_studies ON facilities.facility_id = facilities_studies.facility_id JOIN studies ON facilities_studies.nct_id = studies.nct_id JOIN designs ON studies.nct_id = designs.nct_id WHERE facilities.country = 'Canada' AND designs.investigator_masked = 't'",
+    "cypher": "MATCH (facility:facilities)<-[:AT_FACILITY]-(fs:facilities_studies)<-[:HAS_FACILITY_RECORD]-(study:studies)-[:HAS_DESIGN]->(design:designs) WHERE facility.country = 'Canada' AND design.investigator_masked = 't' RETURN DISTINCT facility.name, facility.city"
   },
   {
     "question": "How many studies per sponsor have reported adverse events?",

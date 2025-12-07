@@ -1,488 +1,488 @@
 [
   {
-    "question": "Find all users located in New York",
-    "sql": "SELECT users.Id, users.DisplayName, users.Location FROM users WHERE users.Location = 'New York'",
-    "cypher": "MATCH (users:users) WHERE users.Location = 'New York' RETURN users.Id, users.DisplayName, users.Location"
+    "question": "What are the display names of all users located in London?",
+    "sql": "SELECT users.DisplayName FROM users WHERE users.Location = 'London'",
+    "cypher": "MATCH (user:users) WHERE user.Location = 'London' RETURN user.DisplayName"
   },
   {
-    "question": "Show all badges with class 1",
-    "sql": "SELECT badges.Id, badges.Name, badges.UserId FROM badges WHERE badges.Class = 1",
-    "cypher": "MATCH (badges:badges) WHERE badges.Class = 1 RETURN badges.Id, badges.Name, badges.UserId"
+    "question": "List all posts with a title containing 'Python'",
+    "sql": "SELECT posts.Title, posts.CreationDate FROM posts WHERE posts.Title LIKE '%Python%'",
+    "cypher": "MATCH (post:posts) WHERE post.Title CONTAINS 'Python' RETURN post.Title, post.CreationDate"
   },
   {
-    "question": "List posts with post type 1",
-    "sql": "SELECT posts.Id, posts.Title, posts.CreationDate FROM posts WHERE posts.PostTypeId = 1",
-    "cypher": "MATCH (posts:posts) WHERE posts.PostTypeId = 1 RETURN posts.Id, posts.Title, posts.CreationDate"
+    "question": "Find all badges named 'Teacher'",
+    "sql": "SELECT badges.Name, badges.Date, badges.UserId FROM badges WHERE badges.Name = 'Teacher'",
+    "cypher": "MATCH (badge:badges) WHERE badge.Name = 'Teacher' RETURN badge.Name, badge.Date, badge.UserId"
   },
   {
-    "question": "Get all votes of type 2",
-    "sql": "SELECT votes.Id, votes.PostId, votes.UserId FROM votes WHERE votes.VoteTypeId = 2",
-    "cypher": "MATCH (votes:votes) WHERE votes.VoteTypeId = 2 RETURN votes.Id, votes.PostId, votes.UserId"
+    "question": "Show all comments created after January 1, 2015",
+    "sql": "SELECT comments.Text, comments.CreationDate FROM comments WHERE comments.CreationDate > '2015-01-01 00:00:00'",
+    "cypher": "MATCH (comment:comments) WHERE comment.CreationDate > '2015-01-01T00:00:00' RETURN comment.Text, comment.CreationDate"
   },
   {
-    "question": "Find comments made by user 5",
-    "sql": "SELECT comments.Id, comments.Text, comments.PostId FROM comments WHERE comments.UserId = 5",
-    "cypher": "MATCH (comments:comments) WHERE comments.UserId = 5 RETURN comments.Id, comments.Text, comments.PostId"
+    "question": "What are the titles of posts with PostTypeId equal to 2?",
+    "sql": "SELECT posts.Title FROM posts WHERE posts.PostTypeId = 2",
+    "cypher": "MATCH (post:posts) WHERE post.PostTypeId = '2' RETURN post.Title"
   },
   {
-    "question": "Show post links with link type 1",
-    "sql": "SELECT postLinks.Id, postLinks.PostId, postLinks.RelatedPostId FROM postLinks WHERE postLinks.LinkTypeId = 1",
-    "cypher": "MATCH (postLinks:postLinks) WHERE postLinks.LinkTypeId = 1 RETURN postLinks.Id, postLinks.PostId, postLinks.RelatedPostId"
+    "question": "List all users who have a website URL",
+    "sql": "SELECT users.DisplayName, users.WebsiteUrl FROM users WHERE users.WebsiteUrl IS NOT NULL",
+    "cypher": "MATCH (user:users) WHERE user.WebsiteUrl <> '' RETURN user.DisplayName, user.WebsiteUrl"
   },
   {
-    "question": "Find post history entries for post 100",
-    "sql": "SELECT postHistory.Id, postHistory.UserId, postHistory.Text FROM postHistory WHERE postHistory.PostId = 100",
-    "cypher": "MATCH (postHistory:postHistory) WHERE postHistory.PostId = 100 RETURN postHistory.Id, postHistory.UserId, postHistory.Text"
+    "question": "Find all votes with VoteTypeId of 2",
+    "sql": "SELECT votes.Id, votes.PostId, votes.CreationDate FROM votes WHERE votes.VoteTypeId = 2",
+    "cypher": "MATCH (vote:votes) WHERE vote.VoteTypeId = '2' RETURN vote.Id, vote.PostId, vote.CreationDate"
   },
   {
-    "question": "List all tag-based badges",
-    "sql": "SELECT badges.Id, badges.Name, badges.UserId FROM badges WHERE badges.TagBased = true",
-    "cypher": "MATCH (badges:badges) WHERE badges.TagBased = true RETURN badges.Id, badges.Name, badges.UserId"
+    "question": "Show all posts tagged with 'javascript'",
+    "sql": "SELECT posts.Title, posts.Tags FROM posts WHERE posts.Tags LIKE '%javascript%'",
+    "cypher": "MATCH (post:posts) WHERE post.Tags CONTAINS 'javascript' RETURN post.Title, post.Tags"
   },
   {
-    "question": "Get posts owned by user 42",
-    "sql": "SELECT posts.Id, posts.Title, posts.Body FROM posts WHERE posts.OwnerUserId = 42",
-    "cypher": "MATCH (posts:posts) WHERE posts.OwnerUserId = 42 RETURN posts.Id, posts.Title, posts.Body"
+    "question": "What are the names of all Class 2 badges?",
+    "sql": "SELECT badges.Name, badges.Date FROM badges WHERE badges.Class = 2",
+    "cypher": "MATCH (badge:badges) WHERE badge.Class = '2' RETURN badge.Name, badge.Date"
   },
   {
-    "question": "Find users with display name John",
-    "sql": "SELECT users.Id, users.DisplayName, users.Location FROM users WHERE users.DisplayName = 'John'",
-    "cypher": "MATCH (users:users) WHERE users.DisplayName = 'John' RETURN users.Id, users.DisplayName, users.Location"
-  },
-  {
-    "question": "Show all comments on post 50",
-    "sql": "SELECT comments.Id, comments.UserId, comments.Text FROM comments WHERE comments.PostId = 50",
-    "cypher": "MATCH (comments:comments) WHERE comments.PostId = 50 RETURN comments.Id, comments.UserId, comments.Text"
-  },
-  {
-    "question": "List badges named 'Teacher'",
-    "sql": "SELECT badges.Id, badges.UserId, badges.Date FROM badges WHERE badges.Name = 'Teacher'",
-    "cypher": "MATCH (badges:badges) WHERE badges.Name = 'Teacher' RETURN badges.Id, badges.UserId, badges.Date"
-  },
-  {
-    "question": "Get votes cast by user 10",
-    "sql": "SELECT votes.Id, votes.PostId, votes.VoteTypeId FROM votes WHERE votes.UserId = 10",
-    "cypher": "MATCH (votes:votes) WHERE votes.UserId = 10 RETURN votes.Id, votes.PostId, votes.VoteTypeId"
-  },
-  {
-    "question": "Find posts with an accepted answer",
-    "sql": "SELECT posts.Id, posts.Title, posts.AcceptedAnswerId FROM posts WHERE posts.AcceptedAnswerId > 0",
-    "cypher": "MATCH (posts:posts) WHERE posts.AcceptedAnswerId > 0 RETURN posts.Id, posts.Title, posts.AcceptedAnswerId"
-  },
-  {
-    "question": "Show post history entries with history type 1",
-    "sql": "SELECT postHistory.Id, postHistory.PostId, postHistory.Text FROM postHistory WHERE postHistory.PostHistoryTypeId = 1",
-    "cypher": "MATCH (postHistory:postHistory) WHERE postHistory.PostHistoryTypeId = 1 RETURN postHistory.Id, postHistory.PostId, postHistory.Text"
-  },
-  {
-    "question": "Find users whose display name starts with 'A'",
-    "sql": "SELECT users.Id, users.DisplayName, users.Location FROM users WHERE users.DisplayName LIKE 'A%'",
-    "cypher": "MATCH (users:users) WHERE users.DisplayName STARTS WITH 'A' RETURN users.Id, users.DisplayName, users.Location"
-  },
-  {
-    "question": "List posts containing 'python' in the title",
-    "sql": "SELECT posts.Id, posts.Title, posts.CreationDate FROM posts WHERE posts.Title LIKE '%python%'",
-    "cypher": "MATCH (posts:posts) WHERE posts.Title CONTAINS 'python' RETURN posts.Id, posts.Title, posts.CreationDate"
-  },
-  {
-    "question": "Get comments containing the word 'thanks'",
-    "sql": "SELECT comments.Id, comments.UserId, comments.Text FROM comments WHERE comments.Text LIKE '%thanks%'",
-    "cypher": "MATCH (comments:comments) WHERE comments.Text CONTAINS 'thanks' RETURN comments.Id, comments.UserId, comments.Text"
-  },
-  {
-    "question": "Find badges with class greater than 2",
-    "sql": "SELECT badges.Id, badges.Name, badges.UserId FROM badges WHERE badges.Class > 2",
-    "cypher": "MATCH (badges:badges) WHERE badges.Class > 2 RETURN badges.Id, badges.Name, badges.UserId"
-  },
-  {
-    "question": "Show posts with parent ID 200",
-    "sql": "SELECT posts.Id, posts.Title, posts.Body FROM posts WHERE posts.ParentId = 200",
-    "cypher": "MATCH (posts:posts) WHERE posts.ParentId = 200 RETURN posts.Id, posts.Title, posts.Body"
-  },
-  {
-    "question": "List all non-tag-based badges",
-    "sql": "SELECT badges.Id, badges.Name, badges.Class FROM badges WHERE badges.TagBased = false",
-    "cypher": "MATCH (badges:badges) WHERE badges.TagBased = false RETURN badges.Id, badges.Name, badges.Class"
-  },
-  {
-    "question": "Get the first 10 users ordered by creation date",
-    "sql": "SELECT users.Id, users.DisplayName, users.CreationDate FROM users ORDER BY users.CreationDate LIMIT 10",
-    "cypher": "MATCH (users:users) RETURN users.Id, users.DisplayName, users.CreationDate ORDER BY users.CreationDate LIMIT 10"
-  },
-  {
-    "question": "Find the 5 most recent posts",
-    "sql": "SELECT posts.Id, posts.Title, posts.CreationDate FROM posts ORDER BY posts.CreationDate DESC LIMIT 5",
-    "cypher": "MATCH (posts:posts) RETURN posts.Id, posts.Title, posts.CreationDate ORDER BY posts.CreationDate DESC LIMIT 5"
-  },
-  {
-    "question": "Show the latest 20 comments",
-    "sql": "SELECT comments.Id, comments.Text, comments.CreationDate FROM comments ORDER BY comments.CreationDate DESC LIMIT 20",
-    "cypher": "MATCH (comments:comments) RETURN comments.Id, comments.Text, comments.CreationDate ORDER BY comments.CreationDate DESC LIMIT 20"
-  },
-  {
-    "question": "List the 10 oldest badges",
-    "sql": "SELECT badges.Id, badges.Name, badges.Date FROM badges ORDER BY badges.Date LIMIT 10",
-    "cypher": "MATCH (badges:badges) RETURN badges.Id, badges.Name, badges.Date ORDER BY badges.Date LIMIT 10"
-  },
-  {
-    "question": "Find votes on post 75",
-    "sql": "SELECT votes.Id, votes.UserId, votes.VoteTypeId FROM votes WHERE votes.PostId = 75",
-    "cypher": "MATCH (votes:votes) WHERE votes.PostId = 75 RETURN votes.Id, votes.UserId, votes.VoteTypeId"
-  },
-  {
-    "question": "Get post links for post 30",
-    "sql": "SELECT postLinks.Id, postLinks.RelatedPostId, postLinks.LinkTypeId FROM postLinks WHERE postLinks.PostId = 30",
-    "cypher": "MATCH (postLinks:postLinks) WHERE postLinks.PostId = 30 RETURN postLinks.Id, postLinks.RelatedPostId, postLinks.LinkTypeId"
-  },
-  {
-    "question": "Show users located in California",
-    "sql": "SELECT users.Id, users.DisplayName, users.WebsiteUrl FROM users WHERE users.Location = 'California'",
-    "cypher": "MATCH (users:users) WHERE users.Location = 'California' RETURN users.Id, users.DisplayName, users.WebsiteUrl"
-  },
-  {
-    "question": "List posts with content license CC BY-SA 4.0",
-    "sql": "SELECT posts.Id, posts.Title, posts.ContentLicense FROM posts WHERE posts.ContentLicense = 'CC BY-SA 4.0'",
-    "cypher": "MATCH (posts:posts) WHERE posts.ContentLicense = 'CC BY-SA 4.0' RETURN posts.Id, posts.Title, posts.ContentLicense"
-  },
-  {
-    "question": "Find comments with content license CC BY-SA 3.0",
-    "sql": "SELECT comments.Id, comments.Text, comments.UserId FROM comments WHERE comments.ContentLicense = 'CC BY-SA 3.0'",
-    "cypher": "MATCH (comments:comments) WHERE comments.ContentLicense = 'CC BY-SA 3.0' RETURN comments.Id, comments.Text, comments.UserId"
-  },
-  {
-    "question": "Get post history entries edited by user 15",
-    "sql": "SELECT postHistory.Id, postHistory.PostId, postHistory.Text FROM postHistory WHERE postHistory.UserId = 15",
-    "cypher": "MATCH (postHistory:postHistory) WHERE postHistory.UserId = 15 RETURN postHistory.Id, postHistory.PostId, postHistory.Text"
-  },
-  {
-    "question": "Show badges earned by user 100",
-    "sql": "SELECT badges.Id, badges.Name, badges.Class FROM badges WHERE badges.UserId = 100",
-    "cypher": "MATCH (badges:badges) WHERE badges.UserId = 100 RETURN badges.Id, badges.Name, badges.Class"
-  },
-  {
-    "question": "Find posts tagged with 'javascript'",
-    "sql": "SELECT posts.Id, posts.Title, posts.Tags FROM posts WHERE posts.Tags LIKE '%javascript%'",
-    "cypher": "MATCH (posts:posts) WHERE posts.Tags CONTAINS 'javascript' RETURN posts.Id, posts.Title, posts.Tags"
-  },
-  {
-    "question": "List users whose location contains 'UK'",
-    "sql": "SELECT users.Id, users.DisplayName, users.Location FROM users WHERE users.Location LIKE '%UK%'",
-    "cypher": "MATCH (users:users) WHERE users.Location CONTAINS 'UK' RETURN users.Id, users.DisplayName, users.Location"
-  },
-  {
-    "question": "Get posts with type 2",
-    "sql": "SELECT posts.Id, posts.Title, posts.ParentId FROM posts WHERE posts.PostTypeId = 2",
-    "cypher": "MATCH (posts:posts) WHERE posts.PostTypeId = 2 RETURN posts.Id, posts.Title, posts.ParentId"
-  },
-  {
-    "question": "Show votes of type 1 on post 50",
-    "sql": "SELECT votes.Id, votes.UserId, votes.CreationDate FROM votes WHERE votes.VoteTypeId = 1 AND votes.PostId = 50",
-    "cypher": "MATCH (votes:votes) WHERE votes.VoteTypeId = 1 AND votes.PostId = 50 RETURN votes.Id, votes.UserId, votes.CreationDate"
-  },
-  {
-    "question": "Find badges with class 1 that are tag-based",
-    "sql": "SELECT badges.Id, badges.Name, badges.UserId FROM badges WHERE badges.Class = 1 AND badges.TagBased = true",
-    "cypher": "MATCH (badges:badges) WHERE badges.Class = 1 AND badges.TagBased = true RETURN badges.Id, badges.Name, badges.UserId"
-  },
-  {
-    "question": "List comments by user 20 on post 100",
-    "sql": "SELECT comments.Id, comments.Text, comments.CreationDate FROM comments WHERE comments.UserId = 20 AND comments.PostId = 100",
-    "cypher": "MATCH (comments:comments) WHERE comments.UserId = 20 AND comments.PostId = 100 RETURN comments.Id, comments.Text, comments.CreationDate"
-  },
-  {
-    "question": "Get post links with link type 2",
-    "sql": "SELECT postLinks.Id, postLinks.PostId, postLinks.RelatedPostId FROM postLinks WHERE postLinks.LinkTypeId = 2",
-    "cypher": "MATCH (postLinks:postLinks) WHERE postLinks.LinkTypeId = 2 RETURN postLinks.Id, postLinks.PostId, postLinks.RelatedPostId"
-  },
-  {
-    "question": "Show posts by owner display name 'admin'",
-    "sql": "SELECT posts.Id, posts.Title, posts.CreationDate FROM posts WHERE posts.OwnerDisplayName = 'admin'",
-    "cypher": "MATCH (posts:posts) WHERE posts.OwnerDisplayName = 'admin' RETURN posts.Id, posts.Title, posts.CreationDate"
-  },
-  {
-    "question": "Find post history with type 2 for post 50",
-    "sql": "SELECT postHistory.Id, postHistory.UserId, postHistory.Text FROM postHistory WHERE postHistory.PostHistoryTypeId = 2 AND postHistory.PostId = 50",
-    "cypher": "MATCH (postHistory:postHistory) WHERE postHistory.PostHistoryTypeId = 2 AND postHistory.PostId = 50 RETURN postHistory.Id, postHistory.UserId, postHistory.Text"
-  },
-  {
-    "question": "List users with a website URL",
-    "sql": "SELECT users.Id, users.DisplayName, users.WebsiteUrl FROM users WHERE users.WebsiteUrl > ''",
-    "cypher": "MATCH (users:users) WHERE users.WebsiteUrl > '' RETURN users.Id, users.DisplayName, users.WebsiteUrl"
-  },
-  {
-    "question": "Get posts with 'SQL' in the body",
-    "sql": "SELECT posts.Id, posts.Title, posts.Body FROM posts WHERE posts.Body LIKE '%SQL%'",
-    "cypher": "MATCH (posts:posts) WHERE posts.Body CONTAINS 'SQL' RETURN posts.Id, posts.Title, posts.Body"
-  },
-  {
-    "question": "Show badges named 'Student'",
-    "sql": "SELECT badges.Id, badges.UserId, badges.Date FROM badges WHERE badges.Name = 'Student'",
-    "cypher": "MATCH (badges:badges) WHERE badges.Name = 'Student' RETURN badges.Id, badges.UserId, badges.Date"
-  },
-  {
-    "question": "Find comments with user display name 'Anonymous'",
-    "sql": "SELECT comments.Id, comments.PostId, comments.Text FROM comments WHERE comments.UserDisplayName = 'Anonymous'",
-    "cypher": "MATCH (comments:comments) WHERE comments.UserDisplayName = 'Anonymous' RETURN comments.Id, comments.PostId, comments.Text"
-  },
-  {
-    "question": "List votes cast by user 5 on posts",
-    "sql": "SELECT votes.Id, votes.PostId, votes.VoteTypeId FROM votes WHERE votes.UserId = 5",
-    "cypher": "MATCH (votes:votes) WHERE votes.UserId = 5 RETURN votes.Id, votes.PostId, votes.VoteTypeId"
-  },
-  {
-    "question": "Get users whose AboutMe contains 'developer'",
-    "sql": "SELECT users.Id, users.DisplayName, users.AboutMe FROM users WHERE users.AboutMe LIKE '%developer%'",
-    "cypher": "MATCH (users:users) WHERE users.AboutMe CONTAINS 'developer' RETURN users.Id, users.DisplayName, users.AboutMe"
-  },
-  {
-    "question": "Show posts with post type 1 and an accepted answer",
-    "sql": "SELECT posts.Id, posts.Title, posts.AcceptedAnswerId FROM posts WHERE posts.PostTypeId = 1 AND posts.AcceptedAnswerId > 0",
-    "cypher": "MATCH (posts:posts) WHERE posts.PostTypeId = 1 AND posts.AcceptedAnswerId > 0 RETURN posts.Id, posts.Title, posts.AcceptedAnswerId"
-  },
-  {
-    "question": "Find badges with class 2",
-    "sql": "SELECT badges.Id, badges.Name, badges.UserId FROM badges WHERE badges.Class = 2",
-    "cypher": "MATCH (badges:badges) WHERE badges.Class = 2 RETURN badges.Id, badges.Name, badges.UserId"
-  },
-  {
-    "question": "List all post links relating to post 500",
-    "sql": "SELECT postLinks.Id, postLinks.RelatedPostId, postLinks.LinkTypeId FROM postLinks WHERE postLinks.PostId = 500",
-    "cypher": "MATCH (postLinks:postLinks) WHERE postLinks.PostId = 500 RETURN postLinks.Id, postLinks.RelatedPostId, postLinks.LinkTypeId"
-  },
-  {
-    "question": "Get the 15 most recent votes",
-    "sql": "SELECT votes.Id, votes.PostId, votes.CreationDate FROM votes ORDER BY votes.CreationDate DESC LIMIT 15",
-    "cypher": "MATCH (votes:votes) RETURN votes.Id, votes.PostId, votes.CreationDate ORDER BY votes.CreationDate DESC LIMIT 15"
-  },
-  {
-    "question": "Show users with display name ending in 'son'",
-    "sql": "SELECT users.Id, users.DisplayName, users.Location FROM users WHERE users.DisplayName LIKE '%son'",
-    "cypher": "MATCH (users:users) WHERE users.DisplayName ENDS WITH 'son' RETURN users.Id, users.DisplayName, users.Location"
-  },
-  {
-    "question": "Find posts with 'error' in the title",
-    "sql": "SELECT posts.Id, posts.Title, posts.Tags FROM posts WHERE posts.Title LIKE '%error%'",
-    "cypher": "MATCH (posts:posts) WHERE posts.Title CONTAINS 'error' RETURN posts.Id, posts.Title, posts.Tags"
-  },
-  {
-    "question": "List comments that contain 'helpful'",
-    "sql": "SELECT comments.Id, comments.UserId, comments.Text FROM comments WHERE comments.Text LIKE '%helpful%'",
-    "cypher": "MATCH (comments:comments) WHERE comments.Text CONTAINS 'helpful' RETURN comments.Id, comments.UserId, comments.Text"
-  },
-  {
-    "question": "Get badges named 'Editor'",
-    "sql": "SELECT badges.Id, badges.UserId, badges.Class FROM badges WHERE badges.Name = 'Editor'",
-    "cypher": "MATCH (badges:badges) WHERE badges.Name = 'Editor' RETURN badges.Id, badges.UserId, badges.Class"
-  },
-  {
-    "question": "Show post history entries with a comment",
-    "sql": "SELECT postHistory.Id, postHistory.PostId, postHistory.Comment FROM postHistory WHERE postHistory.Comment > ''",
-    "cypher": "MATCH (postHistory:postHistory) WHERE postHistory.Comment > '' RETURN postHistory.Id, postHistory.PostId, postHistory.Comment"
+    "question": "List all post history entries with PostHistoryTypeId of 1",
+    "sql": "SELECT postHistory.Id, postHistory.PostId, postHistory.CreationDate FROM postHistory WHERE postHistory.PostHistoryTypeId = 1",
+    "cypher": "MATCH (ph:postHistory) WHERE ph.PostHistoryTypeId = '1' RETURN ph.Id, ph.PostId, ph.CreationDate"
   },
   {
     "question": "Find users located in Germany",
-    "sql": "SELECT users.Id, users.DisplayName, users.Location FROM users WHERE users.Location = 'Germany'",
-    "cypher": "MATCH (users:users) WHERE users.Location = 'Germany' RETURN users.Id, users.DisplayName, users.Location"
+    "sql": "SELECT users.DisplayName, users.Location FROM users WHERE users.Location = 'Germany'",
+    "cypher": "MATCH (user:users) WHERE user.Location = 'Germany' RETURN user.DisplayName, user.Location"
   },
   {
-    "question": "List posts owned by user 1",
-    "sql": "SELECT posts.Id, posts.Title, posts.CreationDate FROM posts WHERE posts.OwnerUserId = 1",
-    "cypher": "MATCH (posts:posts) WHERE posts.OwnerUserId = 1 RETURN posts.Id, posts.Title, posts.CreationDate"
+    "question": "Show all post links with LinkTypeId of 1",
+    "sql": "SELECT postLinks.Id, postLinks.PostId, postLinks.RelatedPostId FROM postLinks WHERE postLinks.LinkTypeId = 1",
+    "cypher": "MATCH (pl:postLinks) WHERE pl.LinkTypeId = '1' RETURN pl.Id, pl.PostId, pl.RelatedPostId"
   },
   {
-    "question": "Get votes of type 3",
-    "sql": "SELECT votes.Id, votes.PostId, votes.UserId FROM votes WHERE votes.VoteTypeId = 3",
-    "cypher": "MATCH (votes:votes) WHERE votes.VoteTypeId = 3 RETURN votes.Id, votes.PostId, votes.UserId"
+    "question": "What posts have the ContentLicense 'CC BY-SA 4.0'?",
+    "sql": "SELECT posts.Title, posts.ContentLicense FROM posts WHERE posts.ContentLicense = 'CC BY-SA 4.0'",
+    "cypher": "MATCH (post:posts) WHERE post.ContentLicense = 'CC BY-SA 4.0' RETURN post.Title, post.ContentLicense"
   },
   {
-    "question": "Show the 10 most recent post history entries",
-    "sql": "SELECT postHistory.Id, postHistory.PostId, postHistory.CreationDate FROM postHistory ORDER BY postHistory.CreationDate DESC LIMIT 10",
-    "cypher": "MATCH (postHistory:postHistory) RETURN postHistory.Id, postHistory.PostId, postHistory.CreationDate ORDER BY postHistory.CreationDate DESC LIMIT 10"
+    "question": "List all comments by the user with display name 'John'",
+    "sql": "SELECT comments.Text, comments.CreationDate FROM comments WHERE comments.UserDisplayName = 'John'",
+    "cypher": "MATCH (comment:comments) WHERE comment.UserDisplayName = 'John' RETURN comment.Text, comment.CreationDate"
   },
   {
-    "question": "Find comments written by user display name 'Guest'",
-    "sql": "SELECT comments.Id, comments.PostId, comments.Text FROM comments WHERE comments.UserDisplayName = 'Guest'",
-    "cypher": "MATCH (comments:comments) WHERE comments.UserDisplayName = 'Guest' RETURN comments.Id, comments.PostId, comments.Text"
+    "question": "Find all tag-based badges",
+    "sql": "SELECT badges.Name, badges.UserId FROM badges WHERE badges.TagBased = True",
+    "cypher": "MATCH (badge:badges) WHERE badge.TagBased = 'True' RETURN badge.Name, badge.UserId"
   },
   {
-    "question": "List posts tagged with 'html'",
-    "sql": "SELECT posts.Id, posts.Title, posts.Tags FROM posts WHERE posts.Tags LIKE '%html%'",
-    "cypher": "MATCH (posts:posts) WHERE posts.Tags CONTAINS 'html' RETURN posts.Id, posts.Title, posts.Tags"
+    "question": "Show all posts created before 2014",
+    "sql": "SELECT posts.Title, posts.CreationDate FROM posts WHERE posts.CreationDate < '2014-01-01 00:00:00'",
+    "cypher": "MATCH (post:posts) WHERE post.CreationDate < '2014-01-01T00:00:00' RETURN post.Title, post.CreationDate"
   },
   {
-    "question": "Get badges earned by user 25",
-    "sql": "SELECT badges.Id, badges.Name, badges.Date FROM badges WHERE badges.UserId = 25",
-    "cypher": "MATCH (badges:badges) WHERE badges.UserId = 25 RETURN badges.Id, badges.Name, badges.Date"
+    "question": "What are the display names of users created in 2020?",
+    "sql": "SELECT users.DisplayName, users.CreationDate FROM users WHERE users.CreationDate >= '2020-01-01 00:00:00' AND users.CreationDate < '2021-01-01 00:00:00'",
+    "cypher": "MATCH (user:users) WHERE user.CreationDate >= '2020-01-01T00:00:00' AND user.CreationDate < '2021-01-01T00:00:00' RETURN user.DisplayName, user.CreationDate"
   },
   {
-    "question": "Show users with location containing 'San'",
-    "sql": "SELECT users.Id, users.DisplayName, users.Location FROM users WHERE users.Location LIKE '%San%'",
-    "cypher": "MATCH (users:users) WHERE users.Location CONTAINS 'San' RETURN users.Id, users.DisplayName, users.Location"
+    "question": "List all Class 3 badges",
+    "sql": "SELECT badges.Name, badges.Date, badges.UserId FROM badges WHERE badges.Class = 3",
+    "cypher": "MATCH (badge:badges) WHERE badge.Class = '3' RETURN badge.Name, badge.Date, badge.UserId"
   },
   {
-    "question": "Find post links where related post is 150",
-    "sql": "SELECT postLinks.Id, postLinks.PostId, postLinks.LinkTypeId FROM postLinks WHERE postLinks.RelatedPostId = 150",
-    "cypher": "MATCH (postLinks:postLinks) WHERE postLinks.RelatedPostId = 150 RETURN postLinks.Id, postLinks.PostId, postLinks.LinkTypeId"
+    "question": "Find all votes cast after 2018",
+    "sql": "SELECT votes.Id, votes.PostId, votes.CreationDate FROM votes WHERE votes.CreationDate > '2018-01-01 00:00:00'",
+    "cypher": "MATCH (vote:votes) WHERE vote.CreationDate > '2018-01-01T00:00:00' RETURN vote.Id, vote.PostId, vote.CreationDate"
   },
   {
-    "question": "List comments on post 25",
-    "sql": "SELECT comments.Id, comments.UserId, comments.Text FROM comments WHERE comments.PostId = 25",
-    "cypher": "MATCH (comments:comments) WHERE comments.PostId = 25 RETURN comments.Id, comments.UserId, comments.Text"
+    "question": "Show posts with titles containing 'database'",
+    "sql": "SELECT posts.Title, posts.Body FROM posts WHERE posts.Title LIKE '%database%'",
+    "cypher": "MATCH (post:posts) WHERE post.Title CONTAINS 'database' RETURN post.Title, post.Body"
   },
   {
-    "question": "Get posts with title starting with 'How'",
-    "sql": "SELECT posts.Id, posts.Title, posts.CreationDate FROM posts WHERE posts.Title LIKE 'How%'",
-    "cypher": "MATCH (posts:posts) WHERE posts.Title STARTS WITH 'How' RETURN posts.Id, posts.Title, posts.CreationDate"
+    "question": "What is the about me section for users in San Francisco?",
+    "sql": "SELECT users.DisplayName, users.AboutMe FROM users WHERE users.Location = 'San Francisco'",
+    "cypher": "MATCH (user:users) WHERE user.Location = 'San Francisco' RETURN user.DisplayName, user.AboutMe"
   },
   {
-    "question": "Show votes for post 200",
-    "sql": "SELECT votes.Id, votes.UserId, votes.VoteTypeId FROM votes WHERE votes.PostId = 200",
-    "cypher": "MATCH (votes:votes) WHERE votes.PostId = 200 RETURN votes.Id, votes.UserId, votes.VoteTypeId"
+    "question": "List all comments with ContentLicense 'CC BY-SA 3.0'",
+    "sql": "SELECT comments.Text, comments.UserDisplayName FROM comments WHERE comments.ContentLicense = 'CC BY-SA 3.0'",
+    "cypher": "MATCH (comment:comments) WHERE comment.ContentLicense = 'CC BY-SA 3.0' RETURN comment.Text, comment.UserDisplayName"
   },
   {
-    "question": "Find badges named 'Supporter'",
-    "sql": "SELECT badges.Id, badges.UserId, badges.Class FROM badges WHERE badges.Name = 'Supporter'",
-    "cypher": "MATCH (badges:badges) WHERE badges.Name = 'Supporter' RETURN badges.Id, badges.UserId, badges.Class"
+    "question": "Find posts owned by a specific display name 'user712'",
+    "sql": "SELECT posts.Title, posts.CreationDate FROM posts WHERE posts.OwnerDisplayName = 'user712'",
+    "cypher": "MATCH (post:posts) WHERE post.OwnerDisplayName = 'user712' RETURN post.Title, post.CreationDate"
   },
   {
-    "question": "List post history entries for history type 3",
-    "sql": "SELECT postHistory.Id, postHistory.PostId, postHistory.UserId FROM postHistory WHERE postHistory.PostHistoryTypeId = 3",
-    "cypher": "MATCH (postHistory:postHistory) WHERE postHistory.PostHistoryTypeId = 3 RETURN postHistory.Id, postHistory.PostId, postHistory.UserId"
+    "question": "Show all badges earned after 2019",
+    "sql": "SELECT badges.Name, badges.Date, badges.UserId FROM badges WHERE badges.Date > '2019-01-01 00:00:00'",
+    "cypher": "MATCH (badge:badges) WHERE badge.Date > '2019-01-01T00:00:00' RETURN badge.Name, badge.Date, badge.UserId"
   },
   {
-    "question": "Get users whose display name contains 'user'",
-    "sql": "SELECT users.Id, users.DisplayName, users.CreationDate FROM users WHERE users.DisplayName LIKE '%user%'",
-    "cypher": "MATCH (users:users) WHERE users.DisplayName CONTAINS 'user' RETURN users.Id, users.DisplayName, users.CreationDate"
+    "question": "What are the posts tagged with 'java'?",
+    "sql": "SELECT posts.Title, posts.Tags FROM posts WHERE posts.Tags LIKE '%java%'",
+    "cypher": "MATCH (post:posts) WHERE post.Tags CONTAINS 'java' RETURN post.Title, post.Tags"
   },
   {
-    "question": "Show posts with body containing 'function'",
-    "sql": "SELECT posts.Id, posts.Title, posts.Body FROM posts WHERE posts.Body LIKE '%function%'",
-    "cypher": "MATCH (posts:posts) WHERE posts.Body CONTAINS 'function' RETURN posts.Id, posts.Title, posts.Body"
+    "question": "List users whose location contains 'York'",
+    "sql": "SELECT users.DisplayName, users.Location FROM users WHERE users.Location LIKE '%York%'",
+    "cypher": "MATCH (user:users) WHERE user.Location CONTAINS 'York' RETURN user.DisplayName, user.Location"
   },
   {
-    "question": "Find the 5 oldest users by creation date",
-    "sql": "SELECT users.Id, users.DisplayName, users.CreationDate FROM users ORDER BY users.CreationDate LIMIT 5",
-    "cypher": "MATCH (users:users) RETURN users.Id, users.DisplayName, users.CreationDate ORDER BY users.CreationDate LIMIT 5"
+    "question": "Find post history entries with a specific RevisionGUID 'e629cbf7-ebcb-4b8d-9962-574af21bcf70' ",
+    "sql": "SELECT postHistory.Id, postHistory.Text FROM postHistory WHERE postHistory.RevisionGUID = 'e629cbf7-ebcb-4b8d-9962-574af21bcf70'",
+    "cypher": "MATCH (ph:postHistory) WHERE ph.RevisionGUID = 'e629cbf7-ebcb-4b8d-9962-574af21bcf70' RETURN ph.Id, ph.Text"
   },
   {
-    "question": "List badges with class 3",
-    "sql": "SELECT badges.Id, badges.Name, badges.UserId FROM badges WHERE badges.Class = 3",
-    "cypher": "MATCH (badges:badges) WHERE badges.Class = 3 RETURN badges.Id, badges.Name, badges.UserId"
+    "question": "Show all votes with VoteTypeId of 1",
+    "sql": "SELECT votes.Id, votes.PostId FROM votes WHERE votes.VoteTypeId = 1",
+    "cypher": "MATCH (vote:votes) WHERE vote.VoteTypeId = '1' RETURN vote.Id, vote.PostId"
   },
   {
-    "question": "Get comments by user 30",
-    "sql": "SELECT comments.Id, comments.PostId, comments.Text FROM comments WHERE comments.UserId = 30",
-    "cypher": "MATCH (comments:comments) WHERE comments.UserId = 30 RETURN comments.Id, comments.PostId, comments.Text"
+    "question": "What posts have an AcceptedAnswerId set?",
+    "sql": "SELECT posts.Title, posts.AcceptedAnswerId FROM posts WHERE posts.AcceptedAnswerId IS NOT NULL",
+    "cypher": "MATCH (post:posts) WHERE post.AcceptedAnswerId <> '' RETURN post.Title, post.AcceptedAnswerId"
   },
   {
-    "question": "Show posts with parent ID greater than 100",
-    "sql": "SELECT posts.Id, posts.Title, posts.ParentId FROM posts WHERE posts.ParentId > 100",
-    "cypher": "MATCH (posts:posts) WHERE posts.ParentId > 100 RETURN posts.Id, posts.Title, posts.ParentId"
+    "question": "List all badges named 'Student'",
+    "sql": "SELECT badges.Name, badges.Date, badges.UserId FROM badges WHERE badges.Name = 'Student'",
+    "cypher": "MATCH (badge:badges) WHERE badge.Name = 'Student' RETURN badge.Name, badge.Date, badge.UserId"
   },
   {
-    "question": "Find post history entries with content license CC BY-SA 4.0",
-    "sql": "SELECT postHistory.Id, postHistory.PostId, postHistory.Text FROM postHistory WHERE postHistory.ContentLicense = 'CC BY-SA 4.0'",
-    "cypher": "MATCH (postHistory:postHistory) WHERE postHistory.ContentLicense = 'CC BY-SA 4.0' RETURN postHistory.Id, postHistory.PostId, postHistory.Text"
+    "question": "Find posts created after June 2017",
+    "sql": "SELECT posts.Title, posts.CreationDate FROM posts WHERE posts.CreationDate > '2017-06-01 00:00:00'",
+    "cypher": "MATCH (post:posts) WHERE post.CreationDate > '2017-06-01T00:00:00' RETURN post.Title, post.CreationDate"
   },
   {
-    "question": "List votes of type 5",
-    "sql": "SELECT votes.Id, votes.PostId, votes.UserId FROM votes WHERE votes.VoteTypeId = 5",
-    "cypher": "MATCH (votes:votes) WHERE votes.VoteTypeId = 5 RETURN votes.Id, votes.PostId, votes.UserId"
+    "question": "Show users with display names starting with 'A'",
+    "sql": "SELECT users.DisplayName, users.Location FROM users WHERE users.DisplayName LIKE 'A%'",
+    "cypher": "MATCH (user:users) WHERE user.DisplayName STARTS WITH 'A' RETURN user.DisplayName, user.Location"
   },
   {
-    "question": "Get users in London",
-    "sql": "SELECT users.Id, users.DisplayName, users.Location FROM users WHERE users.Location = 'London'",
-    "cypher": "MATCH (users:users) WHERE users.Location = 'London' RETURN users.Id, users.DisplayName, users.Location"
+    "question": "What are the post links created in 2016?",
+    "sql": "SELECT postLinks.Id, postLinks.PostId, postLinks.RelatedPostId FROM postLinks WHERE postLinks.CreationDate >= '2016-01-01 00:00:00' AND postLinks.CreationDate < '2017-01-01 00:00:00'",
+    "cypher": "MATCH (pl:postLinks) WHERE pl.CreationDate >= '2016-01-01T00:00:00' AND pl.CreationDate < '2017-01-01T00:00:00' RETURN pl.Id, pl.PostId, pl.RelatedPostId"
   },
   {
-    "question": "Show posts tagged with 'css'",
-    "sql": "SELECT posts.Id, posts.Title, posts.Tags FROM posts WHERE posts.Tags LIKE '%css%'",
-    "cypher": "MATCH (posts:posts) WHERE posts.Tags CONTAINS 'css' RETURN posts.Id, posts.Title, posts.Tags"
+    "question": "List comments containing the word 'thanks'",
+    "sql": "SELECT comments.Text, comments.UserDisplayName FROM comments WHERE comments.Text LIKE '%thanks%'",
+    "cypher": "MATCH (comment:comments) WHERE comment.Text CONTAINS 'thanks' RETURN comment.Text, comment.UserDisplayName"
   },
   {
-    "question": "Find badges named 'Nice Answer'",
-    "sql": "SELECT badges.Id, badges.UserId, badges.Date FROM badges WHERE badges.Name = 'Nice Answer'",
-    "cypher": "MATCH (badges:badges) WHERE badges.Name = 'Nice Answer' RETURN badges.Id, badges.UserId, badges.Date"
+    "question": "Find all non-tag-based badges",
+    "sql": "SELECT badges.Name, badges.Class FROM badges WHERE badges.TagBased = False",
+    "cypher": "MATCH (badge:badges) WHERE badge.TagBased = 'False' RETURN badge.Name, badge.Class"
   },
   {
-    "question": "List the 10 most recent post links",
-    "sql": "SELECT postLinks.Id, postLinks.PostId, postLinks.CreationDate FROM postLinks ORDER BY postLinks.CreationDate DESC LIMIT 10",
-    "cypher": "MATCH (postLinks:postLinks) RETURN postLinks.Id, postLinks.PostId, postLinks.CreationDate ORDER BY postLinks.CreationDate DESC LIMIT 10"
+    "question": "Show posts with PostTypeId of 1 ordered by creation date descending",
+    "sql": "SELECT posts.Title, posts.CreationDate FROM posts WHERE posts.PostTypeId = 1 ORDER BY posts.CreationDate DESC",
+    "cypher": "MATCH (post:posts) WHERE post.PostTypeId = '1' RETURN post.Title, post.CreationDate ORDER BY post.CreationDate DESC"
   },
   {
-    "question": "Get comments containing 'please'",
-    "sql": "SELECT comments.Id, comments.UserId, comments.Text FROM comments WHERE comments.Text LIKE '%please%'",
-    "cypher": "MATCH (comments:comments) WHERE comments.Text CONTAINS 'please' RETURN comments.Id, comments.UserId, comments.Text"
+    "question": "What users have 'developer' in their AboutMe?",
+    "sql": "SELECT users.DisplayName, users.AboutMe FROM users WHERE users.AboutMe LIKE '%developer%'",
+    "cypher": "MATCH (user:users) WHERE user.AboutMe CONTAINS 'developer' RETURN user.DisplayName, user.AboutMe"
   },
   {
-    "question": "Show posts with title containing 'Java'",
-    "sql": "SELECT posts.Id, posts.Title, posts.Tags FROM posts WHERE posts.Title LIKE '%Java%'",
-    "cypher": "MATCH (posts:posts) WHERE posts.Title CONTAINS 'Java' RETURN posts.Id, posts.Title, posts.Tags"
+    "question": "List all post history entries for PostHistoryTypeId 2",
+    "sql": "SELECT postHistory.Id, postHistory.PostId, postHistory.Text FROM postHistory WHERE postHistory.PostHistoryTypeId = 2",
+    "cypher": "MATCH (ph:postHistory) WHERE ph.PostHistoryTypeId = '2' RETURN ph.Id, ph.PostId, ph.Text"
   },
   {
-    "question": "Find users with AboutMe containing 'programming'",
-    "sql": "SELECT users.Id, users.DisplayName, users.AboutMe FROM users WHERE users.AboutMe LIKE '%programming%'",
-    "cypher": "MATCH (users:users) WHERE users.AboutMe CONTAINS 'programming' RETURN users.Id, users.DisplayName, users.AboutMe"
+    "question": "Find badges awarded before 2015",
+    "sql": "SELECT badges.Name, badges.Date FROM badges WHERE badges.Date < '2015-01-01 00:00:00'",
+    "cypher": "MATCH (badge:badges) WHERE badge.Date < '2015-01-01T00:00:00' RETURN badge.Name, badge.Date"
   },
   {
-    "question": "List post history entries by user 50",
-    "sql": "SELECT postHistory.Id, postHistory.PostId, postHistory.Text FROM postHistory WHERE postHistory.UserId = 50",
-    "cypher": "MATCH (postHistory:postHistory) WHERE postHistory.UserId = 50 RETURN postHistory.Id, postHistory.PostId, postHistory.Text"
+    "question": "Show all votes for a specific post",
+    "sql": "SELECT votes.Id, votes.VoteTypeId, votes.CreationDate FROM votes WHERE votes.PostId = 100",
+    "cypher": "MATCH (vote:votes) WHERE vote.PostId = '100' RETURN vote.Id, vote.VoteTypeId, vote.CreationDate"
   },
   {
-    "question": "Get votes cast on post 300",
-    "sql": "SELECT votes.Id, votes.UserId, votes.VoteTypeId FROM votes WHERE votes.PostId = 300",
-    "cypher": "MATCH (votes:votes) WHERE votes.PostId = 300 RETURN votes.Id, votes.UserId, votes.VoteTypeId"
+    "question": "What are the titles of posts with tags containing 'sql'?",
+    "sql": "SELECT posts.Title, posts.Tags FROM posts WHERE posts.Tags LIKE '%sql%'",
+    "cypher": "MATCH (post:posts) WHERE post.Tags CONTAINS 'sql' RETURN post.Title, post.Tags"
   },
   {
-    "question": "Show badges for user 75",
-    "sql": "SELECT badges.Id, badges.Name, badges.Class FROM badges WHERE badges.UserId = 75",
-    "cypher": "MATCH (badges:badges) WHERE badges.UserId = 75 RETURN badges.Id, badges.Name, badges.Class"
+    "question": "List users located in India",
+    "sql": "SELECT users.DisplayName, users.Location FROM users WHERE users.Location = 'India'",
+    "cypher": "MATCH (user:users) WHERE user.Location = 'India' RETURN user.DisplayName, user.Location"
   },
   {
-    "question": "Find posts owned by display name 'moderator'",
-    "sql": "SELECT posts.Id, posts.Title, posts.CreationDate FROM posts WHERE posts.OwnerDisplayName = 'moderator'",
-    "cypher": "MATCH (posts:posts) WHERE posts.OwnerDisplayName = 'moderator' RETURN posts.Id, posts.Title, posts.CreationDate"
+    "question": "Find all post links with LinkTypeId of 3",
+    "sql": "SELECT postLinks.Id, postLinks.PostId, postLinks.RelatedPostId FROM postLinks WHERE postLinks.LinkTypeId = 3",
+    "cypher": "MATCH (pl:postLinks) WHERE pl.LinkTypeId = '3' RETURN pl.Id, pl.PostId, pl.RelatedPostId"
   },
   {
-    "question": "List users whose display name starts with 'M'",
-    "sql": "SELECT users.Id, users.DisplayName, users.Location FROM users WHERE users.DisplayName LIKE 'M%'",
-    "cypher": "MATCH (users:users) WHERE users.DisplayName STARTS WITH 'M' RETURN users.Id, users.DisplayName, users.Location"
+    "question": "Show comments for a specific post ID",
+    "sql": "SELECT comments.Text, comments.UserDisplayName, comments.CreationDate FROM comments WHERE comments.PostId = 500",
+    "cypher": "MATCH (comment:comments) WHERE comment.PostId = '500' RETURN comment.Text, comment.UserDisplayName, comment.CreationDate"
   },
   {
-    "question": "Get comments with content license CC BY-SA 4.0",
-    "sql": "SELECT comments.Id, comments.PostId, comments.Text FROM comments WHERE comments.ContentLicense = 'CC BY-SA 4.0'",
-    "cypher": "MATCH (comments:comments) WHERE comments.ContentLicense = 'CC BY-SA 4.0' RETURN comments.Id, comments.PostId, comments.Text"
+    "question": "What badges have Class 1?",
+    "sql": "SELECT badges.Name, badges.UserId FROM badges WHERE badges.Class = 1",
+    "cypher": "MATCH (badge:badges) WHERE badge.Class = '1' RETURN badge.Name, badge.UserId"
   },
   {
-    "question": "Show post links for related post 75",
-    "sql": "SELECT postLinks.Id, postLinks.PostId, postLinks.LinkTypeId FROM postLinks WHERE postLinks.RelatedPostId = 75",
-    "cypher": "MATCH (postLinks:postLinks) WHERE postLinks.RelatedPostId = 75 RETURN postLinks.Id, postLinks.PostId, postLinks.LinkTypeId"
+    "question": "List posts with body containing 'error'",
+    "sql": "SELECT posts.Title, posts.Body FROM posts WHERE posts.Body LIKE '%error%'",
+    "cypher": "MATCH (post:posts) WHERE post.Body CONTAINS 'error' RETURN post.Title, post.Body"
   },
   {
-    "question": "Find posts with type 1 owned by user 10",
-    "sql": "SELECT posts.Id, posts.Title, posts.Body FROM posts WHERE posts.PostTypeId = 1 AND posts.OwnerUserId = 10",
-    "cypher": "MATCH (posts:posts) WHERE posts.PostTypeId = 1 AND posts.OwnerUserId = 10 RETURN posts.Id, posts.Title, posts.Body"
+    "question": "Find users with display names ending in 'son'",
+    "sql": "SELECT users.DisplayName, users.Location FROM users WHERE users.DisplayName LIKE '%son'",
+    "cypher": "MATCH (user:users) WHERE user.DisplayName ENDS WITH 'son' RETURN user.DisplayName, user.Location"
   },
   {
-    "question": "List badges that are not tag-based with class 1",
-    "sql": "SELECT badges.Id, badges.Name, badges.UserId FROM badges WHERE badges.TagBased = false AND badges.Class = 1",
-    "cypher": "MATCH (badges:badges) WHERE badges.TagBased = false AND badges.Class = 1 RETURN badges.Id, badges.Name, badges.UserId"
+    "question": "Show all votes with VoteTypeId of 5",
+    "sql": "SELECT votes.Id, votes.PostId, votes.CreationDate FROM votes WHERE votes.VoteTypeId = 5",
+    "cypher": "MATCH (vote:votes) WHERE vote.VoteTypeId = '5' RETURN vote.Id, vote.PostId, vote.CreationDate"
   },
   {
-    "question": "Get the 20 most recent badges awarded",
-    "sql": "SELECT badges.Id, badges.Name, badges.Date FROM badges ORDER BY badges.Date DESC LIMIT 20",
-    "cypher": "MATCH (badges:badges) RETURN badges.Id, badges.Name, badges.Date ORDER BY badges.Date DESC LIMIT 20"
+    "question": "What posts have a ParentId set?",
+    "sql": "SELECT posts.Title, posts.ParentId FROM posts WHERE posts.ParentId IS NOT NULL",
+    "cypher": "MATCH (post:posts) WHERE post.ParentId <> '' RETURN post.Title, post.ParentId"
   },
   {
-    "question": "Show posts with body containing 'return'",
-    "sql": "SELECT posts.Id, posts.Title, posts.Body FROM posts WHERE posts.Body LIKE '%return%'",
-    "cypher": "MATCH (posts:posts) WHERE posts.Body CONTAINS 'return' RETURN posts.Id, posts.Title, posts.Body"
+    "question": "List all badges named 'Editor'",
+    "sql": "SELECT badges.Name, badges.Date, badges.UserId FROM badges WHERE badges.Name = 'Editor'",
+    "cypher": "MATCH (badge:badges) WHERE badge.Name = 'Editor' RETURN badge.Name, badge.Date, badge.UserId"
   },
   {
-    "question": "Find users located in India",
-    "sql": "SELECT users.Id, users.DisplayName, users.Location FROM users WHERE users.Location = 'India'",
-    "cypher": "MATCH (users:users) WHERE users.Location = 'India' RETURN users.Id, users.DisplayName, users.Location"
+    "question": "Find post history entries created before 2013",
+    "sql": "SELECT postHistory.Id, postHistory.PostId, postHistory.CreationDate FROM postHistory WHERE postHistory.CreationDate < '2013-01-01 00:00:00'",
+    "cypher": "MATCH (ph:postHistory) WHERE ph.CreationDate < '2013-01-01T00:00:00' RETURN ph.Id, ph.PostId, ph.CreationDate"
+  },
+  {
+    "question": "Show users whose location contains 'California'",
+    "sql": "SELECT users.DisplayName, users.Location FROM users WHERE users.Location LIKE '%California%'",
+    "cypher": "MATCH (user:users) WHERE user.Location CONTAINS 'California' RETURN user.DisplayName, user.Location"
+  },
+  {
+    "question": "What are the comments with 'great' in the text?",
+    "sql": "SELECT comments.Text, comments.CreationDate FROM comments WHERE comments.Text LIKE '%great%'",
+    "cypher": "MATCH (comment:comments) WHERE comment.Text CONTAINS 'great' RETURN comment.Text, comment.CreationDate"
+  },
+  {
+    "question": "List posts tagged with 'c#'",
+    "sql": "SELECT posts.Title, posts.Tags FROM posts WHERE posts.Tags LIKE '%c#%'",
+    "cypher": "MATCH (post:posts) WHERE post.Tags CONTAINS 'c#' RETURN post.Title, post.Tags"
+  },
+  {
+    "question": "Find all badges for a specific user",
+    "sql": "SELECT badges.Name, badges.Class, badges.Date FROM badges WHERE badges.UserId = 1000",
+    "cypher": "MATCH (badge:badges) WHERE badge.UserId = '1000' RETURN badge.Name, badge.Class, badge.Date"
+  },
+  {
+    "question": "Show post links created after 2018",
+    "sql": "SELECT postLinks.Id, postLinks.PostId, postLinks.CreationDate FROM postLinks WHERE postLinks.CreationDate > '2018-01-01 00:00:00'",
+    "cypher": "MATCH (pl:postLinks) WHERE pl.CreationDate > '2018-01-01T00:00:00' RETURN pl.Id, pl.PostId, pl.CreationDate"
+  },
+  {
+    "question": "What users joined before 2012?",
+    "sql": "SELECT users.DisplayName, users.CreationDate FROM users WHERE users.CreationDate < '2012-01-01 00:00:00'",
+    "cypher": "MATCH (user:users) WHERE user.CreationDate < '2012-01-01T00:00:00' RETURN user.DisplayName, user.CreationDate"
+  },
+  {
+    "question": "List all votes created in 2019",
+    "sql": "SELECT votes.Id, votes.PostId, votes.VoteTypeId FROM votes WHERE votes.CreationDate >= '2019-01-01 00:00:00' AND votes.CreationDate < '2020-01-01 00:00:00'",
+    "cypher": "MATCH (vote:votes) WHERE vote.CreationDate >= '2019-01-01T00:00:00' AND vote.CreationDate < '2020-01-01T00:00:00' RETURN vote.Id, vote.PostId, vote.VoteTypeId"
+  },
+  {
+    "question": "Find posts with titles containing 'API'",
+    "sql": "SELECT posts.Title, posts.CreationDate FROM posts WHERE posts.Title LIKE '%API%'",
+    "cypher": "MATCH (post:posts) WHERE post.Title CONTAINS 'API' RETURN post.Title, post.CreationDate"
+  },
+  {
+    "question": "Show all badges named 'Supporter'",
+    "sql": "SELECT badges.Name, badges.Date, badges.UserId FROM badges WHERE badges.Name = 'Supporter'",
+    "cypher": "MATCH (badge:badges) WHERE badge.Name = 'Supporter' RETURN badge.Name, badge.Date, badge.UserId"
+  },
+  {
+    "question": "What are the post history entries with Comment containing 'edit'?",
+    "sql": "SELECT postHistory.Id, postHistory.Comment, postHistory.CreationDate FROM postHistory WHERE postHistory.Comment LIKE '%edit%'",
+    "cypher": "MATCH (ph:postHistory) WHERE ph.Comment CONTAINS 'edit' RETURN ph.Id, ph.Comment, ph.CreationDate"
+  },
+  {
+    "question": "List users located in Canada",
+    "sql": "SELECT users.DisplayName, users.Location FROM users WHERE users.Location = 'Canada'",
+    "cypher": "MATCH (user:users) WHERE user.Location = 'Canada' RETURN user.DisplayName, user.Location"
+  },
+  {
+    "question": "Find comments created before 2014",
+    "sql": "SELECT comments.Text, comments.CreationDate FROM comments WHERE comments.CreationDate < '2014-01-01 00:00:00'",
+    "cypher": "MATCH (comment:comments) WHERE comment.CreationDate < '2014-01-01T00:00:00' RETURN comment.Text, comment.CreationDate"
+  },
+  {
+    "question": "Show posts with OwnerUserId of 500",
+    "sql": "SELECT posts.Title, posts.CreationDate FROM posts WHERE posts.OwnerUserId = 500",
+    "cypher": "MATCH (post:posts) WHERE post.OwnerUserId = '500' RETURN post.Title, post.CreationDate"
+  },
+  {
+    "question": "What are the badges earned in 2020?",
+    "sql": "SELECT badges.Name, badges.Date, badges.UserId FROM badges WHERE badges.Date >= '2020-01-01 00:00:00' AND badges.Date < '2021-01-01 00:00:00'",
+    "cypher": "MATCH (badge:badges) WHERE badge.Date >= '2020-01-01T00:00:00' AND badge.Date < '2021-01-01T00:00:00' RETURN badge.Name, badge.Date, badge.UserId"
+  },
+  {
+    "question": "List all post links for a specific PostId",
+    "sql": "SELECT postLinks.Id, postLinks.RelatedPostId, postLinks.LinkTypeId FROM postLinks WHERE postLinks.PostId = 200",
+    "cypher": "MATCH (pl:postLinks) WHERE pl.PostId = '200' RETURN pl.Id, pl.RelatedPostId, pl.LinkTypeId"
+  },
+  {
+    "question": "Find posts tagged with 'html'",
+    "sql": "SELECT posts.Title, posts.Tags FROM posts WHERE posts.Tags LIKE '%html%'",
+    "cypher": "MATCH (post:posts) WHERE post.Tags CONTAINS 'html' RETURN post.Title, post.Tags"
+  },
+  {
+    "question": "Show users with AboutMe containing 'programming'",
+    "sql": "SELECT users.DisplayName, users.AboutMe FROM users WHERE users.AboutMe LIKE '%programming%'",
+    "cypher": "MATCH (user:users) WHERE user.AboutMe CONTAINS 'programming' RETURN user.DisplayName, user.AboutMe"
+  },
+  {
+    "question": "What votes have VoteTypeId of 3?",
+    "sql": "SELECT votes.Id, votes.PostId, votes.CreationDate FROM votes WHERE votes.VoteTypeId = 3",
+    "cypher": "MATCH (vote:votes) WHERE vote.VoteTypeId = '3' RETURN vote.Id, vote.PostId, vote.CreationDate"
+  },
+  {
+    "question": "List all comments by UserDisplayName 'Anonymous'",
+    "sql": "SELECT comments.Text, comments.CreationDate FROM comments WHERE comments.UserDisplayName = 'Anonymous'",
+    "cypher": "MATCH (comment:comments) WHERE comment.UserDisplayName = 'Anonymous' RETURN comment.Text, comment.CreationDate"
+  },
+  {
+    "question": "Find badges with Class 1 ordered by date",
+    "sql": "SELECT badges.Name, badges.Date FROM badges WHERE badges.Class = 1 ORDER BY badges.Date",
+    "cypher": "MATCH (badge:badges) WHERE badge.Class = '1' RETURN badge.Name, badge.Date ORDER BY badge.Date"
+  },
+  {
+    "question": "Show posts created in 2018",
+    "sql": "SELECT posts.Title, posts.CreationDate FROM posts WHERE posts.CreationDate >= '2018-01-01 00:00:00' AND posts.CreationDate < '2019-01-01 00:00:00'",
+    "cypher": "MATCH (post:posts) WHERE post.CreationDate >= '2018-01-01T00:00:00' AND post.CreationDate < '2019-01-01T00:00:00' RETURN post.Title, post.CreationDate"
+  },
+  {
+    "question": "What are the post history entries for PostHistoryTypeId 4?",
+    "sql": "SELECT postHistory.Id, postHistory.PostId, postHistory.Text FROM postHistory WHERE postHistory.PostHistoryTypeId = 4",
+    "cypher": "MATCH (ph:postHistory) WHERE ph.PostHistoryTypeId = '4' RETURN ph.Id, ph.PostId, ph.Text"
+  },
+  {
+    "question": "List users whose display name is 'David'",
+    "sql": "SELECT users.DisplayName, users.Location, users.CreationDate FROM users WHERE users.DisplayName = 'David'",
+    "cypher": "MATCH (user:users) WHERE user.DisplayName = 'David' RETURN user.DisplayName, user.Location, user.CreationDate"
+  },
+  {
+    "question": "Find all posts with ContentLicense 'CC BY-SA 3.0'",
+    "sql": "SELECT posts.Title, posts.ContentLicense FROM posts WHERE posts.ContentLicense = 'CC BY-SA 3.0'",
+    "cypher": "MATCH (post:posts) WHERE post.ContentLicense = 'CC BY-SA 3.0' RETURN post.Title, post.ContentLicense"
+  },
+  {
+    "question": "Show the 10 most recent comments",
+    "sql": "SELECT comments.Text, comments.CreationDate FROM comments ORDER BY comments.CreationDate DESC LIMIT 10",
+    "cypher": "MATCH (comment:comments) RETURN comment.Text, comment.CreationDate ORDER BY comment.CreationDate DESC LIMIT 10"
+  },
+  {
+    "question": "What badges are named 'Critic'?",
+    "sql": "SELECT badges.Name, badges.Date, badges.UserId FROM badges WHERE badges.Name = 'Critic'",
+    "cypher": "MATCH (badge:badges) WHERE badge.Name = 'Critic' RETURN badge.Name, badge.Date, badge.UserId"
+  },
+  {
+    "question": "List posts with body containing 'function'",
+    "sql": "SELECT posts.Title, posts.Body FROM posts WHERE posts.Body LIKE '%function%'",
+    "cypher": "MATCH (post:posts) WHERE post.Body CONTAINS 'function' RETURN post.Title, post.Body"
+  },
+  {
+    "question": "Find users in Australia",
+    "sql": "SELECT users.DisplayName, users.Location FROM users WHERE users.Location = 'Australia'",
+    "cypher": "MATCH (user:users) WHERE user.Location = 'Australia' RETURN user.DisplayName, user.Location"
+  },
+  {
+    "question": "Show votes cast before 2015",
+    "sql": "SELECT votes.Id, votes.PostId, votes.CreationDate FROM votes WHERE votes.CreationDate < '2015-01-01 00:00:00'",
+    "cypher": "MATCH (vote:votes) WHERE vote.CreationDate < '2015-01-01T00:00:00' RETURN vote.Id, vote.PostId, vote.CreationDate"
+  },
+  {
+    "question": "What are the 5 oldest posts?",
+    "sql": "SELECT posts.Title, posts.CreationDate FROM posts ORDER BY posts.CreationDate LIMIT 5",
+    "cypher": "MATCH (post:posts) RETURN post.Title, post.CreationDate ORDER BY post.CreationDate LIMIT 5"
+  },
+  {
+    "question": "List comments with text containing 'help'",
+    "sql": "SELECT comments.Text, comments.UserDisplayName FROM comments WHERE comments.Text LIKE '%help%'",
+    "cypher": "MATCH (comment:comments) WHERE comment.Text CONTAINS 'help' RETURN comment.Text, comment.UserDisplayName"
+  },
+  {
+    "question": "Find post history entries for a specific PostId",
+    "sql": "SELECT postHistory.Id, postHistory.PostHistoryTypeId, postHistory.CreationDate FROM postHistory WHERE postHistory.PostId = 300",
+    "cypher": "MATCH (ph:postHistory) WHERE ph.PostId = '300' RETURN ph.Id, ph.PostHistoryTypeId, ph.CreationDate"
+  },
+  {
+    "question": "Show all badges with TagBased True",
+    "sql": "SELECT badges.Name, badges.Class, badges.Date FROM badges WHERE badges.TagBased = True",
+    "cypher": "MATCH (badge:badges) WHERE badge.TagBased = 'True' RETURN badge.Name, badge.Class, badge.Date"
+  },
+  {
+    "question": "What posts have titles starting with 'How'?",
+    "sql": "SELECT posts.Title, posts.CreationDate FROM posts WHERE posts.Title LIKE 'How%'",
+    "cypher": "MATCH (post:posts) WHERE post.Title STARTS WITH 'How' RETURN post.Title, post.CreationDate"
+  },
+  {
+    "question": "List users with locations containing 'United'",
+    "sql": "SELECT users.DisplayName, users.Location FROM users WHERE users.Location LIKE '%United%'",
+    "cypher": "MATCH (user:users) WHERE user.Location CONTAINS 'United' RETURN user.DisplayName, user.Location"
+  },
+  {
+    "question": "Find post links with LinkTypeId of 2",
+    "sql": "SELECT postLinks.Id, postLinks.PostId, postLinks.RelatedPostId FROM postLinks WHERE postLinks.LinkTypeId = 2",
+    "cypher": "MATCH (pl:postLinks) WHERE pl.LinkTypeId = '2' RETURN pl.Id, pl.PostId, pl.RelatedPostId"
+  },
+  {
+    "question": "Show the 20 newest badges",
+    "sql": "SELECT badges.Name, badges.Date, badges.UserId FROM badges ORDER BY badges.Date DESC LIMIT 20",
+    "cypher": "MATCH (badge:badges) RETURN badge.Name, badge.Date, badge.UserId ORDER BY badge.Date DESC LIMIT 20"
+  },
+  {
+    "question": "What are the posts tagged with 'css'?",
+    "sql": "SELECT posts.Title, posts.Tags FROM posts WHERE posts.Tags LIKE '%css%'",
+    "cypher": "MATCH (post:posts) WHERE post.Tags CONTAINS 'css' RETURN post.Title, post.Tags"
+  },
+  {
+    "question": "List all votes for PostId 1000",
+    "sql": "SELECT votes.Id, votes.VoteTypeId, votes.CreationDate FROM votes WHERE votes.PostId = 1000",
+    "cypher": "MATCH (vote:votes) WHERE vote.PostId = '1000' RETURN vote.Id, vote.VoteTypeId, vote.CreationDate"
+  },
+  {
+    "question": "Find users created after 2019",
+    "sql": "SELECT users.DisplayName, users.CreationDate FROM users WHERE users.CreationDate > '2019-01-01 00:00:00'",
+    "cypher": "MATCH (user:users) WHERE user.CreationDate > '2019-01-01T00:00:00' RETURN user.DisplayName, user.CreationDate"
+  },
+  {
+    "question": "Show comments with ContentLicense 'CC BY-SA 4.0'",
+    "sql": "SELECT comments.Text, comments.CreationDate FROM comments WHERE comments.ContentLicense = 'CC BY-SA 4.0'",
+    "cypher": "MATCH (comment:comments) WHERE comment.ContentLicense = 'CC BY-SA 4.0' RETURN comment.Text, comment.CreationDate"
+  },
+  {
+    "question": "What badges have been awarded to UserId 50?",
+    "sql": "SELECT badges.Name, badges.Class, badges.Date FROM badges WHERE badges.UserId = 50",
+    "cypher": "MATCH (badge:badges) WHERE badge.UserId = '50' RETURN badge.Name, badge.Class, badge.Date"
+  },
+  {
+    "question": "List posts with PostTypeId 1 created after 2017",
+    "sql": "SELECT posts.Title, posts.CreationDate FROM posts WHERE posts.PostTypeId = 1 AND posts.CreationDate > '2017-01-01 00:00:00'",
+    "cypher": "MATCH (post:posts) WHERE post.PostTypeId = '1' AND post.CreationDate > '2017-01-01T00:00:00' RETURN post.Title, post.CreationDate"
+  },
+  {
+    "question": "Find post history entries with UserDisplayName 'Community'",
+    "sql": "SELECT postHistory.Id, postHistory.PostId, postHistory.CreationDate FROM postHistory WHERE postHistory.UserDisplayName = 'Community'",
+    "cypher": "MATCH (ph:postHistory) WHERE ph.UserDisplayName = 'Community' RETURN ph.Id, ph.PostId, ph.CreationDate"
+  },
+  {
+    "question": "Show users with display names containing 'Mike'",
+    "sql": "SELECT users.DisplayName, users.Location FROM users WHERE users.DisplayName LIKE '%Mike%'",
+    "cypher": "MATCH (user:users) WHERE user.DisplayName CONTAINS 'Mike' RETURN user.DisplayName, user.Location"
+  },
+  {
+    "question": "What are the posts with body containing 'solution'?",
+    "sql": "SELECT posts.Title, posts.Body FROM posts WHERE posts.Body LIKE '%solution%'",
+    "cypher": "MATCH (post:posts) WHERE post.Body CONTAINS 'solution' RETURN post.Title, post.Body"
   },
   {
     "question": "List votes by user 15",

@@ -62,5 +62,5 @@ def validate(
         for task_type, error in errors.items():
             query = task.sql if task_type == TaskType.SQL else task.cypher
             print(f"   [{task_type.value}] {error}")
-            print(f"   Query: {query[:100]}{'...' if len(query) > 100 else ''}")
+            print(f"   Query: {query}")
         print()

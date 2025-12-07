@@ -21,13 +21,13 @@
   },
   {
     "question": "Which studies have a data monitoring committee?",
-    "sql": "SELECT studies.brief_title, studies.has_dmc FROM studies WHERE studies.has_dmc = 'Yes'",
-    "cypher": "MATCH (study:studies) WHERE study.has_dmc = 'Yes' RETURN study.brief_title, study.has_dmc"
+    "sql": "SELECT studies.brief_title, studies.has_dmc FROM studies WHERE studies.has_dmc = 't'",
+    "cypher": "MATCH (study:studies) WHERE study.has_dmc = 't' RETURN study.brief_title, study.has_dmc"
   },
   {
     "question": "Show studies that are FDA regulated drugs",
-    "sql": "SELECT studies.brief_title, studies.is_fda_regulated_drug FROM studies WHERE studies.is_fda_regulated_drug = 'Yes'",
-    "cypher": "MATCH (study:studies) WHERE study.is_fda_regulated_drug = 'Yes' RETURN study.brief_title, study.is_fda_regulated_drug"
+    "sql": "SELECT studies.brief_title, studies.is_fda_regulated_drug FROM studies WHERE studies.is_fda_regulated_drug = 't'",
+    "cypher": "MATCH (study:studies) WHERE study.is_fda_regulated_drug = 't' RETURN study.brief_title, study.is_fda_regulated_drug"
   },
   {
     "question": "List all Phase 1 trials",
@@ -41,8 +41,8 @@
   },
   {
     "question": "What studies are FDA regulated devices?",
-    "sql": "SELECT studies.brief_title, studies.is_fda_regulated_device FROM studies WHERE studies.is_fda_regulated_device = 'Yes'",
-    "cypher": "MATCH (study:studies) WHERE study.is_fda_regulated_device = 'Yes' RETURN study.brief_title, study.is_fda_regulated_device"
+    "sql": "SELECT studies.brief_title, studies.is_fda_regulated_device FROM studies WHERE studies.is_fda_regulated_device = 't'",
+    "cypher": "MATCH (study:studies) WHERE study.is_fda_regulated_device = 't' RETURN study.brief_title, study.is_fda_regulated_device"
   },
   {
     "question": "Show me Phase 2 clinical trials",
@@ -91,8 +91,8 @@
   },
   {
     "question": "List studies involving unapproved devices",
-    "sql": "SELECT studies.brief_title, studies.is_unapproved_device FROM studies WHERE studies.is_unapproved_device = 'Yes'",
-    "cypher": "MATCH (study:studies) WHERE study.is_unapproved_device = 'Yes' RETURN study.brief_title, study.is_unapproved_device"
+    "sql": "SELECT studies.brief_title, studies.is_unapproved_device FROM studies WHERE studies.is_unapproved_device = 't'",
+    "cypher": "MATCH (study:studies) WHERE study.is_unapproved_device = 't' RETURN study.brief_title, study.is_unapproved_device"
   },
   {
     "question": "Find studies with enrollment between 100 and 500",
@@ -101,8 +101,8 @@
   },
   {
     "question": "Which studies are US exports?",
-    "sql": "SELECT studies.brief_title, studies.is_us_export FROM studies WHERE studies.is_us_export = 'Yes'",
-    "cypher": "MATCH (study:studies) WHERE study.is_us_export = 'Yes' RETURN study.brief_title, study.is_us_export"
+    "sql": "SELECT studies.brief_title, studies.is_us_export FROM studies WHERE studies.is_us_export = 't'",
+    "cypher": "MATCH (study:studies) WHERE study.is_us_export = 't' RETURN study.brief_title, study.is_us_export"
   },
   {
     "question": "Show studies with biospecimen retention",
@@ -126,8 +126,8 @@
   },
   {
     "question": "Which studies accept healthy volunteers?",
-    "sql": "SELECT eligibilities.nct_id, eligibilities.healthy_volunteers FROM eligibilities WHERE eligibilities.healthy_volunteers = 'Yes'",
-    "cypher": "MATCH (eligibility:eligibilities) WHERE eligibility.healthy_volunteers = 'Yes' RETURN eligibility.nct_id, eligibility.healthy_volunteers"
+    "sql": "SELECT eligibilities.nct_id, eligibilities.healthy_volunteers FROM eligibilities WHERE eligibilities.healthy_volunteers = 'Accepts Healthy Volunteers'",
+    "cypher": "MATCH (eligibility:eligibilities) WHERE eligibility.healthy_volunteers = 'Accepts Healthy Volunteers' RETURN eligibility.nct_id, eligibility.healthy_volunteers"
   },
   {
     "question": "Find studies that only enroll females",
@@ -141,18 +141,18 @@
   },
   {
     "question": "Show studies that accept adult participants",
-    "sql": "SELECT eligibilities.nct_id, eligibilities.adult FROM eligibilities WHERE eligibilities.adult = 'Yes'",
-    "cypher": "MATCH (eligibility:eligibilities) WHERE eligibility.adult = 'Yes' RETURN eligibility.nct_id, eligibility.adult"
+    "sql": "SELECT eligibilities.nct_id, eligibilities.adult FROM eligibilities WHERE eligibilities.adult = 't'",
+    "cypher": "MATCH (eligibility:eligibilities) WHERE eligibility.adult = 't' RETURN eligibility.nct_id, eligibility.adult"
   },
   {
     "question": "Which studies allow child participants?",
-    "sql": "SELECT eligibilities.nct_id, eligibilities.child FROM eligibilities WHERE eligibilities.child = 'Yes'",
-    "cypher": "MATCH (eligibility:eligibilities) WHERE eligibility.child = 'Yes' RETURN eligibility.nct_id, eligibility.child"
+    "sql": "SELECT eligibilities.nct_id, eligibilities.child FROM eligibilities WHERE eligibilities.child = 't'",
+    "cypher": "MATCH (eligibility:eligibilities) WHERE eligibility.child = 't' RETURN eligibility.nct_id, eligibility.child"
   },
   {
     "question": "Find studies accepting older adult participants",
-    "sql": "SELECT eligibilities.nct_id, eligibilities.older_adult FROM eligibilities WHERE eligibilities.older_adult = 'Yes'",
-    "cypher": "MATCH (eligibility:eligibilities) WHERE eligibility.older_adult = 'Yes' RETURN eligibility.nct_id, eligibility.older_adult"
+    "sql": "SELECT eligibilities.nct_id, eligibilities.older_adult FROM eligibilities WHERE eligibilities.older_adult = 't'",
+    "cypher": "MATCH (eligibility:eligibilities) WHERE eligibility.older_adult = 't' RETURN eligibility.nct_id, eligibility.older_adult"
   },
   {
     "question": "List studies with randomized allocation",
@@ -206,18 +206,18 @@
   },
   {
     "question": "Find studies where subjects are masked",
-    "sql": "SELECT designs.nct_id, designs.subject_masked FROM designs WHERE designs.subject_masked = 'Yes'",
-    "cypher": "MATCH (design:designs) WHERE design.subject_masked = 'Yes' RETURN design.nct_id, design.subject_masked"
+    "sql": "SELECT designs.nct_id, designs.subject_masked FROM designs WHERE designs.subject_masked = 't'",
+    "cypher": "MATCH (design:designs) WHERE design.subject_masked = 't' RETURN design.nct_id, design.subject_masked"
   },
   {
     "question": "Which studies mask the investigators?",
-    "sql": "SELECT designs.nct_id, designs.investigator_masked FROM designs WHERE designs.investigator_masked = 'Yes'",
-    "cypher": "MATCH (design:designs) WHERE design.investigator_masked = 'Yes' RETURN design.nct_id, design.investigator_masked"
+    "sql": "SELECT designs.nct_id, designs.investigator_masked FROM designs WHERE designs.investigator_masked = 't'",
+    "cypher": "MATCH (design:designs) WHERE design.investigator_masked = 't' RETURN design.nct_id, design.investigator_masked"
   },
   {
     "question": "List studies with outcomes assessor masked",
-    "sql": "SELECT designs.nct_id, designs.outcomes_assessor_masked FROM designs WHERE designs.outcomes_assessor_masked = 'Yes'",
-    "cypher": "MATCH (design:designs) WHERE design.outcomes_assessor_masked = 'Yes' RETURN design.nct_id, design.outcomes_assessor_masked"
+    "sql": "SELECT designs.nct_id, designs.outcomes_assessor_masked FROM designs WHERE designs.outcomes_assessor_masked = 't'",
+    "cypher": "MATCH (design:designs) WHERE design.outcomes_assessor_masked = 't' RETURN design.nct_id, design.outcomes_assessor_masked"
   },
   {
     "question": "Show studies with cohort observational model",
@@ -406,13 +406,13 @@
   },
   {
     "question": "Find serious adverse events",
-    "sql": "SELECT reported_event_totals.nct_id, reported_event_totals.classification FROM reported_event_totals WHERE reported_event_totals.event_type = 'Serious'",
-    "cypher": "MATCH (event:reported_event_totals) WHERE event.event_type = 'Serious' RETURN event.nct_id, event.classification"
+    "sql": "SELECT reported_event_totals.nct_id, reported_event_totals.classification FROM reported_event_totals WHERE reported_event_totals.event_type = 'serious'",
+    "cypher": "MATCH (event:reported_event_totals) WHERE event.event_type = 'serious' RETURN event.nct_id, event.classification"
   },
   {
     "question": "List other adverse events",
-    "sql": "SELECT reported_event_totals.nct_id, reported_event_totals.classification FROM reported_event_totals WHERE reported_event_totals.event_type = 'Other'",
-    "cypher": "MATCH (event:reported_event_totals) WHERE event.event_type = 'Other' RETURN event.nct_id, event.classification"
+    "sql": "SELECT reported_event_totals.nct_id, reported_event_totals.classification FROM reported_event_totals WHERE reported_event_totals.event_type = 'other'",
+    "cypher": "MATCH (event:reported_event_totals) WHERE event.event_type = 'other' RETURN event.nct_id, event.classification"
   },
   {
     "question": "Show events with more than 10 subjects affected",
@@ -496,7 +496,7 @@
   },
   {
     "question": "Find lead sponsors for studies",
-    "sql": "SELECT sponsors_studies.nct_id, sponsors_studies.lead_or_collaborator FROM sponsors_studies WHERE sponsors_studies.lead_or_collaborator = 'Lead'",
-    "cypher": "MATCH (ss:sponsors_studies) WHERE ss.lead_or_collaborator = 'Lead' RETURN ss.nct_id, ss.lead_or_collaborator"
+    "sql": "SELECT sponsors_studies.nct_id, sponsors_studies.lead_or_collaborator FROM sponsors_studies WHERE sponsors_studies.lead_or_collaborator = 'lead'",
+    "cypher": "MATCH (ss:sponsors_studies) WHERE ss.lead_or_collaborator = 'lead' RETURN ss.nct_id, ss.lead_or_collaborator"
   }
 ]
