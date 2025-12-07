@@ -1,5 +1,5 @@
 from litellm import completion
-import os
+import os, inspect
 from logging import getLogger
 from constants import get_duckdb_path, get_tasks_directory
 from database.neo4j import get_neo4j_schema
@@ -26,8 +26,18 @@ def evaluate_remote_model(
     task_type: TaskType,
     api_key: str | None = None,
 ) -> None:
-    """Evaluate a remote model on a dataset."""
-    schema = schema_generator[task_type]()
+    """Evaluate a remote model on a dataset."""        
+
+    def call_with_optional_arg(fn, arg):
+        try:
+            return fn(arg)
+        except TypeError:
+            return fn()
+
+    schema = (schema_generator[task_type](dataset_name)
+            if len(inspect.signature(schema_generator[task_type]).parameters) > 0
+            else schema_generator[task_type]())    
+    
     db_path = db_path_resolver[task_type](dataset_name)
     tasks_dir = get_tasks_directory(dataset_name)
 

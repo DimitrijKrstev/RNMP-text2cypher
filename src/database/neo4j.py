@@ -65,10 +65,17 @@ def get_neo4j_schema() -> str:
             nodes,
             "",
         )
+        
+
         relationships = reduce(
-            lambda acc, rel: f"{acc}\nRelationship: {','.join(rel['start_labels'])} -[{rel['name']}({', '.join(rel['properties'])})]-> {','.join(rel['end_labels'])}",
+            lambda acc, rel: (
+                f"{acc}\nRelationship: {','.join(rel['start_labels'])} -[{rel['name']}"
+                f"{('(' + ', '.join(rel['properties']) + ')') if rel['properties'] else ''}]-> "
+                f"{','.join(rel['end_labels'])}"
+            ),
             relationships,
             "",
-        )
+        ).lstrip("\n")
+
 
         return f"{nodes}\n\n{relationships}"
