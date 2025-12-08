@@ -3,24 +3,25 @@ import json
 from tqdm import tqdm
 
 from constants import REMOTE_MODEL_NAME, RESULTS_DIR, get_duckdb_path
-from database.neo4j import get_neo4j_schema
-from database.duckdb import get_duckdb_schema
 from evaluation.scoring import get_task_result
 from models import DatasetName, TaskDifficulty, TaskType, Task, TaskResult
 from utils import save_task_results
 
 logger = getLogger(__name__)
 
-def re_evaluate_results(dataset_name: DatasetName, task_type: TaskType) -> None:
+db_path_resolver = {
+    TaskType.SQL: get_duckdb_path,
+    TaskType.CYPHER: lambda _: None,
+}
+
+
+def re_evaluate_results(dataset_name: DatasetName, task_type: TaskType, model: str = "claude-sonnet-4-20250514") -> None:
     """Re-evaluate SQL or Cypher results for a given already_generated dataset"""
 
-    if task_type == TaskType.SQL:
-        db_path = get_duckdb_path(dataset_name)
-    else:  
-        db_path = None
+    db_path = db_path_resolver[task_type](dataset_name)
 
-    for task_difficulty in {TaskDifficulty.HARD}:
-        result_file = RESULTS_DIR / dataset_name / task_type.value.lower() / "gpt-5-nano" / f"{task_difficulty.value}.json"
+    for task_difficulty in {TaskDifficulty.EASY, TaskDifficulty.INTERMEDIATE ,TaskDifficulty.HARD}:
+        result_file = RESULTS_DIR / dataset_name / task_type.value.lower() / model / f"{task_difficulty.value}.json"
         if not result_file.exists():
             logger.warning(f"Result file not found, skipping: {result_file}")
             continue
@@ -34,20 +35,13 @@ def re_evaluate_results(dataset_name: DatasetName, task_type: TaskType) -> None:
             existing_results, 
             desc=f"Re-evaluating {task_type.value} Tasks ({dataset_name}, {task_difficulty})"
         ):
-            if task_type == TaskType.SQL:
-                task = Task(
-                    question=result_data["question"],
-                    sql=result_data["expected_script"],
-                    cypher="",
-                    cypher_result=None
-                )
-            else:  
-                task = Task(
-                    question=result_data["question"],
-                    sql="",
-                    cypher=result_data["expected_script"],
-                    cypher_result=None  
-                )
+            
+            task = Task(
+                question=result_data["question"],
+                sql=result_data["expected_script"] if task_type == TaskType.SQL else "",
+                cypher=result_data["expected_script"] if task_type == TaskType.CYPHER else "",
+                cypher_result=None
+            )
             
             generated_query = result_data["generated_script"]
             

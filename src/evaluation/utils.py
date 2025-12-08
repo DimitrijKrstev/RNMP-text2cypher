@@ -10,6 +10,9 @@ def compute_component_f1(expected_set, generated_set):
     F1 for query components (entities, attributes, relations, etc.)
     Input: Sets of strings
     """
+    if not expected_set and not generated_set:
+        return 1.0
+
     tp = len(expected_set & generated_set)
     fp = len(generated_set - expected_set)
     fn = len(expected_set - generated_set)

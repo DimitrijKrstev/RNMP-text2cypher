@@ -170,7 +170,7 @@ def get_task_result(task: Task, model_response: str, task_type: TaskType, db_pat
         execution_success=execution_success,
         entity_f1=entity_f1,
         attribute_f1=attribute_f1,
-        relation_f1=relation_f1 if task_type == TaskType.CYPHER else None,
+        relation_f1=relation_f1,
         filter_f1=filter_f1,
         aggregation_f1=aggregation_f1,
         return_column_f1=return_column_f1,

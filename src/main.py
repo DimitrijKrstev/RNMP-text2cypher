@@ -97,6 +97,15 @@ def generate_schema(dataset_name: DatasetName, task_types : list[TaskType]) -> N
         print(result)
         print('---------------------------------------------')     
 
+@app.command()
+def generate_thesis_plots() -> None:
+    """Generate all thesis plots and tables"""
+    from evaluation.complete_plot import ThesisPlotter
+    from constants import RESULTS_DIR, PROJECT_ROOT
+    
+    output_dir = PROJECT_ROOT / "plots"
+    plotter = ThesisPlotter(RESULTS_DIR, output_dir)
+    plotter.generate_all_plots()
 
 if __name__ == "__main__":
     app()

@@ -90,24 +90,37 @@ class TaskResult:
             "error_category": self.error_category,
             "error_flags": self.error_flags,
         }
-
-    #TODO see what this was
-    # @classmethod
-    # def from_dict(cls, data: dict, task_type: "TaskType") -> "TaskResult":
-    #     task = Task(
-    #         question=data["question"],
-    #         sql=data["sql"] if "sql" in data else "",
-    #         cypher=data["cypher"] if "cypher" in data else "",
-    #         cypher_result=data.get("cypher_result"),
-    #     )
-    #     return cls(
-    #         task=task,
-    #         response=data["generated_script"],
-    #         syntaxically_correct=data["syntaxically_correct"],
-    #         correct_result=data["correct_result"],
-    #         exact_match=data["exact_match"],
-    #         task_type=task_type,
-    #     )
+    
+    @classmethod
+    def from_dict(cls, data: dict, task_type: "TaskType") -> "TaskResult":
+        """Reconstruct TaskResult from serialized dict"""
+        
+        task = Task(
+            question=data["question"],
+            sql=data["expected_script"] if task_type == TaskType.SQL else "",
+            cypher=data["expected_script"] if task_type == TaskType.CYPHER else "",
+            cypher_result=None
+        )
+        
+        return cls(
+            task=task,                                          
+            response=data["generated_script"],                  
+            parse_success=data["syntaxically_correct"],         
+            execution_success=data["correct_result"],          
+            entity_f1=data.get("entity_f1", 0.0),
+            attribute_f1=data.get("attribute_f1", 0.0),
+            relation_f1=data.get("relation_f1"),
+            filter_f1=data.get("filter_f1", 0.0),
+            aggregation_f1=data.get("aggregation_f1", 0.0),
+            return_column_f1=data.get("return_column_f1", 0.0),
+            execution_accuracy=data.get("execution_accuracy", False),
+            result_f1=data.get("result_f1", 0.0),
+            result_precision=data.get("result_precision", 0.0),
+            result_recall=data.get("result_recall", 0.0),
+            error_category=data.get("error_category", "UNKNOWN"),
+            error_flags=data.get("error_flags", []),
+            task_type=task_type
+        )
 
 
 class DatasetName(StrEnum):
