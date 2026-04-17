@@ -1,10 +1,11 @@
-from logging import getLogger
 import json
+from logging import getLogger
+
 from tqdm import tqdm
 
 from constants import REMOTE_MODEL_NAME, RESULTS_DIR, get_duckdb_path
 from evaluation.scoring import get_task_result
-from models import DatasetName, TaskDifficulty, TaskType, Task, TaskResult
+from models import DatasetName, Task, TaskDifficulty, TaskResult, TaskType
 from utils import save_task_results
 
 logger = getLogger(__name__)
@@ -15,36 +16,53 @@ db_path_resolver = {
 }
 
 
-def re_evaluate_results(dataset_name: DatasetName, task_type: TaskType, model: str = "claude-sonnet-4-20250514") -> None:
+def re_evaluate_results(
+    dataset_name: DatasetName,
+    task_type: TaskType,
+    model: str = "claude-sonnet-4-20250514",
+) -> None:
     """Re-evaluate SQL or Cypher results for a given already_generated dataset"""
 
     db_path = db_path_resolver[task_type](dataset_name)
 
-    for task_difficulty in {TaskDifficulty.EASY, TaskDifficulty.INTERMEDIATE ,TaskDifficulty.HARD}:
-        result_file = RESULTS_DIR / dataset_name / task_type.value.lower() / model / f"{task_difficulty.value}.json"
+    for task_difficulty in {
+        TaskDifficulty.EASY,
+        TaskDifficulty.INTERMEDIATE,
+        TaskDifficulty.HARD,
+    }:
+        result_file = (
+            RESULTS_DIR
+            / dataset_name
+            / task_type.value.lower()
+            / model
+            / f"{task_difficulty.value}.json"
+        )
         if not result_file.exists():
             logger.warning(f"Result file not found, skipping: {result_file}")
             continue
 
-        with open(result_file, 'r') as f:
+        with result_file.open("r") as f:
             existing_results = json.load(f)
-        
+
         task_results = []
-        
+
         for result_data in tqdm(
-            existing_results, 
-            desc=f"Re-evaluating {task_type.value} Tasks ({dataset_name}, {task_difficulty})"
+            existing_results,
+            desc=f"Re-evaluating {task_type.value} Tasks ({dataset_name}, {task_difficulty})",
         ):
-            
             task = Task(
                 question=result_data["question"],
                 sql=result_data["expected_script"] if task_type == TaskType.SQL else "",
-                cypher=result_data["expected_script"] if task_type == TaskType.CYPHER else "",
-                cypher_result=None
+                cypher=(
+                    result_data["expected_script"]
+                    if task_type == TaskType.CYPHER
+                    else ""
+                ),
+                cypher_result=None,
             )
-            
+
             generated_query = result_data["generated_script"]
-            
+
             try:
                 result = get_task_result(task, generated_query, task_type, db_path)
             except Exception as e:
@@ -66,17 +84,19 @@ def re_evaluate_results(dataset_name: DatasetName, task_type: TaskType, model: s
                     result_recall=0.0,
                     error_category="Evaluation Error",
                     error_flags=[],
-                    task_type=task_type
+                    task_type=task_type,
                 )
 
             task_results.append(result)
-        
+
         save_task_results(
-            task_results, 
-            dataset_name, 
-            task_difficulty, 
-            task_type, 
-            REMOTE_MODEL_NAME
+            task_results,
+            dataset_name,
+            task_difficulty,
+            task_type,
+            REMOTE_MODEL_NAME,
         )
-        
-        logger.info(f"Re-evaluated {len(task_results)} {task_type.value} tasks for {task_difficulty}")
+
+        logger.info(
+            f"Re-evaluated {len(task_results)} {task_type.value} tasks for {task_difficulty}",
+        )

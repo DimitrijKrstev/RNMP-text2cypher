@@ -1,10 +1,10 @@
-from pathlib import Path
-
-from models import TaskResult, TaskType
 import json
 from collections import Counter
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 
+from models import TaskResult, TaskType
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -23,9 +23,9 @@ def plot_for_task_type(task_type: Path, dataset_name: str) -> None:
         if not model_name.is_dir():
             continue
         plot_for_model(
-            model_name, 
+            model_name,
             TaskType.SQL if task_type.name == "sql" else TaskType.CYPHER,
-            dataset_name
+            dataset_name,
         )
 
 
@@ -49,7 +49,7 @@ def plot_for_result_json(
         {
             field: sum(getattr(result, field, False) for result in results)
             for field in fields
-        }
+        },
     )
 
     plt.figure(figsize=(10, 8))

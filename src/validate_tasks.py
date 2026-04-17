@@ -1,12 +1,11 @@
 import json
 from pathlib import Path
-from typing import Optional
 
 from tqdm import tqdm
 
 from constants import get_duckdb_path
-from database.neo4j import query_neo4j
 from database.duckdb import query_duckdb
+from database.neo4j import query_neo4j
 from models import DatasetName, Task, TaskType
 
 QUERY_DB_BY_TASK_TYPE = {
@@ -18,13 +17,12 @@ QUERY_DB_BY_TASK_TYPE = {
 def validate(
     tasks_path: Path,
     database_name: DatasetName,
-    task_types: Optional[list[TaskType]] = None,
+    task_types: list[TaskType] | None = None,
 ) -> None:
-
     if task_types is None:
         task_types = [TaskType.SQL, TaskType.CYPHER]
 
-    with open(tasks_path, "r") as f:
+    with tasks_path.open("r") as f:
         tasks = [Task.from_dict(task) for task in json.load(f)]
 
     db_path = get_duckdb_path(database_name)
@@ -53,7 +51,9 @@ def validate(
 
     print()
     print(f"Path: {tasks_path}")
-    print(f"Total: {len(tasks)} | Valid: {len(valid_tasks)} | Invalid: {len(invalid_tasks)}")
+    print(
+        f"Total: {len(tasks)} | Valid: {len(valid_tasks)} | Invalid: {len(invalid_tasks)}",
+    )
     print(f"Validated: {', '.join(t.value for t in task_types)}")
     print()
 

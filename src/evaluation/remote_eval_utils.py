@@ -1,9 +1,15 @@
-from models import Task, TaskType, TaskResult
-from evaluation.scoring import get_task_result
-from evaluation.utils import build_user_prompt, build_sql_system_prompt, build_cypher_system_prompt
-from litellm import completion
 from logging import getLogger
+
+from litellm import completion
 from tqdm import tqdm
+
+from evaluation.scoring import get_task_result
+from evaluation.utils import (
+    build_cypher_system_prompt,
+    build_sql_system_prompt,
+    build_user_prompt,
+)
+from models import Task, TaskResult, TaskType
 
 logger = getLogger(__name__)
 
@@ -22,13 +28,13 @@ def query_llm(model: str, system: str, prompt: str, api_key: str | None = None) 
         response = completion(
             model=model,
             messages=[
-            {
-                "role": "system",
-                "content": system,
-                "cache_control": {"type": "ephemeral"} 
-            },
-            {"role": "user", "content": prompt},
-        ],
+                {
+                    "role": "system",
+                    "content": system,
+                    "cache_control": {"type": "ephemeral"},
+                },
+                {"role": "user", "content": prompt},
+            ],
             api_key=api_key,
         )
         return response.choices[0].message.content or NO_QUERY

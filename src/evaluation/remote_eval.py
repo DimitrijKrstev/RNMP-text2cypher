@@ -1,12 +1,12 @@
-from litellm import completion
-import os, inspect
+import inspect
 from logging import getLogger
+
 from constants import get_duckdb_path, get_tasks_directory
-from database.neo4j import get_neo4j_schema
 from database.duckdb import get_duckdb_schema
+from database.neo4j import get_neo4j_schema
+from evaluation.remote_eval_utils import process_tasks
 from models import DatasetName, TaskDifficulty, TaskType
 from utils import get_tasks_from_json, save_task_results
-from evaluation.remote_eval_utils import process_tasks
 
 logger = getLogger(__name__)
 
@@ -20,13 +20,14 @@ db_path_resolver = {
     TaskType.CYPHER: lambda _: None,
 }
 
+
 def evaluate_remote_model(
     model_name: str,
     dataset_name: DatasetName,
     task_type: TaskType,
     api_key: str | None = None,
 ) -> None:
-    """Evaluate a remote model on a dataset."""        
+    """Evaluate a remote model on a dataset."""
 
     def call_with_optional_arg(fn, arg):
         try:
@@ -34,10 +35,12 @@ def evaluate_remote_model(
         except TypeError:
             return fn()
 
-    schema = (schema_generator[task_type](dataset_name)
-            if len(inspect.signature(schema_generator[task_type]).parameters) > 0
-            else schema_generator[task_type]())    
-    
+    schema = (
+        schema_generator[task_type](dataset_name)
+        if len(inspect.signature(schema_generator[task_type]).parameters) > 0
+        else schema_generator[task_type]()
+    )
+
     db_path = db_path_resolver[task_type](dataset_name)
     tasks_dir = get_tasks_directory(dataset_name)
 

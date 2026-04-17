@@ -24,7 +24,7 @@ def get_tasks_directory(dataset_name: DatasetName) -> Path:
 
 
 def get_duckdb_path(dataset_name: DatasetName) -> Path:
-    return PROJECT_ROOT/"duckdb" / dataset_name.value / "relbench.duckdb"
+    return PROJECT_ROOT / "duckdb" / dataset_name.value / "relbench.duckdb"
 
 
 def get_csv_output_dir(dataset_name: DatasetName) -> Path:

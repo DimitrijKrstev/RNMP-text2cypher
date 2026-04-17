@@ -25,11 +25,11 @@ def get_neo4j_schema() -> str:
                 (record["key"], record["type"])
                 for record in session.run(
                     f"""
-                    MATCH (n:`{label}`) 
-                    UNWIND keys(n) AS key 
-                    WITH key, n[key] AS val 
+                    MATCH (n:`{label}`)
+                    UNWIND keys(n) AS key
+                    WITH key, n[key] AS val
                     RETURN DISTINCT key, valueType(val) AS type
-                    """
+                    """,
                 )
             ]
             nodes.append({"label": label, "properties": properties})
@@ -42,30 +42,31 @@ def get_neo4j_schema() -> str:
                    collect(DISTINCT labels(a)) AS from_labels,
                    collect(DISTINCT labels(b)) AS to_labels,
                    collect(DISTINCT keys(r)) AS props
-            """
+            """,
         )
         for record in result:
             relationships.append(
                 {
                     "name": record["rel"],
                     "start_labels": list(
-                        {label for sub in record["from_labels"] for label in sub}
+                        {label for sub in record["from_labels"] for label in sub},
                     ),
                     "end_labels": list(
-                        {label for sub in record["to_labels"] for label in sub}
+                        {label for sub in record["to_labels"] for label in sub},
                     ),
                     "properties": list(
-                        {property for sub in record["props"] for property in sub}
+                        {prop for sub in record["props"] for prop in sub},
                     ),
-                }
+                },
             )
 
         nodes = reduce(
-            lambda acc, node: f"{acc}\nNode: {node['label']}({', '.join(f'{k}: {t}' for k, t in node['properties'])})",
+            lambda acc, node: (
+                f"{acc}\nNode: {node['label']}({', '.join(f'{k}: {t}' for k, t in node['properties'])})"
+            ),
             nodes,
             "",
         )
-        
 
         relationships = reduce(
             lambda acc, rel: (
@@ -76,6 +77,5 @@ def get_neo4j_schema() -> str:
             relationships,
             "",
         ).lstrip("\n")
-
 
         return f"{nodes}\n\n{relationships}"
